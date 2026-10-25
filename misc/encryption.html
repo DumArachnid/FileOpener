@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BaNt0 Payload Scrambler & Shield</title>
+    <title>BaNt0 Blind Stealth Shield</title>
     <style>
         :root {
             --bg: #f4efe6;
@@ -14,7 +14,10 @@
             --accent: #c84b25;
             --accent-hover: #b03f1e;
             --input-bg: #faf8f5;
-            --success: #16a34a;
+            --success-bg: #f0fdf4;
+            --success-text: #16a34a;
+            --error-bg: #fef2f2;
+            --error-text: #dc2626;
         }
 
         body {
@@ -32,7 +35,7 @@
 
         .card {
             width: 100%;
-            max-width: 500px;
+            max-width: 520px;
             background: var(--card);
             border: 1px solid var(--border);
             border-radius: 14px;
@@ -66,7 +69,7 @@
 
         textarea {
             width: 100%;
-            height: 90px;
+            height: 85px;
             background: var(--input-bg);
             border: 1px solid var(--border);
             border-radius: 10px;
@@ -76,7 +79,7 @@
             font-size: 0.85rem;
             resize: vertical;
             box-sizing: border-box;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
             transition: border-color 0.2s;
         }
 
@@ -88,7 +91,7 @@
         .btn-group {
             display: flex;
             gap: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
 
         button {
@@ -124,6 +127,31 @@
             background: #f0ece1;
         }
 
+        .status-box {
+            font-family: monospace;
+            font-size: 0.8rem;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            min-height: 20px;
+            word-break: break-all;
+        }
+
+        .status-box.success {
+            background: var(--success-bg);
+            border-color: #bbf7d0;
+            color: var(--success-text);
+        }
+
+        .status-box.error {
+            background: var(--error-bg);
+            border-color: #fecaca;
+            color: var(--error-text);
+        }
+
         .footer-note {
             font-size: 0.75rem;
             color: var(--text-muted);
@@ -136,11 +164,11 @@
 
     <div class="card">
         <div class="header-title">
-            <span>#</span> BaNt0 Shield & Scrambler
+            <span>#</span> BaNt0 Blind Stealth Shield
         </div>
         
         <label for="inputData">Input Payload / Text</label>
-        <textarea id="inputData" placeholder="Drop text or link here..."></textarea>
+        <textarea id="inputData" placeholder="Drop text or scrambled payload here..."></textarea>
         
         <div class="btn-group">
             <button onclick="scrambleText()">Scramble</button>
@@ -150,83 +178,131 @@
         <label for="outputData">Result Output</label>
         <textarea id="outputData" placeholder="Result will appear here..." readonly></textarea>
         
-        <div class="footer-note">Prefix stamp & dummy-bit matrix active.</div>
+        <label>Status Log</label>
+        <div id="statusLog" class="status-box">Ready.</div>
+        
+        <div class="footer-note">Blind interval guessing matrix & reversed padding active.</div>
     </div>
 
     <script>
         const PREFIX = "BaNt0BadAshyNewTab-";
-        const DUMMY_MARKER = "_";
+        const B64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+        function setStatus(message, type = 'normal') {
+            const log = document.getElementById('statusLog');
+            log.className = 'status-box ' + type;
+            log.textContent = message;
+        }
 
         function scrambleText() {
             const raw = document.getElementById('inputData').value;
-            if (!raw) return;
+            if (!raw) {
+                setStatus("Input field is empty.", "error");
+                return;
+            }
 
             try {
-                // 1. Prepend the mandatory prefix
+                // 1. Stamp with mandatory prefix
                 const stamped = PREFIX + raw;
 
-                // 2. Base64 encode it
-                let encoded = btoa(encodeURIComponent(stamped));
+                // 2. Base64 encode
+                const cleanB64 = btoa(encodeURIComponent(stamped));
 
-                // 3. Add dummy bits based on length
-                if (encoded.length > 100) {
-                    // Evenly space dummy bits out every 15 characters
-                    let spaced = "";
-                    for (let i = 0; i < encoded.length; i++) {
-                        spaced += encoded[i];
-                        if ((i + 1) % 15 === 0) {
-                            spaced += DUMMY_MARKER;
-                        }
-                    }
-                    encoded = spaced;
-                } else {
-                    // Short payload padding
-                    encoded = encoded + "===DUMMY";
+                // 3. Isolate trailing padding (=) so padding stays strictly at the end
+                const paddingMatch = cleanB64.match(/(=+)$/);
+                let core = cleanB64;
+                let padding = "";
+                if (paddingMatch) {
+                    padding = paddingMatch[1];
+                    core = cleanB64.slice(0, -padding.length);
                 }
 
-                document.getElementById('outputData').value = encoded;
+                // Reverse only the core string, append padding back untouched
+                const reversedCore = core.split('').reverse().join('');
+                const reversedB64 = reversedCore + padding;
+
+                // 4. Generate random secret interval between 1 and 500 (No header stored!)
+                const interval = Math.floor(Math.random() * 500) + 1;
+
+                // 5. Interleave decoys dynamically based on the random interval
+                let interleaved = "";
+                let count = 0;
+                for (let i = 0; i < reversedB64.length; i++) {
+                    interleaved += reversedB64[i];
+                    count++;
+                    if (count % interval === 0) {
+                        const decoy = B64_ALPHABET[Math.floor(Math.random() * B64_ALPHABET.length)];
+                        interleaved += decoy;
+                    }
+                }
+
+                document.getElementById('outputData').value = interleaved;
+                setStatus(`Successfully scrambled (Secret Interval #${interval} applied invisibly).`, "success");
             } catch (err) {
-                document.getElementById('outputData').value = "Error during scrambling: " + err.message;
+                setStatus("Error during scrambling: " + err.message, "error");
+                document.getElementById('outputData').value = "";
             }
         }
 
         function descrambleText() {
             const input = document.getElementById('inputData').value.trim();
-            if (!input) return;
+            if (!input) {
+                setStatus("Input field is empty.", "error");
+                return;
+            }
 
-            try {
-                let cleaned = input;
+            let cracked = false;
+            let successPayload = "";
+            let guessedInterval = 0;
 
-                // 1. Remove dummy bits (guess/reverse the spacing pattern or padding)
-                if (cleaned.length > 100 || cleaned.includes(DUMMY_MARKER)) {
-                    let unspaced = "";
-                    let counter = 0;
-                    for (let i = 0; i < cleaned.length; i++) {
-                        if (cleaned[i] === DUMMY_MARKER && (counter % 16 === 15)) {
-                            // Skip the injected dummy bit
-                            continue;
+            // Brute-force guessing intervals from 1 to 500
+            for (let interval = 1; interval <= 500; interval++) {
+                try {
+                    // 1. Strip decoys using the current guess interval
+                    let restored = "";
+                    let count = 0;
+                    for (let i = 0; i < input.length; i++) {
+                        count++;
+                        if (count % (interval + 1) === 0) {
+                            continue; // Skip decoy
                         }
-                        unspaced += cleaned[i];
-                        counter++;
+                        restored += input[i];
                     }
-                    cleaned = unspaced.replace(new RegExp(`\\${DUMMY_MARKER}`, 'g'), "");
-                } else {
-                    cleaned = cleaned.split("===DUMMY")[0];
-                }
 
-                // 2. Base64 decode
-                const decodedBytes = atob(cleaned);
-                const original = decodeURIComponent(decodedBytes);
+                    // 2. Separate padding from restored string to reverse core back safely
+                    const paddingMatch = restored.match(/(=+)$/);
+                    let core = restored;
+                    let padding = "";
+                    if (paddingMatch) {
+                        padding = paddingMatch[1];
+                        core = restored.slice(0, -padding.length);
+                    }
 
-                // 3. Check for the signature prefix and hand over cracked version
-                if (original.startsWith(PREFIX)) {
-                    const purePayload = original.slice(PREFIX.length);
-                    document.getElementById('outputData').value = `[CRACKED SUCCESS]\n${purePayload}`;
-                } else {
-                    document.getElementById('outputData').value = `[WARNING] Decoded, but missing signature. Raw: ${original}`;
+                    const originalCore = core.split('').reverse().join('');
+                    const cleanB64 = originalCore + padding;
+
+                    // 3. Base64 & URI decode
+                    const decodedBytes = atob(cleanB64);
+                    const original = decodeURIComponent(decodedBytes);
+
+                    // 4. Verify prefix signature
+                    if (original.startsWith(PREFIX)) {
+                        guessedInterval = interval;
+                        successPayload = original.slice(PREFIX.length);
+                        cracked = true;
+                        break; // Found the correct interval!
+                    }
+                } catch (e) {
+                    // This interval guessed wrong, let the loop try the next one
                 }
-            } catch (err) {
-                document.getElementById('outputData').value = "Failed to descramble. Corrupted dummy bits or invalid string :/";
+            }
+
+            if (cracked) {
+                document.getElementById('outputData').value = successPayload;
+                setStatus(`[CRACKED SUCCESS] Successfully guessed hidden interval #${guessedInterval}! Payload verified.`, "success");
+            } else {
+                document.getElementById('outputData').value = "";
+                setStatus(`[ERROR] Descramble failed: Exhausted intervals (1-500). Invalid payload or corrupted string :/`, "error");
             }
         }
     </script>
