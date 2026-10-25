@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base64 & Payload Shield</title>
+    <style>
+        :root {
+            --bg: #f4efe6;
+            --card: #ffffff;
+            --border: #e6dfd5;
+            --text-main: #27272a;
+            --text-muted: #71717a;
+            --accent: #c84b25;
+            --accent-hover: #b03f1e;
+            --input-bg: #faf8f5;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 480px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 24px;
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.05);
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--text-main);
+        }
+
+        .header-title span {
+            color: var(--accent);
+        }
+
+        label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        textarea {
+            width: 100%;
+            height: 90px;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-main);
+            padding: 12px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            resize: vertical;
+            box-sizing: border-box;
+            margin-bottom: 16px;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            flex: 1;
+            background: var(--accent);
+            color: #ffffff;
+            border: none;
+            padding: 10px 16px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            box-shadow: 0 4px 12px rgba(200, 75, 37, 0.2);
+        }
+
+        button:hover {
+            background: var(--accent-hover);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button.secondary {
+            background: var(--input-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            box-shadow: none;
+        }
+
+        button.secondary:hover {
+            background: #f0ece1;
+        }
+
+        .footer-note {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <div class="header-title">
+            <span>#</span> Base64 Payload Scrambler
+        </div>
+        
+        <label for="inputData">Input Payload / URL</label>
+        <textarea id="inputData" placeholder="Drop text or link to scramble..."></textarea>
+        
+        <div class="btn-group">
+            <button onclick="scrambleText()">Scramble</button>
+            <button class="secondary" onclick="descrambleText()">Descramble</button>
+        </div>
+
+        <label for="outputData">Result Output</label>
+        <textarea id="outputData" placeholder="Result will appear here..." readonly></textarea>
+        
+        <div class="footer-note">Runs 100% local. Zero network logs.</div>
+    </div>
+
+    <script>
+        const CUSTOM_HEADER = "SECURE-PAYLOAD-v1::";
+
+        function scrambleText() {
+            const raw = document.getElementById('inputData').value;
+            if (!raw) return;
+
+            try {
+                const encoded = btoa(encodeURIComponent(raw));
+                const scrambled = CUSTOM_HEADER + btoa(encoded.split('').reverse().join(''));
+                document.getElementById('outputData').value = scrambled;
+            } catch (err) {
+                document.getElementById('outputData').value = "Error: " + err.message;
+            }
+        }
+
+        function descrambleText() {
+            const input = document.getElementById('inputData').value.trim();
+            if (!input) return;
+
+            try {
+                let cleaned = input;
+                if (input.startsWith(CUSTOM_HEADER)) {
+                    cleaned = input.slice(CUSTOM_HEADER.length);
+                }
+
+                const unreversed = atob(cleaned).split('').reverse().join('');
+                const original = decodeURIComponent(atob(unreversed));
+
+                document.getElementById('outputData').value = original;
+            } catch (err) {
+                document.getElementById('outputData').value = "Failed to descramble. Check your payload string :/";
+            }
+        }
+    </script>
+</body>
+</html>
