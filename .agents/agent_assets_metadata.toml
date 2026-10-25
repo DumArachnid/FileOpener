@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "6Fdz2vGROMjusgMDqlloX"
+uri = "file://artifacts/new-tab/public/workspace.html"
+type = "html"
+title = "New Tab — Single HTML File"
+description = "The complete website in one HTML file, with all CSS and JavaScript included. Download it and open its source to copy and paste the entire page."
+logical_id = "a74c8a2a-0381-4dde-ae53-51ece791eecd"
+content_hash = "sha256:fbd9425482d7bf80d92f2fbb269b2f749838eb0fb450666d6e6b60a589ebeada"
+size = 145036
+mtime_ms = 1792906077802
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:577cd84b-fdd9-4ce2-a885-1a83b1059f15/a74c8a2a-0381-4dde-ae53-51ece791eecd/23b1752b-e4d2-44e6-b997-a39b35de236b"
+storage_version_token = "1792906111247809"
+content_type = "text/html"

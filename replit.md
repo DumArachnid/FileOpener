@@ -37,6 +37,7 @@ _Describe the high-level user-facing capabilities of this app once they exist._
 - Improve the uploaded website incrementally; do not start from scratch.
 - Preserve existing features wherever possible.
 - Replace multiple named themes with freely customizable accent and background colors, including hex input.
+- Keep the actual website in a single copyable HTML file with its CSS and JavaScript inline, preserving its functions.
 
 ## Gotchas
 
