@@ -18,10 +18,11 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Generate Self-Decoding Base64 HTML File
+      - name: Generate Self-Decoding Base64 HTML File and Zip Archive
         run: |
           python -c '
           import base64
+          import zipfile
 
           file_path = "artifacts/new-tab/public/workspace.html"
 
@@ -56,15 +57,21 @@ jobs:
           with open("workspace-base64.html", "w", encoding="utf-8") as f:
               f.write(wrapper_html)
               
-          print("Generated workspace-base64.html successfully!")
+          # Create a compressed zip archive of the HTML file
+          with zipfile.ZipFile("workspace-base64.zip", "w", zipfile.ZIP_DEFLATED) as zipf:
+              zipf.write("workspace-base64.html")
+              
+          print("Generated workspace-base64.html and workspace-base64.zip successfully!")
           '
 
-      - name: Create GitHub Release and Upload Asset
+      - name: Create GitHub Release and Upload Assets
         uses: softprops/action-gh-release@v2
         with:
-          files: workspace-base64.html
+          files: |
+            workspace-base64.html
+            workspace-base64.zip
           tag_name: mimo-v${{ github.run_number }}
           name: "Base64 Version"
-          body: "Manual self-extracting base64 build generated from `workspace.html` (Commit: `${{ github.sha }}`)."
+          body: "Manual self-extracting base64 build and zipped version generated from `workspace.html` (Commit: `${{ github.sha }}`)."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
