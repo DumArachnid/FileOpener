@@ -14,4 +14,4 @@ Mimo.org is known for its inability to update if the code is deemed too complex.
 Yes, I did. I used the built-in “Apple Intelligence” that modern iPhones have, not the cloud LLM. This means I ran the AI locally instead of wasting water.
 
 
-![Workspace Preview](assets/DumArachnidCat.png)
+!DumArachnidCatPFP.png](assets/DumArachnidCat.png)
