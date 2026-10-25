@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BaNt0 Blind Stealth Shield</title>
+    <title>BaNt0 Stealth Payload Shield</title>
     <style>
         :root {
             --bg: #f4efe6;
@@ -164,7 +164,7 @@
 
     <div class="card">
         <div class="header-title">
-            <span>#</span> BaNt0 Blind Stealth Shield
+            <span>#</span> BaNt0 Stealth Payload Shield
         </div>
         
         <label for="inputData">Input Payload / Text</label>
@@ -181,7 +181,7 @@
         <label>Status Log</label>
         <div id="statusLog" class="status-box">Ready.</div>
         
-        <div class="footer-note">Synchronized blind routing active.</div>
+        <div class="footer-note">Dynamic 1-500 interval matrix & padding preservation active.</div>
     </div>
 
     <script>
@@ -194,99 +194,6 @@
             log.textContent = message;
         }
 
-        // --- UNEVEN ENCODING/DECODING (< 100 chars) ---
-        function scrambleUneven(str, seed) {
-            let s = seed;
-            const lcg = () => {
-                s = (s * 1664525 + 1013904223) % 4294967296;
-                return s / 4294967296;
-            };
-
-            let result = "";
-            let nextDecoyAt = Math.floor(lcg() * 5) + 1;
-            let cleanCharCount = 0;
-
-            for (let i = 0; i < str.length; i++) {
-                result += str[i];
-                cleanCharCount++;
-                if (cleanCharCount === nextDecoyAt) {
-                    const decoy = B64_ALPHABET[Math.floor(Math.random() * B64_ALPHABET.length)];
-                    result += decoy;
-                    cleanCharCount = 0;
-                    nextDecoyAt = Math.floor(lcg() * 8) + 1;
-                }
-            }
-            return result;
-        }
-
-        function descrambleUneven(input, seed) {
-            let s = seed;
-            const lcg = () => {
-                s = (s * 1664525 + 1013904223) % 4294967296;
-                return s / 4294967296;
-            };
-
-            let restored = "";
-            let nextDecoyAt = Math.floor(lcg() * 5) + 1;
-            let cleanCharCount = 0;
-
-            for (let i = 0; i < input.length; i++) {
-                cleanCharCount++;
-                restored += input[i];
-                if (cleanCharCount === nextDecoyAt) {
-                    i++; // Skip the injected decoy character right after
-                    cleanCharCount = 0;
-                    nextDecoyAt = Math.floor(lcg() * 8) + 1;
-                }
-            }
-            return restored;
-        }
-
-        // --- EVEN ENCODING/DECODING (>= 100 chars) ---
-        function scrambleEven(str, interval) {
-            let interleaved = "";
-            let count = 0;
-            for (let i = 0; i < str.length; i++) {
-                interleaved += str[i];
-                count++;
-                if (count % interval === 0) {
-                    const decoy = B64_ALPHABET[Math.floor(Math.random() * B64_ALPHABET.length)];
-                    interleaved += decoy;
-                }
-            }
-            return interleaved;
-        }
-
-        function descrambleEven(input, interval) {
-            let restored = "";
-            let count = 0;
-            for (let i = 0; i < input.length; i++) {
-                count++;
-                if (count % (interval + 1) === 0) {
-                    continue;
-                }
-                restored += input[i];
-            }
-            return restored;
-        }
-
-        // --- CORE BASE64 & PADDING RESTORATION ---
-        function decodeAndVerify(restored) {
-            const paddingMatch = restored.match(/(=+)$/);
-            let core = restored;
-            let padding = "";
-            if (paddingMatch) {
-                padding = paddingMatch[1];
-                core = restored.slice(0, -padding.length);
-            }
-
-            const originalCore = core.split('').reverse().join('');
-            const cleanB64 = originalCore + padding;
-
-            const decodedBytes = atob(cleanB64);
-            return decodeURIComponent(decodedBytes);
-        }
-
         function scrambleText() {
             const raw = document.getElementById('inputData').value;
             if (!raw) {
@@ -295,9 +202,13 @@
             }
 
             try {
+                // 1. Stamp with mandatory prefix
                 const stamped = PREFIX + raw;
+
+                // 2. Base64 encode
                 const cleanB64 = btoa(encodeURIComponent(stamped));
 
+                // 3. Isolate trailing padding (=) so padding stays strictly at the end
                 const paddingMatch = cleanB64.match(/(=+)$/);
                 let core = cleanB64;
                 let padding = "";
@@ -306,21 +217,29 @@
                     core = cleanB64.slice(0, -padding.length);
                 }
 
+                // Reverse only the core string, append padding back untouched
                 const reversedCore = core.split('').reverse().join('');
                 const reversedB64 = reversedCore + padding;
 
-                let finalPayload = "";
-                if (reversedB64.length < 100) {
-                    const seed = Math.floor(Math.random() * 500) + 1;
-                    finalPayload = scrambleUneven(reversedB64, seed);
-                    setStatus(`Successfully scrambled (Uneven mode, Seed #${seed} applied invisibly).`, "success");
-                } else {
-                    const interval = Math.floor(Math.random() * 500) + 1;
-                    finalPayload = scrambleEven(reversedB64, interval);
-                    setStatus(`Successfully scrambled (Even mode, Interval #${interval} applied invisibly).`, "success");
+                // 4. Generate random interval between 1 and 500
+                const interval = Math.floor(Math.random() * 500) + 1;
+                const header = String(interval).padStart(3, '0'); // 3-char pristine header
+
+                // 5. Interleave decoys dynamically based on the random interval
+                let interleaved = "";
+                let count = 0;
+                for (let i = 0; i < reversedB64.length; i++) {
+                    interleaved += reversedB64[i];
+                    count++;
+                    if (count % interval === 0) {
+                        const decoy = B64_ALPHABET[Math.floor(Math.random() * B64_ALPHABET.length)];
+                        interleaved += decoy;
+                    }
                 }
 
+                const finalPayload = header + interleaved;
                 document.getElementById('outputData').value = finalPayload;
+                setStatus(`Successfully scrambled with dynamic interval #${interval}. Padding preserved at tail.`, "success");
             } catch (err) {
                 setStatus("Error during scrambling: " + err.message, "error");
                 document.getElementById('outputData').value = "";
@@ -334,44 +253,59 @@
                 return;
             }
 
-            let cracked = false;
-            let successPayload = "";
-
-            // 1. Blindly try all 500 Uneven Seeds
-            for (let seed = 1; seed <= 500; seed++) {
-                try {
-                    const restored = descrambleUneven(input, seed);
-                    const original = decodeAndVerify(restored);
-                    if (original.startsWith(PREFIX)) {
-                        successPayload = original.slice(PREFIX.length);
-                        cracked = true;
-                        setStatus(`[CRACKED SUCCESS] Matched via Uneven Seed #${seed}!`, "success");
-                        break;
-                    }
-                } catch (e) {}
-            }
-
-            // 2. If not found, blindly try all 500 Even Intervals
-            if (!cracked) {
-                for (let interval = 1; interval <= 500; interval++) {
-                    try {
-                        const restored = descrambleEven(input, interval);
-                        const original = decodeAndVerify(restored);
-                        if (original.startsWith(PREFIX)) {
-                            successPayload = original.slice(PREFIX.length);
-                            cracked = true;
-                            setStatus(`[CRACKED SUCCESS] Matched via Even Interval #${interval}!`, "success");
-                            break;
-                        }
-                    } catch (e) {}
+            try {
+                if (input.length < 4) {
+                    throw new Error("Input string too short to contain interval header.");
                 }
-            }
 
-            if (cracked) {
-                document.getElementById('outputData').value = successPayload;
-            } else {
+                // 1. Read the 3-character interval header
+                const headerStr = input.slice(0, 3);
+                const interval = parseInt(headerStr, 10);
+                if (isNaN(interval) || interval < 1 || interval > 500) {
+                    throw new Error("Invalid or corrupted interval header.");
+                }
+
+                const body = input.slice(3);
+
+                // 2. Strip decoys using the exact interval rhythm
+                let restored = "";
+                let count = 0;
+                for (let i = 0; i < body.length; i++) {
+                    count++;
+                    if (count % (interval + 1) === 0) {
+                        continue; // Skip decoy
+                    }
+                    restored += body[i];
+                }
+
+                // 3. Separate padding from restored string to reverse core back safely
+                const paddingMatch = restored.match(/(=+)$/);
+                let core = restored;
+                let padding = "";
+                if (paddingMatch) {
+                    padding = paddingMatch[1];
+                    core = restored.slice(0, -padding.length);
+                }
+
+                const originalCore = core.split('').reverse().join('');
+                const cleanB64 = originalCore + padding;
+
+                // 4. Base64 & URI decode
+                const decodedBytes = atob(cleanB64);
+                const original = decodeURIComponent(decodedBytes);
+
+                // 5. Verify prefix signature
+                if (original.startsWith(PREFIX)) {
+                    const purePayload = original.slice(PREFIX.length);
+                    document.getElementById('outputData').value = purePayload;
+                    setStatus(`[CRACKED SUCCESS] Interval #${interval} decrypted. Payload verified.`, "success");
+                } else {
+                    document.getElementById('outputData').value = original;
+                    setStatus(`[WARNING] Decoded successfully, but missing signature prefix.`, "error");
+                }
+            } catch (err) {
                 document.getElementById('outputData').value = "";
-                setStatus(`[ERROR] Descramble failed: Exhausted all seeds & intervals (1-500).`, "error");
+                setStatus(`[ERROR] Descramble failed: ${err.message}`, "error");
             }
         }
     </script>
