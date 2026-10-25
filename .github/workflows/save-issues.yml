@@ -2,8 +2,6 @@ name: Save Open Issues as .TXT
 
 on:
   workflow_dispatch:
-  issues:
-    types: [opened, edited, deleted, closed, reopened]
 
 jobs:
   save-issues:
