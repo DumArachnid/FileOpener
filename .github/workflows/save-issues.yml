@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Fetch and save open issues
+      - name: Fetch and save bug and unlabeled issues
         uses: actions/github-script@v7
         with:
           script: |
@@ -35,7 +35,14 @@ jobs:
             const issueList = [];
             for (const issue of issues.data) {
               if (issue.pull_request) continue;
-              issueList.push(`Title: ${issue.title}\nDes: ${issue.body || 'No description provided.'}`);
+
+              const hasBugLabel = issue.labels.some(l => l.name === 'bug');
+              const isUnlabeled = issue.labels.length === 0;
+
+              // Include if it's a bug or has no labels at all
+              if (hasBugLabel || isUnlabeled) {
+                issueList.push(`Title: ${issue.title}\nDes: ${issue.body || 'No description provided.'}`);
+              }
             }
 
             const filePath = path.join(dir, 'issues.txt');
@@ -46,5 +53,5 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add Bugs/
-          git diff --staged --quiet || git commit -m "docs: update issues txt file [skip ci]"
+          git diff --staged --quiet || git commit -m "docs: update bug and unlabeled issues txt file [skip ci]"
           git push
