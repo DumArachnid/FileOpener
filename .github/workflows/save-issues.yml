@@ -1,4 +1,4 @@
-name: Save Open Issues to TXT
+name: Save Open Issues as .TXT
 
 on:
   workflow_dispatch:
@@ -22,13 +22,11 @@ jobs:
             const fs = require('fs');
             const path = require('path');
 
-            // Fixed: use process.env.GITHUB_WORKSPACE instead of context.workspace
             const dir = path.join(process.env.GITHUB_WORKSPACE, 'Bugs');
             if (!fs.existsSync(dir)) {
                 fs.mkdirSync(dir, { recursive: true });
             }
 
-            // Grab all open issues for the repo
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -36,31 +34,19 @@ jobs:
               per_page: 100
             });
 
-            // Loop through and write each issue to a txt file
+            const issueList = [];
             for (const issue of issues.data) {
               if (issue.pull_request) continue;
-
-              const filename = `issue-${issue.number}.txt`;
-              const filepath = path.join(dir, filename);
-              
-              const content = [
-                `Title: ${issue.title}`,
-                `Author: ${issue.user.login}`,
-                `Created: ${issue.created_at}`,
-                `URL: ${issue.html_url}`,
-                `----------------------------------------`,
-                ``,
-                issue.body || 'No description provided.'
-              ].join('\n');
-              
-              fs.writeFileSync(filepath, content);
-              console.log(`Saved: ${filename}`);
+              issueList.push(`Title: ${issue.title}\nDes: ${issue.body || 'No description provided.'}`);
             }
+
+            const filePath = path.join(dir, 'issues.txt');
+            fs.writeFileSync(filePath, issueList.join('\n-\n'));
 
       - name: Commit and push changes
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add Bugs/
-          git diff --staged --quiet || git commit -m "docs: save open issues as a txt"
+          git diff --staged --quiet || git commit -m "docs: update issues txt file [skip ci]"
           git push
