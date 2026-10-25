@@ -204,16 +204,15 @@
 
             let result = "";
             let nextDecoyAt = Math.floor(lcg() * 5) + 1;
-            let charCount = 0;
+            let cleanCharCount = 0;
 
             for (let i = 0; i < str.length; i++) {
                 result += str[i];
-                charCount++;
-                if (charCount === nextDecoyAt) {
-                    // Use Math.random() for decoy character to keep LCG step counts identical to decoder
+                cleanCharCount++;
+                if (cleanCharCount === nextDecoyAt) {
                     const decoy = B64_ALPHABET[Math.floor(Math.random() * B64_ALPHABET.length)];
                     result += decoy;
-                    charCount = 0;
+                    cleanCharCount = 0;
                     nextDecoyAt = Math.floor(lcg() * 8) + 1;
                 }
             }
@@ -229,15 +228,15 @@
 
             let restored = "";
             let nextDecoyAt = Math.floor(lcg() * 5) + 1;
-            let charCount = 0;
+            let cleanCharCount = 0;
 
             for (let i = 0; i < input.length; i++) {
-                charCount++;
-                if (charCount === nextDecoyAt) {
-                    charCount = 0;
+                cleanCharCount++;
+                restored += input[i];
+                if (cleanCharCount === nextDecoyAt) {
+                    i++; // Skip the injected decoy character right after
+                    cleanCharCount = 0;
                     nextDecoyAt = Math.floor(lcg() * 8) + 1;
-                } else {
-                    restored += input[i];
                 }
             }
             return restored;
