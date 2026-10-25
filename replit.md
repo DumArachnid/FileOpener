@@ -40,6 +40,7 @@ _Describe the high-level user-facing capabilities of this app once they exist._
 - Keep the actual website in a single copyable HTML file with its CSS and JavaScript inline, preserving its functions.
 - The website is for school and is aimed primarily at ChromeOS at all times. Newcomers see a clickable corner compatibility notice for 10 seconds; full details open on click or from Settings.
 - Keep viewer pages loaded when switching tabs so users can copy and paste between sites without losing their place. Offer a configurable loaded-tab limit, including 2–5 tabs for lower-memory devices.
+- Put long control descriptions behind a nearby “?” tooltip instead of taking up space inline.
 
 ## Gotchas
 

@@ -343,6 +343,12 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 .compatibility-toast[hidden] { display: none; }
 .timer-pill, .calc-btn.op, .pts, .rewards-badge, .urlbox .star.on,
 .sheet:not(.s3), .compatibility-toast strong { color: var(--accent-ink); }
+.control-help { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.control-help > select, .control-help > .btn { flex: 1; min-width: 0; }
+.help-trigger { display: inline-grid; place-items: center; flex: none; width: 26px; height: 26px; padding: 0; border: 1.5px solid var(--border-strong); border-radius: 50%; background: var(--panel); color: var(--text); font: 700 13px var(--mono); cursor: help; }
+.help-trigger:hover, .help-trigger:focus-visible, .help-trigger[aria-expanded="true"] { background: var(--accent-soft); color: var(--accent-ink); border-color: currentColor; }
+.help-tooltip { position: fixed; z-index: 1500; width: min(320px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow-y: auto; padding: 12px 14px; border: 1.5px solid var(--border-strong); border-radius: 10px; background: var(--panel); color: var(--text); box-shadow: 3px 3px 0 var(--ink-shadow); font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
+.help-tooltip[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -428,8 +434,11 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </select>
 </div>
 </div>
-<button class="btn danger" id="panicBtn"><i data-ic="alert"></i>Panic now</button>
-<p class="small muted tight">Tap Escape four times quickly to panic from anywhere.</p>
+<div class="control-help">
+<button class="btn danger" id="panicBtn" aria-describedby="panicHelp"><i data-ic="alert"></i>Panic now</button>
+<button type="button" class="help-trigger" data-help="panicHelp" aria-label="About the panic shortcut" aria-describedby="panicHelp" aria-expanded="false">?</button>
+</div>
+<p class="sr-only" id="panicHelp">Tap Escape four times quickly to panic from anywhere.</p>
 </div>
 </details>
 
@@ -646,6 +655,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </div>
 <div>
 <label for="tabMemoryLimit">Keep tabs loaded</label>
+<div class="control-help">
 <select id="tabMemoryLimit" aria-describedby="tabMemoryHelp">
 <option value="1">Off — only the current tab</option>
 <option value="2">2 tabs</option>
@@ -654,7 +664,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <option value="5">5 tabs</option>
 <option value="12" selected>All tabs (up to 12, default)</option>
 </select>
-<p id="tabMemoryHelp" class="small muted tight">Keeps your most recently used pages loaded, including the current tab. Older pages reload when reopened and may lose unsaved website form entries. Uses more memory; does not survive a browser refresh. Background pages may keep playing audio.</p>
+<button type="button" class="help-trigger" data-help="tabMemoryHelp" aria-label="About keeping tabs loaded" aria-describedby="tabMemoryHelp" aria-expanded="false">?</button>
+</div>
+<p id="tabMemoryHelp" class="sr-only">Keeps your most recently used pages loaded, including the current tab. Older pages reload when reopened and may lose unsaved website form entries. Uses more memory; does not survive a browser refresh. Background pages may keep playing audio.</p>
 </div>
 <button class="btn" id="helpOpenBtn"><i data-ic="keyboard"></i>Keyboard shortcuts</button>
 <button class="btn primary" id="unlockEverythingBtn"><i data-ic="unlock"></i>Unlock everything (free)</button>
@@ -785,8 +797,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <!-- Shortcut help -->
 <div class="overlay hidden" id="helpModal" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
 <div class="help-box">
-<div class="row-between"><h2>Keyboard shortcuts</h2><button class="icon-btn" id="helpClose" aria-label="Close shortcuts"><i data-ic="x"></i></button></div>
-<p class="small muted tight">Shortcuts avoid browser-reserved combos. Press <kbd>?</kbd> anytime outside a text field.</p>
+<div class="row-between"><div class="control-help"><h2>Keyboard shortcuts</h2><button type="button" class="help-trigger" data-help="shortcutsHelp" aria-label="About keyboard shortcuts" aria-describedby="shortcutsHelp" aria-expanded="false">?</button></div><button class="icon-btn" id="helpClose" aria-label="Close shortcuts"><i data-ic="x"></i></button></div>
+<p id="shortcutsHelp" class="sr-only">Shortcuts avoid browser-reserved combos. Press ? anytime outside a text field.</p>
 <div id="helpList" class="help-list"></div>
 </div>
 </div>
@@ -963,6 +975,69 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     t = t || document.activeElement;
     return !!t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable);
   };
+
+  // One floating tooltip outside the scrolling sidebar avoids clipped help text.
+  var helpTip = document.createElement('div');
+  helpTip.id = 'controlHelpTooltip';
+  helpTip.className = 'help-tooltip';
+  helpTip.setAttribute('role', 'tooltip');
+  helpTip.hidden = true;
+  document.body.appendChild(helpTip);
+  var helpAnchor = null, helpPinned = false, helpTimer;
+  function closeControlHelp() {
+    clearTimeout(helpTimer);
+    if (helpAnchor) helpAnchor.setAttribute('aria-expanded', 'false');
+    helpAnchor = null; helpPinned = false; helpTip.hidden = true;
+  }
+  function showControlHelp(button) {
+    clearTimeout(helpTimer);
+    var source = document.getElementById(button.dataset.help);
+    if (!source) return;
+    if (helpAnchor !== button) closeControlHelp();
+    helpAnchor = button;
+    helpTip.textContent = source.textContent;
+    helpTip.hidden = false;
+    button.setAttribute('aria-expanded', 'true');
+    var r = button.getBoundingClientRect(), t = helpTip.getBoundingClientRect();
+    var left = r.right + 10;
+    if (left + t.width > window.innerWidth - 12) left = r.left - t.width - 10;
+    helpTip.style.left = Math.max(12, Math.min(left, window.innerWidth - t.width - 12)) + 'px';
+    helpTip.style.top = Math.max(12, Math.min(r.top, window.innerHeight - t.height - 12)) + 'px';
+  }
+  function scheduleHelpClose() {
+    clearTimeout(helpTimer);
+    if (!helpPinned) helpTimer = setTimeout(function () {
+      if (document.activeElement !== helpAnchor) closeControlHelp();
+    }, 180);
+  }
+  document.querySelectorAll('.help-trigger').forEach(function (button) {
+    button.setAttribute('aria-controls', helpTip.id);
+    button.addEventListener('pointerenter', function (e) {
+      if (e.pointerType !== 'touch') showControlHelp(button);
+    });
+    button.addEventListener('pointerleave', scheduleHelpClose);
+    button.addEventListener('focus', function () { showControlHelp(button); });
+    button.addEventListener('blur', scheduleHelpClose);
+    button.addEventListener('click', function () {
+      if (helpAnchor === button && helpPinned) closeControlHelp();
+      else { showControlHelp(button); helpPinned = true; }
+    });
+  });
+  helpTip.addEventListener('pointerenter', function () { clearTimeout(helpTimer); });
+  helpTip.addEventListener('pointerleave', scheduleHelpClose);
+  document.addEventListener('pointerdown', function (e) {
+    if (helpAnchor && !helpAnchor.contains(e.target) && !helpTip.contains(e.target)) closeControlHelp();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && helpAnchor) {
+      closeControlHelp(); e.preventDefault(); e.stopImmediatePropagation();
+    } else if (e.key === 'Tab' && helpAnchor) closeControlHelp();
+  }, true);
+  document.addEventListener('scroll', function (e) {
+    if (!helpTip.contains(e.target)) closeControlHelp();
+  }, true);
+  document.addEventListener('toggle', closeControlHelp, true);
+  window.addEventListener('resize', closeControlHelp);
 })();
 
 </script>
