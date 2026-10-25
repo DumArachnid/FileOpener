@@ -181,7 +181,7 @@
         <label>Status Log</label>
         <div id="statusLog" class="status-box">Ready.</div>
         
-        <div class="footer-note">Blind adaptive routing (<100 uneven / >=100 even) active.</div>
+        <div class="footer-note">Synchronized blind routing active.</div>
     </div>
 
     <script>
@@ -210,7 +210,8 @@
                 result += str[i];
                 charCount++;
                 if (charCount === nextDecoyAt) {
-                    const decoy = B64_ALPHABET[Math.floor(lcg() * B64_ALPHABET.length)];
+                    // Use Math.random() for decoy character to keep LCG step counts identical to decoder
+                    const decoy = B64_ALPHABET[Math.floor(Math.random() * B64_ALPHABET.length)];
                     result += decoy;
                     charCount = 0;
                     nextDecoyAt = Math.floor(lcg() * 8) + 1;
