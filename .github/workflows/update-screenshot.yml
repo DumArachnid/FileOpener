@@ -1,0 +1,64 @@
+name: Update Workspace Screenshot
+
+on:
+  workflow_dispatch:
+
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Puppeteer
+        run: npm install puppeteer
+
+      - name: Take Screenshot
+        run: |
+          node -e '
+          const puppeteer = require("puppeteer");
+          const path = require("path");
+
+          (async () => {
+            const browser = await puppeteer.launch({
+              args: ["--no-sandbox", "--disable-setuid-sandbox"]
+            });
+            const page = await browser.newPage();
+            
+            // Set viewport size (tweak width/height if you want mobile view!)
+            await page.setViewport({ width: 1280, height: 800 });
+
+            // Open the local workspace.html file
+            const filePath = "file://" + path.resolve("artifacts/new-tab/public/workspace.html");
+            await page.goto(filePath, { waitUntil: "networkidle0" });
+
+            // Give any scripts or canvas elements a second to breathe
+            await new Promise(r => setTimeout(r, 1500));
+
+            // Ensure assets directory exists
+            const fs = require("fs");
+            if (!fs.existsSync("assets")) {
+                fs.mkdirSync("assets");
+            }
+
+            // Save screenshot
+            await page.screenshot({ path: "assets/workspace-preview.png", fullPage: true });
+            await browser.close();
+            console.log("Screenshot snapped successfully!");
+          })();
+          '
+
+      - name: Commit and push screenshot
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/workspace-preview.png
+          git diff --staged --quiet || (git commit -m "Auto-update workspace preview screenshot [skip ci]" && git push)
