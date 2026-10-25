@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>New Tab</title> <!--Do not modify-->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23d4451f'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -625,6 +626,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </div>
 <button class="btn" id="helpOpenBtn"><i data-ic="keyboard"></i>Keyboard shortcuts</button>
 <button class="btn primary" id="unlockEverythingBtn"><i data-ic="unlock"></i>Unlock everything (free)</button>
+<button class="btn" id="compatibilityBtn">ChromeOS &amp; compatibility</button>
 <button class="btn danger-ghost" id="resetAllBtn"><i data-ic="trash"></i>Reset all settings</button>
 </div>
 </details>
@@ -771,6 +773,17 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 
 <div id="toasts" class="toasts" aria-live="polite"></div>
 
+<dialog id="compatibilityNotice" aria-labelledby="compatibilityTitle" style="max-width:540px;width:calc(100% - 32px);max-height:85vh;overflow:auto;padding:28px;border:2px solid var(--border-strong);border-radius:16px;background:var(--panel);color:var(--text);box-shadow:6px 6px 0 var(--ink-shadow)">
+<h2 id="compatibilityTitle">Made for ChromeOS</h2>
+<p id="compatibilityDetected" style="font-weight:700"></p>
+<p>New Tab is a school-focused website designed primarily for <strong>ChromeOS using an up-to-date Google Chrome browser</strong>.</p>
+<p><strong>Other systems:</strong> Windows, macOS, and Linux with a modern browser may work, but are not the primary support target. Android, iPhone, and iPad may have limited file viewing, keyboard shortcuts, downloads, and fullscreen support.</p>
+<p>OS detection is only an estimate, not a compatibility test. School-managed Chromebooks may restrict websites, embedded pages, popups, clipboard access, or downloads. This website cannot override school policies or websites that block embedding. Follow your school’s acceptable-use rules.</p>
+<p>Notes and settings stay in this browser, not a school account or cloud backup. Export important work before clearing browser data or moving devices. Google Fonts and online pages need internet access.</p>
+<button class="btn primary" id="compatibilityAccept">Got it</button>
+</dialog>
+<div id="secretCat" hidden role="status" aria-live="polite" style="position:fixed;inset:0;z-index:2147483647;display:none;place-items:center;pointer-events:none;background:color-mix(in srgb,var(--bg) 85%,transparent);color:var(--accent);font-family:system-ui,sans-serif;font-size:clamp(150px,40vw,520px);font-weight:900;line-height:1;text-shadow:6px 6px 0 var(--panel)">:3</div>
+
 <script>
 /* New Tab workspace: shared utilities (icons, toasts, confirm dialog, URL validation). */
 (function () {
@@ -862,7 +875,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   };
 
   NT.getJSON = function (key, fallback) {
-    try { var v = JSON.parse(localStorage.getItem(key)); return v == null ? fallback : v; } catch (e) { return fallback; }
+    try { var v = JSON.parse(localStorage.getItem(key)); return v == null || (Array.isArray(fallback) && !Array.isArray(v)) ? fallback : v; } catch (e) { return fallback; }
   };
   NT.setItem = function (key, val) {
     try { localStorage.setItem(key, val); return true; } catch (e) { NT.toast('Browser storage is full or blocked', 'error'); return false; }
@@ -1765,7 +1778,16 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   NT.resetAll = resetAll;
   resetAllBtn.addEventListener('click', resetAll);
 
+  let unlockClicks = 0, secretCatTimer;
   el('unlockEverythingBtn').addEventListener('click', () => {
+    unlockClicks++;
+    if (unlockClicks === 3) {
+      unlockClicks = 0;
+      const cat = el('secretCat');
+      clearTimeout(secretCatTimer);
+      cat.hidden = false; cat.style.display = 'grid';
+      secretCatTimer = setTimeout(() => { cat.hidden = true; cat.style.display = 'none'; }, 3000);
+    }
     FEATURES.forEach(f => { if (!unlockedItems.includes(f.id)) unlockedItems.push(f.id); });
     NT.setJSON('disguise_unlocked', unlockedItems);
     points = Math.max(points, 99999); shards = Math.max(shards, 99999);
@@ -1832,7 +1854,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   // (1) Bookmarks
   // =====================================================
   var BM_KEY = 'disguise_bookmarks';
-  var bookmarks = (NT.getJSON(BM_KEY, []) || []).filter(function (b) { return b && typeof b.url === 'string' && safeUrl(b.url); });
+  var bookmarks = NT.getJSON(BM_KEY, []).filter(function (b) { return b && typeof b.url === 'string' && safeUrl(b.url); }).map(function (b) {
+    return { id: typeof b.id === 'string' && b.id ? b.id : uid(), url: safeUrl(b.url), title: typeof b.title === 'string' && b.title.trim() ? b.title.slice(0, 60) : hostOf(b.url) };
+  });
   function saveBookmarks() { NT.setJSON(BM_KEY, bookmarks); renderBookmarks(); updateStar(); if (NT.afterEmpty && el('emptyState')) NT.afterEmpty(); }
   function isBookmarked(u) { return !!u && bookmarks.some(function (b) { return b.url === u; }); }
   function addBookmark(raw, name) {
@@ -2009,7 +2033,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       empty: !NT.hasContent() && !!el('emptyState'),
       view: isTextView ? 'text' : (el('emptyState') ? 'empty' : 'html'),
       html: (isTextView || el('emptyState')) ? '' : previewArea.innerHTML,
-      left: NT.statusLeft.textContent, right: NT.statusRight.textContent, url: urlInput.value
+      left: NT.statusLeft.textContent, right: NT.statusRight.textContent, url: urlInput.value,
+      draft: NT.editorOpen() ? editorTextarea.value : null
     };
   }
   function restore(t) {
@@ -2025,6 +2050,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       else previewArea.innerHTML = s.html;
       NT.setStatus(s.left, s.right); urlInput.value = s.url;
       NT.updateActions(NT.hasContent());
+      if (s.draft != null) {
+        NT.openEditor(); editorTextarea.value = s.draft;
+        if (NT.onEditorOpen) NT.onEditorOpen();
+      }
     }
     updateStar();
   }
@@ -2226,14 +2255,22 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     clearTimeout(notesT);
     notesT = setTimeout(function () { if (NT.setItem('disguise_notes', notes.value)) notesState.textContent = 'Saved ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }, 350);
   });
-  window.addEventListener('beforeunload', function () { if (notesT) localStorage.setItem('disguise_notes', notes.value); });
+  function flushNotes() {
+    if (!notesT) return;
+    clearTimeout(notesT); notesT = null;
+    notesState.textContent = NT.setItem('disguise_notes', notes.value) ? 'Saved' : 'Not saved';
+  }
+  window.addEventListener('beforeunload', flushNotes);
+  document.addEventListener('visibilitychange', function () { if (document.hidden) flushNotes(); });
   el('notesCopyBtn').addEventListener('click', function () {
     if (!notes.value) { toast('Nothing to copy', 'error'); return; }
+    if (!navigator.clipboard || !navigator.clipboard.writeText) { toast('Clipboard is unavailable here. Select the notes and copy them manually.', 'error'); return; }
     navigator.clipboard.writeText(notes.value).then(function () { toast('Notes copied'); }, function () { toast('Clipboard is blocked by the browser', 'error'); });
   });
   el('notesClearBtn').addEventListener('click', async function () {
     if (!notes.value) return;
     if (!(await confirmDialog('Clear your notes?', 'The notes pad will be emptied. This cannot be undone.', 'Clear notes', true))) return;
+    clearTimeout(notesT); notesT = null;
     notes.value = ''; localStorage.removeItem('disguise_notes'); notesState.textContent = 'Cleared'; notesCount();
   });
   function focusNotes() { NT.openGroup('grp-notes'); setTimeout(function () { notes.focus(); }, 80); }
@@ -2465,6 +2502,32 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   renderTabs();
 })();
 
+</script>
+<script>
+(function () {
+  'use strict';
+  var notice = document.getElementById('compatibilityNotice');
+  var ua = navigator.userAgent || '';
+  var platform = navigator.userAgentData && navigator.userAgentData.platform || '';
+  var os = /CrOS/i.test(ua) || /Chrome OS/i.test(platform) ? 'ChromeOS'
+    : /Android/i.test(ua) ? 'Android'
+    : /iPad|iPhone|iPod/i.test(ua) || (/MacIntel/.test(navigator.platform || '') && navigator.maxTouchPoints > 1) ? 'iOS / iPadOS'
+    : /Windows/i.test(ua) ? 'Windows'
+    : /Macintosh|Mac OS/i.test(ua) ? 'macOS'
+    : /Linux/i.test(ua) ? 'Linux' : 'an unknown operating system';
+  var chrome = /Chrome\//.test(ua) && !/Edg\/|OPR\//.test(ua);
+  document.getElementById('compatibilityDetected').textContent = 'Detected: ' + os + '. ' +
+    (os === 'ChromeOS' && chrome ? 'You appear to be using our primary target: ChromeOS with Chrome.'
+      : 'Your setup is outside our primary ChromeOS + Chrome target; some features may be limited.');
+  function showNotice() { if (!notice.open) notice.showModal(); }
+  document.getElementById('compatibilityBtn').addEventListener('click', showNotice);
+  document.getElementById('compatibilityAccept').addEventListener('click', function () { notice.close(); });
+  notice.addEventListener('close', function () { window.NT.setItem('disguise_compatibility_seen', '1'); });
+  notice.addEventListener('keydown', function (e) { if (e.key === 'Escape') e.stopPropagation(); });
+  var seen = false;
+  try { seen = localStorage.getItem('disguise_compatibility_seen') === '1'; } catch (e) {}
+  if (!seen) showNotice();
+})();
 </script>
 </body>
 </html>

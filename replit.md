@@ -38,6 +38,7 @@ _Describe the high-level user-facing capabilities of this app once they exist._
 - Preserve existing features wherever possible.
 - Replace multiple named themes with freely customizable accent and background colors, including hex input.
 - Keep the actual website in a single copyable HTML file with its CSS and JavaScript inline, preserving its functions.
+- The website is for school and is aimed primarily at ChromeOS at all times. Newcomers should see an OS/browser compatibility disclaimer.
 
 ## Gotchas
 
