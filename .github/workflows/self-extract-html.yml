@@ -64,7 +64,7 @@ jobs:
         with:
           files: workspace-base64.html
           tag_name: mimo-v${{ github.run_number }}
-          name: "Base64 Mimo Version"
+          name: "Base64 Version"
           body: "Manual self-extracting base64 build generated from `workspace.html` (Commit: `${{ github.sha }}`)."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
