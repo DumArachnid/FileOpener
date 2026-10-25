@@ -1,0 +1,7 @@
+Title: Sidebar is connected to the entire page.
+Author: DumArachnid
+Created: 2026-10-25T16:11:55Z
+URL: https://github.com/DumArachnid/FileOpener/issues/1
+----------------------------------------
+
+No description provided.
