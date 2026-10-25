@@ -1,5 +1,7 @@
 # File Opener | Workspace
 
+![Workspace Preview](assets/workspace-preview.png)
+
 This site aims to provide a functional workspace for ChromeOS users, particularly for educational purposes.
 
 # Why create HTML that runs a long Base64 string?
