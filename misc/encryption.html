@@ -181,7 +181,7 @@
         <label>Status Log</label>
         <div id="statusLog" class="status-box">Ready.</div>
         
-        <div class="footer-note">Blind interval guessing matrix & reversed padding active.</div>
+        <div class="footer-note">Blind adaptive routing (<100 uneven / >=100 even) active.</div>
     </div>
 
     <script>
@@ -194,6 +194,99 @@
             log.textContent = message;
         }
 
+        // --- UNEVEN ENCODING/DECODING (< 100 chars) ---
+        function scrambleUneven(str, seed) {
+            let s = seed;
+            const lcg = () => {
+                s = (s * 1664525 + 1013904223) % 4294967296;
+                return s / 4294967296;
+            };
+
+            let result = "";
+            let nextDecoyAt = Math.floor(lcg() * 5) + 1;
+            let charCount = 0;
+
+            for (let i = 0; i < str.length; i++) {
+                result += str[i];
+                charCount++;
+                if (charCount === nextDecoyAt) {
+                    const decoy = B64_ALPHABET[Math.floor(lcg() * B64_ALPHABET.length)];
+                    result += decoy;
+                    charCount = 0;
+                    nextDecoyAt = Math.floor(lcg() * 8) + 1;
+                }
+            }
+            return result;
+        }
+
+        function descrambleUneven(input, seed) {
+            let s = seed;
+            const lcg = () => {
+                s = (s * 1664525 + 1013904223) % 4294967296;
+                return s / 4294967296;
+            };
+
+            let restored = "";
+            let nextDecoyAt = Math.floor(lcg() * 5) + 1;
+            let charCount = 0;
+
+            for (let i = 0; i < input.length; i++) {
+                charCount++;
+                if (charCount === nextDecoyAt) {
+                    charCount = 0;
+                    nextDecoyAt = Math.floor(lcg() * 8) + 1;
+                } else {
+                    restored += input[i];
+                }
+            }
+            return restored;
+        }
+
+        // --- EVEN ENCODING/DECODING (>= 100 chars) ---
+        function scrambleEven(str, interval) {
+            let interleaved = "";
+            let count = 0;
+            for (let i = 0; i < str.length; i++) {
+                interleaved += str[i];
+                count++;
+                if (count % interval === 0) {
+                    const decoy = B64_ALPHABET[Math.floor(Math.random() * B64_ALPHABET.length)];
+                    interleaved += decoy;
+                }
+            }
+            return interleaved;
+        }
+
+        function descrambleEven(input, interval) {
+            let restored = "";
+            let count = 0;
+            for (let i = 0; i < input.length; i++) {
+                count++;
+                if (count % (interval + 1) === 0) {
+                    continue;
+                }
+                restored += input[i];
+            }
+            return restored;
+        }
+
+        // --- CORE BASE64 & PADDING RESTORATION ---
+        function decodeAndVerify(restored) {
+            const paddingMatch = restored.match(/(=+)$/);
+            let core = restored;
+            let padding = "";
+            if (paddingMatch) {
+                padding = paddingMatch[1];
+                core = restored.slice(0, -padding.length);
+            }
+
+            const originalCore = core.split('').reverse().join('');
+            const cleanB64 = originalCore + padding;
+
+            const decodedBytes = atob(cleanB64);
+            return decodeURIComponent(decodedBytes);
+        }
+
         function scrambleText() {
             const raw = document.getElementById('inputData').value;
             if (!raw) {
@@ -202,13 +295,9 @@
             }
 
             try {
-                // 1. Stamp with mandatory prefix
                 const stamped = PREFIX + raw;
-
-                // 2. Base64 encode
                 const cleanB64 = btoa(encodeURIComponent(stamped));
 
-                // 3. Isolate trailing padding (=) so padding stays strictly at the end
                 const paddingMatch = cleanB64.match(/(=+)$/);
                 let core = cleanB64;
                 let padding = "";
@@ -217,27 +306,21 @@
                     core = cleanB64.slice(0, -padding.length);
                 }
 
-                // Reverse only the core string, append padding back untouched
                 const reversedCore = core.split('').reverse().join('');
                 const reversedB64 = reversedCore + padding;
 
-                // 4. Generate random secret interval between 1 and 500 (No header stored!)
-                const interval = Math.floor(Math.random() * 500) + 1;
-
-                // 5. Interleave decoys dynamically based on the random interval
-                let interleaved = "";
-                let count = 0;
-                for (let i = 0; i < reversedB64.length; i++) {
-                    interleaved += reversedB64[i];
-                    count++;
-                    if (count % interval === 0) {
-                        const decoy = B64_ALPHABET[Math.floor(Math.random() * B64_ALPHABET.length)];
-                        interleaved += decoy;
-                    }
+                let finalPayload = "";
+                if (reversedB64.length < 100) {
+                    const seed = Math.floor(Math.random() * 500) + 1;
+                    finalPayload = scrambleUneven(reversedB64, seed);
+                    setStatus(`Successfully scrambled (Uneven mode, Seed #${seed} applied invisibly).`, "success");
+                } else {
+                    const interval = Math.floor(Math.random() * 500) + 1;
+                    finalPayload = scrambleEven(reversedB64, interval);
+                    setStatus(`Successfully scrambled (Even mode, Interval #${interval} applied invisibly).`, "success");
                 }
 
-                document.getElementById('outputData').value = interleaved;
-                setStatus(`Successfully scrambled (Secret Interval #${interval} applied invisibly).`, "success");
+                document.getElementById('outputData').value = finalPayload;
             } catch (err) {
                 setStatus("Error during scrambling: " + err.message, "error");
                 document.getElementById('outputData').value = "";
@@ -253,56 +336,42 @@
 
             let cracked = false;
             let successPayload = "";
-            let guessedInterval = 0;
 
-            // Brute-force guessing intervals from 1 to 500
-            for (let interval = 1; interval <= 500; interval++) {
+            // 1. Blindly try all 500 Uneven Seeds
+            for (let seed = 1; seed <= 500; seed++) {
                 try {
-                    // 1. Strip decoys using the current guess interval
-                    let restored = "";
-                    let count = 0;
-                    for (let i = 0; i < input.length; i++) {
-                        count++;
-                        if (count % (interval + 1) === 0) {
-                            continue; // Skip decoy
-                        }
-                        restored += input[i];
-                    }
-
-                    // 2. Separate padding from restored string to reverse core back safely
-                    const paddingMatch = restored.match(/(=+)$/);
-                    let core = restored;
-                    let padding = "";
-                    if (paddingMatch) {
-                        padding = paddingMatch[1];
-                        core = restored.slice(0, -padding.length);
-                    }
-
-                    const originalCore = core.split('').reverse().join('');
-                    const cleanB64 = originalCore + padding;
-
-                    // 3. Base64 & URI decode
-                    const decodedBytes = atob(cleanB64);
-                    const original = decodeURIComponent(decodedBytes);
-
-                    // 4. Verify prefix signature
+                    const restored = descrambleUneven(input, seed);
+                    const original = decodeAndVerify(restored);
                     if (original.startsWith(PREFIX)) {
-                        guessedInterval = interval;
                         successPayload = original.slice(PREFIX.length);
                         cracked = true;
-                        break; // Found the correct interval!
+                        setStatus(`[CRACKED SUCCESS] Matched via Uneven Seed #${seed}!`, "success");
+                        break;
                     }
-                } catch (e) {
-                    // This interval guessed wrong, let the loop try the next one
+                } catch (e) {}
+            }
+
+            // 2. If not found, blindly try all 500 Even Intervals
+            if (!cracked) {
+                for (let interval = 1; interval <= 500; interval++) {
+                    try {
+                        const restored = descrambleEven(input, interval);
+                        const original = decodeAndVerify(restored);
+                        if (original.startsWith(PREFIX)) {
+                            successPayload = original.slice(PREFIX.length);
+                            cracked = true;
+                            setStatus(`[CRACKED SUCCESS] Matched via Even Interval #${interval}!`, "success");
+                            break;
+                        }
+                    } catch (e) {}
                 }
             }
 
             if (cracked) {
                 document.getElementById('outputData').value = successPayload;
-                setStatus(`[CRACKED SUCCESS] Successfully guessed hidden interval #${guessedInterval}! Payload verified.`, "success");
             } else {
                 document.getElementById('outputData').value = "";
-                setStatus(`[ERROR] Descramble failed: Exhausted intervals (1-500). Invalid payload or corrupted string :/`, "error");
+                setStatus(`[ERROR] Descramble failed: Exhausted all seeds & intervals (1-500).`, "error");
             }
         }
     </script>
