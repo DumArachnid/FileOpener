@@ -1,4 +1,4 @@
-#File Opener | Workspace
+# File Opener | Workspace
 
 The purpose of this site is to provide a functional workspace for ChromeOS users, particularly for educational purposes.
 
