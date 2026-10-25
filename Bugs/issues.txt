@@ -1,3 +1,6 @@
+Title: If the entire theme is black and the text color is white, the text is not visible when you hover over it.
+Des: It appears that the color is hardcoded.
+-
 Title: Add a better encryption mechanism.
 Des: So I don't have to rely on Base64 that can easily be detected by school extensions like GoGuardian or makes it harder for teachers to just throw it in a Base64 Decrypter
 -
