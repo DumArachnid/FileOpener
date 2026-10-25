@@ -1,9 +1,6 @@
-name: Auto-Release Base64 Workspace
+name: Manual Base64 Release
 
 on:
-  push:
-    paths:
-      - 'artifacts/new-tab/public/workspace.html'
   workflow_dispatch:
 
 jobs:
@@ -28,18 +25,16 @@ jobs:
 
           file_path = "artifacts/new-tab/public/workspace.html"
 
-          # Read the original workspace.html safely without modifying it
           with open(file_path, "rb") as f:
               raw_bytes = f.read()
 
           b64_encoded = base64.b64encode(raw_bytes).decode("utf-8")
 
-          # Create the self-unpacking wrapper HTML as a separate output file
           wrapper_html = f"""<!DOCTYPE html>
           <html lang="en">
           <head>
               <meta charset="UTF-8">
-              <title>Workspace Base64 Self-Extracting</title>
+              <title>Base64 Mimo Version</title>
           </head>
           <body>
               <script>
@@ -68,8 +63,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: workspace-base64.html
-          tag_name: workspace-v${{ github.run_number }}
-          name: "Workspace Base64 Build #v${{ github.run_number }}"
-          body: "Automated self-extracting base64 build generated from `workspace.html` (Commit: `${{ github.sha }}`)."
+          tag_name: mimo-v${{ github.run_number }}
+          name: "Base64 Mimo Version"
+          body: "Manual self-extracting base64 build generated from `workspace.html` (Commit: `${{ github.sha }}`)."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
