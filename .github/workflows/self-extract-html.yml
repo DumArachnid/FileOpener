@@ -1,4 +1,4 @@
-name: Self-Extracting HTML Builder
+name: Auto-Release Base64 Workspace
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  encode-and-commit:
+  release-base64:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -21,32 +21,30 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Generate Self-Decoding Base64 Wrapper
+      - name: Generate Self-Decoding Base64 HTML File
         run: |
           python -c '
           import base64
 
           file_path = "artifacts/new-tab/public/workspace.html"
 
-          # Read the current workspace.html bytes
+          # Read the original workspace.html safely without modifying it
           with open(file_path, "rb") as f:
               raw_bytes = f.read()
 
-          # Encode to base64 string
           b64_encoded = base64.b64encode(raw_bytes).decode("utf-8")
 
-          # Create the self-unpacking wrapper HTML
+          # Create the self-unpacking wrapper HTML as a separate output file
           wrapper_html = f"""<!DOCTYPE html>
-          <html lang=\"en\">
+          <html lang="en">
           <head>
-              <meta charset=\"UTF-8\">
-              <title>Workspace</title>
+              <meta charset="UTF-8">
+              <title>Workspace Base64 Self-Extracting</title>
           </head>
           <body>
               <script>
                   const b64 = "{b64_encoded}";
                   
-                  // UTF-8 safe base64 decoder
                   function b64DecodeUnicode(str) {{
                       return decodeURIComponent(atob(str).split("").map(function(c) {{
                           return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
@@ -60,17 +58,18 @@ jobs:
           </body>
           </html>"""
 
-          # Overwrite workspace.html with the self-decoding version
-          with open(file_path, "w", encoding="utf-8") as f:
+          with open("workspace-base64.html", "w", encoding="utf-8") as f:
               f.write(wrapper_html)
               
-          print("Successfully transformed workspace.html into a self-extracting base64 payload!")
+          print("Generated workspace-base64.html successfully!")
           '
 
-      - name: Commit and push changes
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add artifacts/new-tab/public/workspace.html
-          git diff --staged --quiet || git commit -m "Auto-convert workspace.html to self-extracting base64 [skip ci]"
-          git push
+      - name: Create GitHub Release and Upload Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: workspace-base64.html
+          tag_name: workspace-v${{ github.run_number }}
+          name: "Workspace Base64 Build #v${{ github.run_number }}"
+          body: "Automated self-extracting base64 build generated from `workspace.html` (Commit: `${{ github.sha }}`)."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
