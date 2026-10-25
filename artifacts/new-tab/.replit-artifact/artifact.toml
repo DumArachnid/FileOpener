@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "New Tab"
+description = "An upgraded personal file and web viewer with existing privacy and utility tools, fully custom colors, bookmarks, tabs, notes, and focus tools."
+version = "1.0.0"
+id = "artifacts/new-tab"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20707
+
+[services.development]
+run = "pnpm --filter @workspace/new-tab run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/new-tab", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/new-tab/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20707"
+BASE_PATH = "/"

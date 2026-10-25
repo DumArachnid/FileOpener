@@ -1,6 +1,6 @@
-# [Project name]
+# New Tab
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A personal file and web viewer with utility tools, privacy controls, and customizable colors.
 
 ## Run & Operate
 
@@ -34,7 +34,9 @@ _Describe the high-level user-facing capabilities of this app once they exist._
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Improve the uploaded website incrementally; do not start from scratch.
+- Preserve existing features wherever possible.
+- Replace multiple named themes with freely customizable accent and background colors, including hex input.
 
 ## Gotchas
 

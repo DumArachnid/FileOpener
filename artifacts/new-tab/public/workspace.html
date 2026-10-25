@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>New Tab</title> <!--Do not modify-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="workspace.css" />
+</head>
+<body>
+<div class="app" id="app">
+<div class="scrim" id="scrim"></div>
+
+<aside class="sidebar" id="sidebar" aria-label="Settings and tools">
+<div class="side-head">
+<div class="side-title"><span class="logo-mark"></span><h2>Desk</h2></div>
+<div id="clockDisplay">00:00:00</div>
+</div>
+
+<!-- Notes -->
+<details class="sidebar-group" id="grp-notes" open>
+<summary><i data-ic="note"></i>Notes</summary>
+<div class="sidebar-group-content">
+<textarea id="notesArea" rows="6" placeholder="Jot anything down. It saves as you type." spellcheck="true"></textarea>
+<div class="row-between small muted"><span id="notesState">Saved</span><span id="notesCounts">0 words</span></div>
+<div class="flex">
+<button class="btn sm" id="notesCopyBtn"><i data-ic="copy"></i>Copy</button>
+<button class="btn sm danger-ghost" id="notesClearBtn"><i data-ic="trash"></i>Clear</button>
+</div>
+</div>
+</details>
+
+<!-- Focus timer -->
+<details class="sidebar-group" id="grp-timer">
+<summary><i data-ic="timer"></i>Focus timer</summary>
+<div class="sidebar-group-content">
+<div class="timer" id="timerBox">
+<svg class="timer-ring" viewBox="0 0 100 100" aria-hidden="true"><circle class="ring-bg" cx="50" cy="50" r="44"/><circle class="ring-fg" id="timerRing" cx="50" cy="50" r="44"/></svg>
+<div class="timer-read"><div id="timerDisplay">25:00</div><div class="small muted" id="timerLabel">Ready</div></div>
+</div>
+<div class="flex" style="align-items:flex-end">
+<div style="width:92px"><label for="timerMinutes">Minutes</label><input id="timerMinutes" type="number" min="1" max="180" step="1" value="25" /></div>
+<button class="btn primary" id="timerStartBtn" style="flex:1"><i data-ic="play"></i><span>Start</span></button>
+<button class="btn" id="timerResetBtn" title="Reset timer"><i data-ic="refresh"></i></button>
+</div>
+</div>
+</details>
+
+<!-- Bookmarks -->
+<details class="sidebar-group" id="grp-bookmarks">
+<summary><i data-ic="bookmark"></i>Bookmarks <span class="count-pill" id="bmCount">0</span></summary>
+<div class="sidebar-group-content">
+<form class="stack" id="bmForm" autocomplete="off">
+<input id="bmName" type="text" placeholder="Name (optional)" maxlength="60" />
+<div class="flex nowrap"><input id="bmUrl" type="text" placeholder="https://..." style="flex:1" /><button class="btn primary" type="submit" id="bmAddBtn"><i data-ic="plus"></i>Add</button></div>
+</form>
+<div id="bookmarkList" class="list"></div>
+</div>
+</details>
+
+<!-- Recents -->
+<details class="sidebar-group" id="grp-recents">
+<summary><i data-ic="history"></i>Recent <span class="count-pill" id="recentCount">0</span></summary>
+<div class="sidebar-group-content">
+<div id="recentList" class="list"></div>
+<button class="btn sm danger-ghost" id="recentClearBtn"><i data-ic="trash"></i>Clear recent</button>
+</div>
+</details>
+
+<!-- Panic & Privacy -->
+<details class="sidebar-group" id="grp-panic">
+<summary><i data-ic="alert"></i>Panic</summary>
+<div class="sidebar-group-content">
+<div>
+<label for="panicLink">Panic redirect link</label>
+<input id="panicLink" type="text" placeholder="https://google.com" />
+</div>
+<div class="flex nowrap" style="align-items:flex-end;">
+<div style="flex:1">
+<label for="panicHotkey">Hotkey</label>
+<input id="panicHotkey" type="text" maxlength="1" placeholder="`" class="mono center-text" />
+</div>
+<div style="flex:1">
+<label for="idleTimer">Auto-panic</label>
+<select id="idleTimer">
+<option value="0">Off</option>
+<option value="60000">1 min</option>
+<option value="180000">3 mins</option>
+<option value="300000">5 mins</option>
+</select>
+</div>
+</div>
+<button class="btn danger" id="panicBtn"><i data-ic="alert"></i>Panic now</button>
+<p class="small muted tight">Tap Escape four times quickly to panic from anywhere.</p>
+</div>
+</details>
+
+<!-- Mini-game -->
+<details class="sidebar-group" id="grp-game">
+<summary><i data-ic="gamepad"></i>G@m3</summary>
+<div class="sidebar-group-content">
+<div>
+<label for="gameB64Input">Base64 HTML game code</label>
+<textarea id="gameB64Input" rows="3" class="mono tiny" placeholder="Paste Base64 HTML string..."></textarea>
+</div>
+<div class="flex nowrap">
+<button class="btn primary" id="loadGameBtn" style="flex:1;">Load &amp; save game</button>
+<button class="btn danger-ghost" id="clearGameBtn" title="Clear mini game"><i data-ic="x"></i></button>
+</div>
+<div id="gameWrapper" style="display:none;">
+<iframe id="gameFrame" title="Mini game" sandbox="allow-scripts allow-pointer-lock"></iframe>
+</div>
+</div>
+</details>
+
+<!-- Fonts -->
+<details class="sidebar-group" id="grp-fonts">
+<summary><i data-ic="type"></i>Custom font</summary>
+<div class="sidebar-group-content" id="fontSystemContent">
+<div id="fontSystemLock" class="locked-box">
+<p class="small muted tight">Font system is locked.</p>
+<button class="btn primary sm" id="unlockFontsBtn"><i data-ic="gem"></i>Unlock for 200</button>
+</div>
+<div id="fontSystemBody" class="hidden stack">
+<div>
+<label for="fontSelect">Select font</label>
+<select id="fontSelect">
+<option value="'Bricolage Grotesque', system-ui, -apple-system, sans-serif">Bricolage Grotesque (default)</option>
+<option value="Arial, sans-serif">Arial</option>
+<option value="'Courier New', Courier, monospace">Courier New</option>
+<option value="'Comic Sans MS', cursive, sans-serif">Comic Sans MS</option>
+<option value="Georgia, serif">Georgia</option>
+<option value="'Times New Roman', Times, serif">Times New Roman</option>
+</select>
+</div>
+<div>
+<label for="customFontInput">Add Google font</label>
+<div class="flex nowrap">
+<input id="customFontInput" type="text" placeholder="e.g. Fraunces" style="flex:1" title="Type a font name available on Google Fonts" />
+<button class="btn primary" id="addFontBtn">Add</button>
+</div>
+</div>
+</div>
+</div>
+</details>
+
+<!-- Calculator -->
+<details class="sidebar-group" id="grp-calc">
+<summary><i data-ic="calc"></i>Calculator</summary>
+<div class="sidebar-group-content">
+<div id="calcLock" class="locked-box">
+<p class="small muted tight">Calculator is locked.</p>
+<button class="btn primary sm" id="unlockCalcBtn"><i data-ic="gem"></i>Unlock for 50</button>
+</div>
+<div id="calcBody" class="hidden">
+<div id="calcDisplay" class="calc-display">0</div>
+<div class="calc-grid">
+<button class="btn calc-btn" data-val="C">C</button>
+<button class="btn calc-btn" data-val="back" aria-label="Backspace">&#9003;</button>
+<button class="btn calc-btn" data-val="%">%</button>
+<button class="btn calc-btn op" data-val="/">&divide;</button>
+<button class="btn calc-btn" data-val="7">7</button>
+<button class="btn calc-btn" data-val="8">8</button>
+<button class="btn calc-btn" data-val="9">9</button>
+<button class="btn calc-btn op" data-val="*">&times;</button>
+<button class="btn calc-btn" data-val="4">4</button>
+<button class="btn calc-btn" data-val="5">5</button>
+<button class="btn calc-btn" data-val="6">6</button>
+<button class="btn calc-btn op" data-val="-">&minus;</button>
+<button class="btn calc-btn" data-val="1">1</button>
+<button class="btn calc-btn" data-val="2">2</button>
+<button class="btn calc-btn" data-val="3">3</button>
+<button class="btn calc-btn op" data-val="+">+</button>
+<button class="btn calc-btn" data-val="0" style="grid-column: span 2;">0</button>
+<button class="btn calc-btn" data-val=".">.</button>
+<button class="btn calc-btn eq" data-val="=">=</button>
+</div>
+</div>
+</div>
+</details>
+
+<!-- Base64 -->
+<details class="sidebar-group" id="grp-b64">
+<summary><i data-ic="hash"></i>Base64</summary>
+<div class="sidebar-group-content">
+<div>
+<label for="b64ToolInput">Input text</label>
+<textarea id="b64ToolInput" rows="2" class="mono tiny" placeholder="Type text here..."></textarea>
+</div>
+<div class="flex nowrap">
+<button class="btn primary" id="b64EncodeBtn" style="flex:1;">Encode</button>
+<button class="btn" id="b64DecodeBtn" style="flex:1;">Decode</button>
+</div>
+<div>
+<label for="b64ToolOutput">Result</label>
+<textarea id="b64ToolOutput" rows="2" readonly class="mono tiny" placeholder="Output appears here..."></textarea>
+</div>
+</div>
+</details>
+
+<!-- Disguiser -->
+<details class="sidebar-group" id="grp-disguise">
+<summary><i data-ic="window"></i>Disguiser</summary>
+<div class="sidebar-group-content">
+<div id="disguiseLock" class="locked-box">
+<p class="small muted tight">Tab disguise system is locked.</p>
+<button class="btn primary sm" id="unlockDisguiseBtn"><i data-ic="gem"></i>Unlock for 175</button>
+</div>
+<div id="disguiseBody" class="hidden stack">
+<div>
+<label for="titleInput">Page title</label>
+<div class="flex nowrap">
+<input id="titleInput" type="text" placeholder="Custom title..." style="flex:1"/>
+<button class="btn primary" id="applyTitleBtn">Set</button>
+</div>
+</div>
+<div>
+<label for="blankTitleInput">about:blank tab title</label>
+<div class="flex nowrap">
+<input id="blankTitleInput" type="text" placeholder="New tab" style="flex:1"/>
+<button class="btn primary" id="applyBlankTitleBtn">Set</button>
+</div>
+</div>
+<div>
+<label for="imageInput">Image to favicon (Base64)</label>
+<input id="imageInput" type="file" accept="image/*" />
+<textarea id="base64FaviconInput" rows="2" class="mono tiny" placeholder="data:image/png;base64,..." style="margin-top:6px;"></textarea>
+<div class="flex nowrap" style="margin-top:6px;">
+<button class="btn primary" id="applyBase64Btn" style="flex:1;">Set favicon</button>
+<button class="btn danger-ghost" id="clearFaviconBtn" title="Clear favicon"><i data-ic="x"></i></button>
+</div>
+<div class="img-preview" id="imagePreview" style="margin-top:8px;"><div class="muted small">No image</div></div>
+</div>
+<div>
+<label for="cloakPathInput">History cloaking</label>
+<div class="flex nowrap">
+<input id="cloakPathInput" type="text" placeholder="?q=calculus" value="?q=calculus+homework+help" style="flex:1">
+<button class="btn primary" id="cloakUrlBtn">Cloak</button>
+<button class="btn" id="resetUrlBtn">Undo</button>
+</div>
+</div>
+</div>
+</div>
+</details>
+
+<!-- Rewards -->
+<details class="sidebar-group" id="grp-rewards">
+<summary><i data-ic="gem"></i>Rewards</summary>
+<div class="sidebar-group-content">
+<div class="rewards-panel">
+<div class="rewards-stats">
+<div class="rewards-row">
+<span class="stat"><i data-ic="gem"></i>Points <b id="pointsDisplay" class="pts">0</b></span>
+<span class="rewards-badge"><i data-ic="flame"></i><span id="streakDisplay">0</span> day streak</span>
+</div>
+<div class="rewards-row">
+<span class="stat"><i data-ic="bolt"></i>Shards <b id="shardsDisplay" class="shd">0</b></span>
+<span class="small muted">Next shard <strong id="shardTimerDisplay">1:00</strong></span>
+</div>
+</div>
+<button class="btn primary" id="claimRewardBtn">Claim daily reward</button>
+<button class="btn" id="claimTimedBtn">Claim bonus</button>
+</div>
+<div class="small muted" style="margin-top:2px">Spend points and shards on tools:</div>
+<div id="shopContainer"></div>
+</div>
+</details>
+
+<!-- Appearance -->
+<details class="sidebar-group" id="grp-appearance">
+<summary><i data-ic="palette"></i>Appearance</summary>
+<div class="sidebar-group-content">
+<div class="stack" id="colorControls">
+<div class="color-row" data-key="accent"><label for="hex_accent">Accent</label><input type="color" id="color_accent" aria-label="Accent color picker" /><input type="text" id="hex_accent" class="mono" maxlength="7" spellcheck="false" aria-label="Accent hex" /></div>
+<div class="color-row" data-key="bg"><label for="hex_bg">Background</label><input type="color" id="color_bg" aria-label="Background color picker" /><input type="text" id="hex_bg" class="mono" maxlength="7" spellcheck="false" aria-label="Background hex" /></div>
+<div class="color-row" data-key="panel"><label for="hex_panel">Panel</label><input type="color" id="color_panel" aria-label="Panel color picker" /><input type="text" id="hex_panel" class="mono" maxlength="7" spellcheck="false" aria-label="Panel hex" /></div>
+<div class="color-row" data-key="text"><label for="hex_text">Text</label><input type="color" id="color_text" aria-label="Text color picker" /><input type="text" id="hex_text" class="mono" maxlength="7" spellcheck="false" aria-label="Text hex" /></div>
+<div class="small" id="colorHint" role="status"></div>
+<button class="btn sm" id="resetColorsBtn"><i data-ic="refresh"></i>Restore default colors</button>
+</div>
+
+<div>
+<label for="presetSelect">Tab disguise preset</label>
+<select id="presetSelect">
+<option value="">Presets...</option>
+<option value="nosotros">Nosotros Online</option>
+<option value="mail">Email Inbox</option>
+<option value="sheets">Spreadsheet</option>
+</select>
+</div>
+
+<div>
+<label>App opacity (<span id="opacityVal">100%</span>)</label>
+<input type="range" id="opacitySlider" min="0.1" max="1" step="0.05" value="1">
+</div>
+</div>
+</details>
+
+<!-- Configuration -->
+<details class="sidebar-group" id="grp-settings">
+<summary><i data-ic="sliders"></i>Settings</summary>
+<div class="sidebar-group-content">
+<div class="flex nowrap">
+<button class="btn" id="exportBtn" style="flex:1"><i data-ic="download"></i>Export</button>
+<label for="importConfig" class="btn" style="flex:1; margin:0;"><i data-ic="upload"></i>Import
+<input type="file" id="importConfig" accept=".json" style="display:none;">
+</label>
+</div>
+<button class="btn" id="helpOpenBtn"><i data-ic="keyboard"></i>Keyboard shortcuts</button>
+<button class="btn primary" id="unlockEverythingBtn"><i data-ic="unlock"></i>Unlock everything (free)</button>
+<button class="btn danger-ghost" id="resetAllBtn"><i data-ic="trash"></i>Reset all settings</button>
+</div>
+</details>
+</aside>
+
+<main class="center" role="main">
+<section class="panel">
+
+<div class="topbar">
+<button class="icon-btn mobile-only" id="sidebarToggle" title="Toggle sidebar (Alt+M)" aria-label="Toggle sidebar"><i data-ic="menu"></i></button>
+<button class="icon-btn desk-only hide-in-focus" id="sidebarToggleDesk" title="Toggle sidebar (Alt+M)" aria-label="Toggle sidebar"><i data-ic="panel"></i></button>
+<div class="brand hide-in-focus"><span class="logo-mark"></span><span>New Tab</span></div>
+<div class="tabstrip" id="tabStrip" role="tablist" aria-label="Viewer tabs"></div>
+<button class="icon-btn" id="newTabBtn" title="New viewer tab (Alt+T)" aria-label="New viewer tab"><i data-ic="plus"></i></button>
+<span class="topbar-gap"></span>
+<button class="timer-pill hidden" id="timerPill" title="Focus timer (Alt+P to pause)"><i data-ic="timer"></i><span id="timerPillText">25:00</span></button>
+<button class="btn sm hide-in-focus" id="paletteBtn" title="Command palette (Ctrl/Cmd+K)"><i data-ic="command"></i><span class="hide-sm">Commands</span></button>
+<button class="icon-btn hide-in-focus" id="helpBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"><i data-ic="keyboard"></i></button>
+<button class="btn sm" id="focusModeBtn" title="Expand view / toggle focus mode (Alt+Z)"><i data-ic="eye"></i><span>Focus</span></button>
+</div>
+
+<div class="toolbar hide-in-focus">
+<div class="tool-left">
+<label class="btn file-btn" title="Open local file (Alt+O)" for="fileInput"><i data-ic="file"></i><span>Open file</span></label>
+<input id="fileInput" type="file" class="sr-only" />
+<div class="urlbox">
+<i data-ic="globe" class="url-ic"></i>
+<input id="urlInput" type="text" placeholder="Paste a web address" autocomplete="off" spellcheck="false" aria-label="Web address" />
+<button class="icon-btn star" id="bmCurrentBtn" title="Bookmark this address (Alt+B)" aria-label="Bookmark this address"><i data-ic="star"></i></button>
+<div class="suggest hidden" id="urlSuggest"></div>
+</div>
+<button class="btn primary" id="loadUrlBtn">Load web</button>
+</div>
+<div class="tool-right">
+<button class="icon-btn" id="findBtn" title="Find in text (Alt+S)" aria-label="Find in text"><i data-ic="search"></i></button>
+<button class="btn sm" id="fontDecBtn" title="Decrease font">A-</button>
+<button class="btn sm" id="fontIncBtn" title="Increase font">A+</button>
+<button class="icon-btn" id="refreshBtn" title="Refresh" aria-label="Refresh"><i data-ic="refresh"></i></button>
+<button class="icon-btn" id="fullscreenBtn" title="Fullscreen" aria-label="Fullscreen"><i data-ic="maximize"></i></button>
+</div>
+</div>
+
+<div class="findbar hidden hide-in-focus" id="findBar" role="search">
+<i data-ic="search"></i>
+<input id="findInput" type="text" placeholder="Find in text" autocomplete="off" aria-label="Find text" />
+<span class="small muted mono" id="findCount">0 matches</span>
+<button class="icon-btn" id="findPrev" title="Previous match (Shift+Enter)" aria-label="Previous match"><i data-ic="chevronUp"></i></button>
+<button class="icon-btn" id="findNext" title="Next match (Enter)" aria-label="Next match"><i data-ic="chevronDown"></i></button>
+<button class="icon-btn" id="findClose" title="Close (Esc)" aria-label="Close find"><i data-ic="x"></i></button>
+</div>
+
+<div class="preview-wrap">
+<div id="previewArea" class="preview-area" aria-live="polite"></div>
+<div id="iframeWarning" class="iframe-warning">If the site refuses to load, it blocks embedding.</div>
+
+<div id="editorPanel" class="editor-panel hidden">
+<div class="editor-head">
+<strong>Edit text</strong>
+<div class="flex nowrap">
+<button class="btn sm" id="undoBtn" title="Undo (Ctrl/Cmd+Z)"><i data-ic="undo"></i><span class="hide-sm">Undo</span></button>
+<button class="btn sm" id="redoBtn" title="Redo (Ctrl/Cmd+Shift+Z)"><i data-ic="redo"></i><span class="hide-sm">Redo</span></button>
+<button class="btn sm" id="cancelEditBtn">Cancel</button>
+<button class="btn sm primary" id="saveEditBtn">Save changes</button>
+</div>
+</div>
+<textarea id="editorTextarea" class="editor" spellcheck="false" placeholder="File contents..."></textarea>
+<div class="editor-foot small muted mono"><span id="editorCounts">0 words &middot; 0 characters</span><span>Ctrl/Cmd+S to save</span></div>
+</div>
+</div>
+
+<div class="file-actions-container">
+<button class="btn sm toggle-toolbar" id="toggleButtonsBtn">Hide toolbar</button>
+<div id="fileActions" class="file-actions hidden" role="group" aria-label="File actions">
+<button class="btn primary" id="saveFileBtn" title="Save text file to localStorage"><i data-ic="download"></i>Save text</button>
+<button class="btn" id="downloadBtn"><i data-ic="download"></i>Download</button>
+<button class="btn" id="openBlankBtn" title="Open in new blank window"><i data-ic="window"></i>about:blank</button>
+<button class="btn" id="openHereBtn" title="Render as HTML"><i data-ic="code"></i>Render HTML</button>
+<button class="btn" id="editBtn" title="Edit text (Alt+X)"><i data-ic="edit"></i>Edit text</button>
+<button class="btn" id="copyBtn"><i data-ic="copy"></i>Copy</button>
+<button class="btn danger-ghost" id="clearFileBtn"><i data-ic="trash"></i>Clear saved</button>
+</div>
+</div>
+
+<div class="statusbar" id="statusBar">
+<div class="small status-left" id="statusLeft">No source</div>
+<div class="small muted mono status-mid" id="statusCounts"></div>
+<div class="small muted status-right" id="statusRight">Not saved</div>
+</div>
+
+</section>
+</main>
+</div>
+
+<template id="emptyTpl">
+<div class="empty" id="emptyState">
+<div class="empty-art" aria-hidden="true">
+<div class="sheet s1"><i data-ic="note"></i></div>
+<div class="sheet s2"><i data-ic="link"></i></div>
+<div class="sheet s3"><i data-ic="file"></i></div>
+</div>
+<h3>Your desk is clear.</h3>
+<p>Drop a file anywhere on this page, paste a web address, or start with a note. Everything stays in this browser.</p>
+<div class="flex center-flex">
+<button class="btn primary" data-act="open-file"><i data-ic="file"></i>Open a file</button>
+<button class="btn" data-act="focus-url"><i data-ic="globe"></i>Load a web page</button>
+<button class="btn" data-act="palette"><i data-ic="command"></i>Commands <kbd>Ctrl K</kbd></button>
+</div>
+<div class="empty-lists">
+<div class="js-empty-bm hidden"><div class="small muted eyebrow">Bookmarks</div><div class="chips" id="emptyBookmarks"></div></div>
+<div class="js-empty-rc hidden"><div class="small muted eyebrow">Recent</div><div class="chips" id="emptyRecents"></div></div>
+</div>
+</div>
+</template>
+
+<!-- Command palette -->
+<div class="overlay hidden" id="palette" role="dialog" aria-modal="true" aria-label="Command palette">
+<div class="palette-box">
+<div class="palette-input"><i data-ic="command"></i><input id="paletteInput" type="text" placeholder="Type a command or search bookmarks..." autocomplete="off" spellcheck="false" aria-label="Search commands" /><kbd>Esc</kbd></div>
+<div class="palette-list" id="paletteList" role="listbox"></div>
+<div class="palette-foot small muted"><span><kbd>&uarr;</kbd><kbd>&darr;</kbd> navigate</span><span><kbd>Enter</kbd> run</span></div>
+</div>
+</div>
+
+<!-- Shortcut help -->
+<div class="overlay hidden" id="helpModal" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+<div class="help-box">
+<div class="row-between"><h2>Keyboard shortcuts</h2><button class="icon-btn" id="helpClose" aria-label="Close shortcuts"><i data-ic="x"></i></button></div>
+<p class="small muted tight">Shortcuts avoid browser-reserved combos. Press <kbd>?</kbd> anytime outside a text field.</p>
+<div id="helpList" class="help-list"></div>
+</div>
+</div>
+
+<!-- Confirm -->
+<div class="overlay hidden" id="confirmModal" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle">
+<div class="confirm-box">
+<h2 id="confirmTitle">Are you sure?</h2>
+<p id="confirmBody" class="muted"></p>
+<div class="flex" style="justify-content:flex-end">
+<button class="btn" id="confirmCancel">Cancel</button>
+<button class="btn danger" id="confirmOk">Confirm</button>
+</div>
+</div>
+</div>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
+
+<script src="workspace-utils.js"></script>
+<script src="workspace.js"></script>
+<script src="workspace-extras.js"></script>
+</body>
+</html>
