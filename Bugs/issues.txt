@@ -1,4 +1,4 @@
-Title: Some buttons have hardcoded colors, making it difficult to determine if the user has changed their theme to dark or black.
+Title: Some buttons have hardcoded colors, making it difficult to read for the user if they had changed their theme to dark or black.
 Des: An example is the “Unlock Everything (free)” button. It’s hardcoded to be black with white font color, which can make it appear strange if the user’s theme is red, green, or any other color.
 -
 Title: It’s frustrating that you can’t scroll down to access settings if there are one or more menus open. This makes it inconvenient to have to close all the menus just to reset something. Additionally, it seems to be affecting more menus at the bottom.
