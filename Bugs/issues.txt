@@ -1,3 +1,12 @@
+Title: App opacity isn't capped
+Des: The app opacity should be capped at 10% because if it goes too low, the user won’t be able to see it. Since app opacity is saved in local storage, it will remain permanently for users who lack experience editing their browser’s local storage or simply cannot access it.
+-
+Title: The image of the 3 files
+Des: If the user zooms in on their page to 150%, the image of the three files will overlap the text that reads “Your desk is empty.” This issue also seems to affect users with low-resolution displays, even if their zoom level is set to 100% or native.
+-
+Title: Focus Mode
+Des: When the user activates focus mode, the toolbar remains visible. However, the “No source” and “Not saved” indicators should be retained.
+-
 Title: Some buttons have hardcoded colors, making it difficult to read for the user if they had changed their theme to dark or black.
 Des: An example is the “Unlock Everything (free)” button. It’s hardcoded to be black with white font color, which can make it appear strange if the user’s theme is red, green, or any other color.
 -
