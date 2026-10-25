@@ -1,3 +1,6 @@
+Title: It’s frustrating that you can’t scroll down to access settings if there are one or more menus open. This makes it inconvenient to have to close all the menus just to reset something. Additionally, it seems to be affecting more menus at the bottom.
+Des: No description provided.
+-
 Title: If the entire theme is black and the text color is white, the text is not visible when you hover over it.
 Des: It seems that the color is hardcoded. The same applies to whether the submenu is open. When the submenu is open, the text is saved as black, making it nearly invisible, if not completely invisible, on dark themes. Changing the text color to red, orange, or green doesn’t make a difference.
 -
