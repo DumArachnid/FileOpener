@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Base64 & Payload Shield</title>
+    <title>BaNt0 Payload Scrambler & Shield</title>
     <style>
         :root {
             --bg: #f4efe6;
@@ -14,6 +14,7 @@
             --accent: #c84b25;
             --accent-hover: #b03f1e;
             --input-bg: #faf8f5;
+            --success: #16a34a;
         }
 
         body {
@@ -31,7 +32,7 @@
 
         .card {
             width: 100%;
-            max-width: 480px;
+            max-width: 500px;
             background: var(--card);
             border: 1px solid var(--border);
             border-radius: 14px;
@@ -135,11 +136,11 @@
 
     <div class="card">
         <div class="header-title">
-            <span>#</span> Base64 Payload Scrambler
+            <span>#</span> BaNt0 Shield & Scrambler
         </div>
         
-        <label for="inputData">Input Payload / URL</label>
-        <textarea id="inputData" placeholder="Drop text or link to scramble..."></textarea>
+        <label for="inputData">Input Payload / Text</label>
+        <textarea id="inputData" placeholder="Drop text or link here..."></textarea>
         
         <div class="btn-group">
             <button onclick="scrambleText()">Scramble</button>
@@ -149,22 +150,43 @@
         <label for="outputData">Result Output</label>
         <textarea id="outputData" placeholder="Result will appear here..." readonly></textarea>
         
-        <div class="footer-note">Runs 100% local. Zero network logs.</div>
+        <div class="footer-note">Prefix stamp & dummy-bit matrix active.</div>
     </div>
 
     <script>
-        const CUSTOM_HEADER = "SECURE-PAYLOAD-v1::";
+        const PREFIX = "BaNt0BadAshyNewTab-";
+        const DUMMY_MARKER = "_";
 
         function scrambleText() {
             const raw = document.getElementById('inputData').value;
             if (!raw) return;
 
             try {
-                const encoded = btoa(encodeURIComponent(raw));
-                const scrambled = CUSTOM_HEADER + btoa(encoded.split('').reverse().join(''));
-                document.getElementById('outputData').value = scrambled;
+                // 1. Prepend the mandatory prefix
+                const stamped = PREFIX + raw;
+
+                // 2. Base64 encode it
+                let encoded = btoa(encodeURIComponent(stamped));
+
+                // 3. Add dummy bits based on length
+                if (encoded.length > 100) {
+                    // Evenly space dummy bits out every 15 characters
+                    let spaced = "";
+                    for (let i = 0; i < encoded.length; i++) {
+                        spaced += encoded[i];
+                        if ((i + 1) % 15 === 0) {
+                            spaced += DUMMY_MARKER;
+                        }
+                    }
+                    encoded = spaced;
+                } else {
+                    // Short payload padding
+                    encoded = encoded + "===DUMMY";
+                }
+
+                document.getElementById('outputData').value = encoded;
             } catch (err) {
-                document.getElementById('outputData').value = "Error: " + err.message;
+                document.getElementById('outputData').value = "Error during scrambling: " + err.message;
             }
         }
 
@@ -174,16 +196,37 @@
 
             try {
                 let cleaned = input;
-                if (input.startsWith(CUSTOM_HEADER)) {
-                    cleaned = input.slice(CUSTOM_HEADER.length);
+
+                // 1. Remove dummy bits (guess/reverse the spacing pattern or padding)
+                if (cleaned.length > 100 || cleaned.includes(DUMMY_MARKER)) {
+                    let unspaced = "";
+                    let counter = 0;
+                    for (let i = 0; i < cleaned.length; i++) {
+                        if (cleaned[i] === DUMMY_MARKER && (counter % 16 === 15)) {
+                            // Skip the injected dummy bit
+                            continue;
+                        }
+                        unspaced += cleaned[i];
+                        counter++;
+                    }
+                    cleaned = unspaced.replace(new RegExp(`\\${DUMMY_MARKER}`, 'g'), "");
+                } else {
+                    cleaned = cleaned.split("===DUMMY")[0];
                 }
 
-                const unreversed = atob(cleaned).split('').reverse().join('');
-                const original = decodeURIComponent(atob(unreversed));
+                // 2. Base64 decode
+                const decodedBytes = atob(cleaned);
+                const original = decodeURIComponent(decodedBytes);
 
-                document.getElementById('outputData').value = original;
+                // 3. Check for the signature prefix and hand over cracked version
+                if (original.startsWith(PREFIX)) {
+                    const purePayload = original.slice(PREFIX.length);
+                    document.getElementById('outputData').value = `[CRACKED SUCCESS]\n${purePayload}`;
+                } else {
+                    document.getElementById('outputData').value = `[WARNING] Decoded, but missing signature. Raw: ${original}`;
+                }
             } catch (err) {
-                document.getElementById('outputData').value = "Failed to descramble. Check your payload string :/";
+                document.getElementById('outputData').value = "Failed to descramble. Corrupted dummy bits or invalid string :/";
             }
         }
     </script>
