@@ -7,8 +7,5 @@ Des: No description provided.
 Title: If the entire theme is black and the text color is white, the text is not visible when you hover over it.
 Des: It seems that the color is hardcoded. The same applies to whether the submenu is open. When the submenu is open, the text is saved as black, making it nearly invisible, if not completely invisible, on dark themes. Changing the text color to red, orange, or green doesn’t make a difference.
 -
-Title: Add a better encryption mechanism.
-Des: So I don't have to rely on Base64 that can easily be detected by school extensions like GoGuardian or makes it harder for teachers to just throw it in a Base64 Decrypter
--
 Title: Sidebar is connected to the entire page.
-Des: No description provided.
+Des: Since the sidebar is linked to the entire page, clicking the button to close it will close everything else, resulting in a cramped appearance. 
