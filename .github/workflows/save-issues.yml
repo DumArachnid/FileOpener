@@ -1,0 +1,67 @@
+name: Save Open Issues to TXT
+
+on:
+  workflow_dispatch: # Lets me trigger it manually from the Actions tab
+  issues:
+    types: [opened, edited, deleted, closed, reopened] # Optional: updates automatically when issues change
+
+jobs:
+  save-issues:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch and save open issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            // Create the Bugs directory if it doesn't exist
+            const dir = path.join(context.workspace, 'Bugs');
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+            }
+
+            // Grab all open issues for the repo
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+
+            // Loop through and write each issue to a txt file
+            for (const issue of issues.data) {
+              // GitHub API treats PRs as issues, so skip 'em
+              if (issue.pull_request) continue;
+
+              const filename = `issue-${issue.number}.txt`;
+              const filepath = path.join(dir, filename);
+              
+              const content = [
+                `Title: ${issue.title}`,
+                `Author: ${issue.user.login}`,
+                `Created: ${issue.created_at}`,
+                `URL: ${issue.html_url}`,
+                `----------------------------------------`,
+                ``,
+                issue.body || 'No description provided.'
+              ].join('\n');
+              
+              fs.writeFileSync(filepath, content);
+              console.log(`Saved: ${filename}`);
+            }
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add Bugs/
+          git diff --staged --quiet || git commit -m "docs: saves open issues as .txt"
+          git push
