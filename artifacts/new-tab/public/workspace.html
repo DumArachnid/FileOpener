@@ -227,6 +227,7 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .preview-wrap { display: flex; flex-direction: column; gap: 10px; flex: 1 1 auto; position: relative; min-height: 0; }
 .preview-area { flex: 1; border: 2px dashed var(--border-strong); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; background: var(--input-bg); overflow: hidden; position: relative; transition: border-color .2s, background .2s, transform .2s var(--ease); min-height: 0; }
 .preview-area.drag-over { border-color: var(--accent); background: var(--accent-soft); border-style: solid; transform: scale(.995); }
+.preview-area.tab-parked { position: absolute; top: 0; left: 0; visibility: hidden; pointer-events: none; }
 .preview-area iframe, .preview-area img { width: 100%; height: 100%; border: 0; display: block; object-fit: contain; background: #fff; }
 .preview-area pre { width: 100%; height: 100%; margin: 0; padding: 20px; white-space: pre-wrap; word-break: break-word; overflow: auto; font-size: var(--font-size, 14px); font-family: var(--mono); line-height: 1.6; background: var(--panel); align-self: stretch; }
 .preview-area:has(iframe), .preview-area:has(img), .preview-area:has(pre) { border-style: solid; border-width: 1.5px; }
@@ -643,6 +644,18 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <input type="file" id="importConfig" accept=".json" style="display:none;">
 </label>
 </div>
+<div>
+<label for="tabMemoryLimit">Keep tabs loaded</label>
+<select id="tabMemoryLimit" aria-describedby="tabMemoryHelp">
+<option value="1">Off — only the current tab</option>
+<option value="2">2 tabs</option>
+<option value="3">3 tabs</option>
+<option value="4">4 tabs</option>
+<option value="5">5 tabs</option>
+<option value="12" selected>All tabs (up to 12, default)</option>
+</select>
+<p id="tabMemoryHelp" class="small muted tight">Keeps your most recently used pages loaded, including the current tab. Older pages reload when reopened and may lose unsaved website form entries. Uses more memory; does not survive a browser refresh. Background pages may keep playing audio.</p>
+</div>
 <button class="btn" id="helpOpenBtn"><i data-ic="keyboard"></i>Keyboard shortcuts</button>
 <button class="btn primary" id="unlockEverythingBtn"><i data-ic="unlock"></i>Unlock everything (free)</button>
 <button class="btn" id="compatibilityBtn">ChromeOS &amp; compatibility</button>
@@ -740,7 +753,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </div>
 
 <template id="emptyTpl">
-<div class="empty" id="emptyState">
+<div class="empty" data-empty-state>
 <div class="empty-art" aria-hidden="true">
 <div class="sheet s1"><i data-ic="note"></i></div>
 <div class="sheet s2"><i data-ic="link"></i></div>
@@ -981,7 +994,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   const TOP = (function () { try { void window.top.document.title; return window.top; } catch (e) { return window; } })();
 
   const app = el('app');
-  const previewArea = el('previewArea'), fileInput = el('fileInput');
+  let previewArea = el('previewArea');
+  const fileInput = el('fileInput');
+  NT.setPreviewArea = area => { previewArea = area; };
   const urlInput = el('urlInput'), loadUrlBtn = el('loadUrlBtn');
   const iframeWarning = el('iframeWarning');
   const fileActions = el('fileActions');
@@ -1064,6 +1079,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   function b64EncodeUnicode(str) { return btoa(unescape(encodeURIComponent(str))); }
   function b64DecodeUnicode(str) { try { return decodeURIComponent(escape(atob(str))); } catch (e) { return ''; } }
   function revokeCurrent() {
+    previewArea._textLoadToken = null;
     try { if (V.blobURL && !/^https?:/i.test(V.blobURL)) { URL.revokeObjectURL(V.blobURL); } } catch (e) {}
     V.blobURL = null;
   }
@@ -1090,7 +1106,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   function renderTextView(text) {
     previewArea.innerHTML = '';
     const pre = document.createElement('pre');
-    pre.id = 'textView';
+    pre.setAttribute('data-text-view', '');
     pre.textContent = text;
     previewArea.appendChild(pre);
     if (NT.onTextRendered) NT.onTextRendered();
@@ -1341,6 +1357,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     setupIdlePanic();
     updateRewardsUI();
     processOfflineShards();
+    if (NT.reloadTabMemory) NT.reloadTabMemory();
   }
   function renderSavedFile(encoded) {
     if (!encoded) return;
@@ -1624,12 +1641,12 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   fullscreenBtn.addEventListener('click', toggleFullscreen);
 
   // ---------- Drop / open files ----------
-  ['dragover', 'dragenter'].forEach(ev => previewArea.addEventListener(ev, e => { e.preventDefault(); previewArea.classList.add('drag-over'); }));
-  ['dragleave', 'drop'].forEach(ev => previewArea.addEventListener(ev, e => { e.preventDefault(); previewArea.classList.remove('drag-over'); }));
-  previewArea.addEventListener('drop', e => { const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) handleFileOpen(f); });
+  const previewHost = previewArea.parentElement;
+  ['dragover', 'dragenter'].forEach(ev => previewHost.addEventListener(ev, e => { e.preventDefault(); previewArea.classList.add('drag-over'); }));
+  ['dragleave', 'drop'].forEach(ev => previewHost.addEventListener(ev, e => { e.preventDefault(); previewArea.classList.remove('drag-over'); }));
   // Whole-page drop too, so the empty state promise ("drop a file anywhere") holds
   document.addEventListener('dragover', e => e.preventDefault());
-  document.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f && !previewArea.contains(e.target)) handleFileOpen(f); });
+  document.addEventListener('drop', e => { e.preventDefault(); const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) handleFileOpen(f); });
   fileInput.addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) handleFileOpen(f); fileInput.value = ''; });
   NT.pickFile = () => fileInput.click();
 
@@ -1647,12 +1664,19 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       previewArea.appendChild(img);
       updateActions(true);
     } else if (file.type.startsWith('text/') || /\.(html?|js|css|json|md|txt|py|java|c|cpp|csv)$/i.test(file.name)) {
+      const destination = previewArea, token = Symbol('text load');
+      destination._textLoadToken = token;
       file.text().then(text => {
+        if (destination._textLoadToken !== token) return;
+        if (destination !== previewArea) {
+          if (NT.finishBackgroundText) NT.finishBackgroundText(destination, file, text, b64EncodeUnicode(text));
+          return;
+        }
         V.isText = true; V.isHTML = /\.html?$/i.test(file.name);
         V.saved = b64EncodeUnicode(text);
         renderTextView(text);
         updateActions(true);
-      });
+      }).catch(() => toast('Could not read ' + file.name, 'error'));
     } else {
       V.blobURL = URL.createObjectURL(file);
       makeFrame(V.blobURL, file.type === 'application/pdf' ? null : 'allow-scripts allow-pointer-lock', file.name);
@@ -1895,7 +1919,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   var bookmarks = NT.getJSON(BM_KEY, []).filter(function (b) { return b && typeof b.url === 'string' && safeUrl(b.url); }).map(function (b) {
     return { id: typeof b.id === 'string' && b.id ? b.id : uid(), url: safeUrl(b.url), title: typeof b.title === 'string' && b.title.trim() ? b.title.slice(0, 60) : hostOf(b.url) };
   });
-  function saveBookmarks() { NT.setJSON(BM_KEY, bookmarks); renderBookmarks(); updateStar(); if (NT.afterEmpty && el('emptyState')) NT.afterEmpty(); }
+  function saveBookmarks() { NT.setJSON(BM_KEY, bookmarks); renderBookmarks(); updateStar(); if (NT.afterEmpty && previewArea.querySelector('.empty')) NT.afterEmpty(); }
   function isBookmarked(u) { return !!u && bookmarks.some(function (b) { return b.url === u; }); }
   function addBookmark(raw, name) {
     var u = safeUrl(raw);
@@ -1937,7 +1961,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     function commit(save) {
       if (done) return; done = true;
       if (save && inp.value.trim()) { b.title = inp.value.trim(); NT.setJSON(BM_KEY, bookmarks); toast('Bookmark renamed'); }
-      renderBookmarks(); if (NT.afterEmpty && el('emptyState')) NT.afterEmpty();
+      renderBookmarks(); if (NT.afterEmpty && previewArea.querySelector('.empty')) NT.afterEmpty();
     }
     inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); commit(true); } else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); commit(false); } });
     inp.addEventListener('blur', function () { commit(true); });
@@ -1993,14 +2017,14 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       row.querySelector('.open').addEventListener('click', function () { NT.openUrl(r.url); });
       row.querySelector('.del').addEventListener('click', function () {
         recents = recents.filter(function (x) { return x.url !== r.url; });
-        NT.setJSON(RC_KEY, recents); renderRecents(); if (el('emptyState') && NT.afterEmpty) NT.afterEmpty();
+        NT.setJSON(RC_KEY, recents); renderRecents(); if (previewArea.querySelector('.empty') && NT.afterEmpty) NT.afterEmpty();
       });
       box.appendChild(row);
     });
   }
   el('recentClearBtn').addEventListener('click', async function () {
     if (!(await confirmDialog('Clear recent pages?', 'This removes the list of recently loaded addresses. Bookmarks are kept.', 'Clear', true))) return;
-    recents = []; NT.setJSON(RC_KEY, recents); renderRecents(); if (el('emptyState') && NT.afterEmpty) NT.afterEmpty();
+    recents = []; NT.setJSON(RC_KEY, recents); renderRecents(); if (previewArea.querySelector('.empty') && NT.afterEmpty) NT.afterEmpty();
   });
 
   // Empty-state chips
@@ -2059,18 +2083,83 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   // =====================================================
   // (3) Viewer tabs (content retained per tab)
   // =====================================================
-  var tabs = [], activeId = null, MAX_TABS = 12;
+  var tabs = [], activeId = null, MAX_TABS = 12, visitClock = 0;
+  var previewHost = previewArea.parentElement;
+  var memorySelect = el('tabMemoryLimit');
+  function readMemoryLimit() {
+    var value;
+    try { value = Number(localStorage.getItem('disguise_tab_memory_limit')); } catch (e) {}
+    return [1, 2, 3, 4, 5, 12].includes(value) ? value : 12;
+  }
+  var memoryLimit = readMemoryLimit();
+  memorySelect.value = String(memoryLimit);
+  function selectArea(t) {
+    if (!t.area) {
+      t.area = document.createElement('div');
+      t.area.className = 'preview-area tab-parked';
+      t.area.setAttribute('aria-live', 'polite');
+      previewHost.insertBefore(t.area, el('editorPanel'));
+    }
+    previewArea = t.area;
+    previewArea.dataset.tabId = t.id;
+    previewArea.id = 'previewArea';
+    previewArea.classList.remove('tab-parked');
+    previewArea.style.removeProperty('width');
+    previewArea.style.removeProperty('height');
+    previewArea.inert = false;
+    NT.setPreviewArea(previewArea);
+    t.used = ++visitClock;
+  }
+  function park(t) {
+    if (!t || !t.area) return;
+    t.area.removeAttribute('id');
+    // display:none can collapse an iframe's viewport and reset its scroll.
+    // Keep its dimensions and browsing context, without painting or interaction.
+    var rect = t.area.getBoundingClientRect();
+    t.area.style.width = rect.width + 'px';
+    t.area.style.height = rect.height + 'px';
+    t.area.classList.add('tab-parked');
+    t.area.inert = true;
+  }
+  function trimMemory() {
+    var loaded = tabs.filter(t => t.area);
+    loaded.sort((a, b) => (a.used || 0) - (b.used || 0));
+    while (loaded.length > memoryLimit) {
+      var oldest = loaded.find(t => t.id !== activeId);
+      if (!oldest) break;
+      oldest.area.remove();
+      oldest.area = null;
+      loaded.splice(loaded.indexOf(oldest), 1);
+    }
+  }
+  memorySelect.addEventListener('change', async function () {
+    var next = Number(memorySelect.value);
+    if (tabs.filter(t => t.area).length > next) {
+      var ok = await NT.confirmDialog('Unload older tabs?',
+        'Older pages will reload when reopened. Unsaved entries inside those websites may be lost. Workspace text drafts are kept.',
+        'Change limit', true);
+      if (!ok) { memorySelect.value = String(memoryLimit); return; }
+    }
+    memoryLimit = next;
+    NT.setItem('disguise_tab_memory_limit', String(next));
+    trimMemory();
+  });
+  NT.reloadTabMemory = function () {
+    memoryLimit = readMemoryLimit();
+    memorySelect.value = String(memoryLimit);
+    trimMemory();
+  };
   var tabStrip = el('tabStrip');
   function activeTab() { return tabs.find(function (t) { return t.id === activeId; }); }
   function snapshot(t) {
     if (!t) return;
     findClear();
-    var isTextView = !!previewArea.querySelector('#textView');
+    var isTextView = !!previewArea.querySelector('[data-text-view]');
     t.snap = {
       file: V.file, blobURL: V.blobURL, saved: V.saved, isText: V.isText, isHTML: V.isHTML,
-      empty: !NT.hasContent() && !!el('emptyState'),
-      view: isTextView ? 'text' : (el('emptyState') ? 'empty' : 'html'),
-      html: (isTextView || el('emptyState')) ? '' : previewArea.innerHTML,
+      empty: !NT.hasContent() && !!previewArea.querySelector('.empty'),
+      view: isTextView ? 'text' : (previewArea.querySelector('.empty') ? 'empty' : 'html'),
+      html: (isTextView || previewArea.querySelector('.empty')) ? '' : previewArea.innerHTML,
       left: NT.statusLeft.textContent, right: NT.statusRight.textContent, url: urlInput.value,
       draft: NT.editorOpen() ? editorTextarea.value : null
     };
@@ -2078,14 +2167,18 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   function restore(t) {
     NT.closeEditor();
     var s = t.snap;
+    var live = !!t.area;
+    selectArea(t);
     if (!s) {
       V.file = null; V.blobURL = null; V.saved = null; V.isText = false; V.isHTML = false;
       NT.showEmpty(); NT.setStatus('No source', ''); urlInput.value = ''; NT.updateActions(false);
     } else {
       V.file = s.file; V.blobURL = s.blobURL; V.saved = s.saved; V.isText = s.isText; V.isHTML = s.isHTML;
-      if (s.view === 'text') NT.renderTextView(NT.savedText());
-      else if (s.view === 'empty') NT.showEmpty();
-      else previewArea.innerHTML = s.html;
+      if (!live) {
+        if (s.view === 'text') NT.renderTextView(NT.savedText());
+        else if (s.view === 'empty') NT.showEmpty();
+        else previewArea.innerHTML = s.html;
+      } else if (s.view === 'empty' && NT.afterEmpty) NT.afterEmpty();
       NT.setStatus(s.left, s.right); urlInput.value = s.url;
       NT.updateActions(NT.hasContent());
       if (s.draft != null) {
@@ -2093,6 +2186,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         if (NT.onEditorOpen) NT.onEditorOpen();
       }
     }
+    trimMemory();
     updateStar();
   }
   function renderTabs() {
@@ -2114,14 +2208,15 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     var a = tabStrip.querySelector('.tab.active'); if (a && a.scrollIntoView) a.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }
   function activateTab(id) {
-    if (id === activeId) return;
-    snapshot(activeTab());
+    if (id === activeId || !tabs.some(t => t.id === id)) return;
+    snapshot(activeTab()); park(activeTab());
     activeId = id; restore(activeTab()); renderTabs();
   }
   function newTab(silent) {
     if (tabs.length >= MAX_TABS) { toast('Tab limit reached (' + MAX_TABS + ')', 'error'); return; }
-    var t = { id: uid(), title: 'New tab', snap: null };
-    if (activeId) snapshot(activeTab());
+    var t = { id: uid(), title: 'New tab', snap: null, area: null };
+    if (activeId) { snapshot(activeTab()); park(activeTab()); }
+    else if (silent) { t.area = previewArea; t.area.dataset.tabId = t.id; t.used = ++visitClock; }
     tabs.push(t); activeId = t.id;
     if (!silent) restore(t);
     renderTabs();
@@ -2134,8 +2229,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     var blob = id === activeId ? V.blobURL : (t.snap && t.snap.blobURL);
     try { if (blob && !/^https?:/i.test(blob)) URL.revokeObjectURL(blob); } catch (e) {}
     if (id === activeId) V.blobURL = null;
+    if (t.area) { t.area.remove(); t.area = null; }
     tabs.splice(i, 1);
-    if (!tabs.length) { activeId = null; newTab(true); restore(activeTab()); renderTabs(); return; }
+    if (!tabs.length) { activeId = null; newTab(); return; }
     if (id === activeId) { activeId = tabs[Math.max(0, i - 1)].id; restore(activeTab()); }
     renderTabs();
   }
@@ -2145,6 +2241,20 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     activateTab(tabs[(i + d + tabs.length) % tabs.length].id);
   }
   NT.onContentChanged = function (title) { var t = activeTab(); if (t) { t.title = (title || 'New tab').slice(0, 40); renderTabs(); } };
+  NT.finishBackgroundText = function (area, file, text, encoded) {
+    var t = tabs.find(t => t.id === area.dataset.tabId);
+    if (!t || !t.snap || t.snap.file !== file) return;
+    t.snap.saved = encoded; t.snap.isText = true; t.snap.isHTML = /\.html?$/i.test(file.name);
+    t.snap.view = 'text'; t.snap.empty = false; t.snap.html = '';
+    if (t.id === activeId) {
+      V.saved = encoded; V.isText = true; V.isHTML = t.snap.isHTML;
+      NT.renderTextView(text); NT.updateActions(true);
+    } else if (t.area) {
+      var pre = document.createElement('pre');
+      pre.setAttribute('data-text-view', ''); pre.textContent = text;
+      t.area.replaceChildren(pre);
+    }
+  };
   NT.onUrlLoaded = function (u) { addRecent(u); NT.onContentChanged(hostOf(u)); updateStar(); };
   el('newTabBtn').addEventListener('click', function () { newTab(); });
 
@@ -2154,7 +2264,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   var findBar = el('findBar'), findInput = el('findInput'), findCountEl = el('findCount');
   var marks = [], taHits = [], findIdx = -1;
   function findOpen() { return !findBar.classList.contains('hidden'); }
-  function textViewEl() { return previewArea.querySelector('#textView'); }
+  function textViewEl() { return previewArea.querySelector('[data-text-view]'); }
   function findClear() {
     var pre = textViewEl();
     if (marks.length && pre) pre.textContent = NT.savedText();

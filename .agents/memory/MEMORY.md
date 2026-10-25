@@ -1,0 +1,1 @@
+- [Live viewer tabs](live-viewer-tabs.md) — keep inactive iframe viewports laid out; hiding with display:none can reset scroll despite preserving the document.
