@@ -40,8 +40,8 @@ jobs:
             const filePath = "file://" + path.resolve("artifacts/new-tab/public/workspace.html");
             await page.goto(filePath, { waitUntil: "networkidle0" });
 
-            // Give any scripts or canvas elements a second to breathe
-            await new Promise(r => setTimeout(r, 1500));
+            // Wait 12 seconds for workspace.html to fully settle
+            await new Promise(r => setTimeout(r, 12000));
 
             // Ensure assets directory exists
             const fs = require("fs");
