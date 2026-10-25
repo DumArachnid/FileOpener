@@ -1,0 +1,5 @@
+Title: Add a better encryption mechanism.
+Des: So I don't have to rely on Base64 that can easily be detected by school extensions like GoGuardian or makes it harder for teachers to just throw it in a base64 decryptor
+-
+Title: Sidebar is connected to the entire page.
+Des: No description provided.
