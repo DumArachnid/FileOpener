@@ -34,7 +34,7 @@ jobs:
             const page = await browser.newPage();
             
             // Set viewport size (tweak width/height if you want mobile view!)
-            await page.setViewport({ width: 1280, height: 800 });
+            await page.setViewport({ width: 1280, height: 720 });
 
             // Open the local workspace.html file
             const filePath = "file://" + path.resolve("artifacts/new-tab/public/workspace.html");
