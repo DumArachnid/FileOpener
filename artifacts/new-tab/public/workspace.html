@@ -323,6 +323,17 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 }
 @media (min-width: 921px) { .app.sidebar-collapsed .sidebar { display: none; } }
 
+.compatibility-toast {
+  position: fixed; right: max(20px, env(safe-area-inset-right)); bottom: max(20px, env(safe-area-inset-bottom));
+  z-index: 1000; width: min(340px, calc(100vw - 40px)); padding: 18px 20px;
+  border: 1.5px solid var(--border-strong); border-radius: 12px; background: var(--panel);
+  color: var(--text); box-shadow: 4px 4px 0 var(--ink-shadow); text-align: left;
+  cursor: pointer; font: inherit; line-height: 1.5;
+}
+.compatibility-toast strong { display: block; color: var(--accent); margin-bottom: 4px; }
+.compatibility-toast span { display: block; font-size: 13px; }
+.compatibility-toast:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+.compatibility-toast[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -772,6 +783,13 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </div>
 
 <div id="toasts" class="toasts" aria-live="polite"></div>
+<div aria-live="polite">
+<button id="compatibilityToast" class="compatibility-toast" type="button" aria-haspopup="dialog" aria-controls="compatibilityNotice" hidden>
+<strong>Made for ChromeOS</strong>
+<span>ChromeOS + Chrome is our main target. Click for compatibility details.</span>
+<span>Disappears after 10 seconds. Also available in Settings.</span>
+</button>
+</div>
 
 <dialog id="compatibilityNotice" aria-labelledby="compatibilityTitle" style="max-width:540px;width:calc(100% - 32px);max-height:85vh;overflow:auto;padding:28px;border:2px solid var(--border-strong);border-radius:16px;background:var(--panel);color:var(--text);box-shadow:6px 6px 0 var(--ink-shadow)">
 <h2 id="compatibilityTitle">Made for ChromeOS</h2>
@@ -2519,14 +2537,28 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   document.getElementById('compatibilityDetected').textContent = 'Detected: ' + os + '. ' +
     (os === 'ChromeOS' && chrome ? 'You appear to be using our primary target: ChromeOS with Chrome.'
       : 'Your setup is outside our primary ChromeOS + Chrome target; some features may be limited.');
-  function showNotice() { if (!notice.open) notice.showModal(); }
+  var cornerNotice = document.getElementById('compatibilityToast');
+  var cornerTimer;
+  function hideCornerNotice() {
+    clearTimeout(cornerTimer);
+    cornerNotice.hidden = true;
+    window.NT.setItem('disguise_compatibility_seen', '1');
+  }
+  function showNotice() {
+    hideCornerNotice();
+    if (!notice.open) notice.showModal();
+  }
+  cornerNotice.addEventListener('click', showNotice);
   document.getElementById('compatibilityBtn').addEventListener('click', showNotice);
   document.getElementById('compatibilityAccept').addEventListener('click', function () { notice.close(); });
   notice.addEventListener('close', function () { window.NT.setItem('disguise_compatibility_seen', '1'); });
   notice.addEventListener('keydown', function (e) { if (e.key === 'Escape') e.stopPropagation(); });
   var seen = false;
   try { seen = localStorage.getItem('disguise_compatibility_seen') === '1'; } catch (e) {}
-  if (!seen) showNotice();
+  if (!seen) {
+    cornerNotice.hidden = false;
+    cornerTimer = setTimeout(hideCornerNotice, 10000);
+  }
 })();
 </script>
 </body>
