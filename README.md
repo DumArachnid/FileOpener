@@ -1,7 +1,6 @@
 # File Opener | Workspace
 
 ![Workspace Preview](assets/workspace-preview.png)
-*Pretend the popup isn’t there.*
 
 This site aims to provide a functional workspace for ChromeOS users, especially for educational purposes.
 
