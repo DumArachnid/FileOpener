@@ -348,6 +348,13 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 .help-trigger:hover, .help-trigger:focus-visible, .help-trigger[aria-expanded="true"] { background: var(--accent-soft); color: var(--accent-ink); border-color: currentColor; }
 .help-tooltip { position: fixed; z-index: 1500; width: min(320px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow-y: auto; padding: 12px 14px; border: 1.5px solid var(--border-strong); border-radius: 10px; background: var(--panel); color: var(--text); box-shadow: 3px 3px 0 var(--ink-shadow); font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
 .help-tooltip[hidden] { display: none; }
+.shortcut-settings { margin-top: 10px; }
+.shortcut-settings > summary { font-size: 12.5px; font-weight: 600; color: var(--text); cursor: pointer; padding: 9px 0; }
+.shortcut-list { display: grid; gap: 6px; max-height: 360px; overflow-y: auto; padding: 2px; }
+.shortcut-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: 6px; align-items: center; font-size: 12px; }
+.shortcut-row > span:first-child { min-width: 0; }
+.shortcut-row kbd { min-width: 72px; text-align: center; }
+.shortcut-note { margin: 6px 0; line-height: 1.45; }
 </style>
 </head>
 <body>
@@ -650,6 +657,12 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <p id="tabMemoryHelp" class="sr-only">Keeps your most recently used pages loaded, including the current tab. Older pages reload when reopened and may lose unsaved website form entries. Uses more memory; does not survive a browser refresh. Background pages may keep playing audio.</p>
 </div>
 <button class="btn" id="helpOpenBtn"><i data-ic="keyboard"></i>Keyboard shortcuts</button>
+<details class="shortcut-settings" id="shortcutSettings">
+<summary>Customize keyboard shortcuts</summary>
+<p class="small muted shortcut-note">Select “Record,” then press a key combination with Ctrl, Alt, Shift, or Cmd. ChromeOS may reserve some combinations; if one does nothing, try another. Press Escape to cancel a recording. Tab-number shortcuts are unset by default.</p>
+<div class="shortcut-list" id="shortcutList"></div>
+<button class="btn sm" id="resetShortcutsBtn" type="button" style="margin-top:8px">Restore default shortcuts</button>
+</details>
 <button class="btn primary" id="unlockEverythingBtn"><i data-ic="unlock"></i>Unlock everything (free)</button>
 <button class="btn" id="compatibilityBtn">ChromeOS &amp; compatibility</button>
 <button class="btn danger-ghost" id="resetAllBtn"><i data-ic="trash"></i>Reset all settings</button>
@@ -2002,7 +2015,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     var b = el('bmCurrentBtn');
     var on = isBookmarked(u);
     b.classList.toggle('on', on);
-    b.title = on ? 'Remove bookmark (Alt+B)' : 'Bookmark this address (Alt+B)';
+    var key = NT.shortcutDisplay ? NT.shortcutDisplay('bookmark') : '';
+    b.title = (on ? 'Remove bookmark' : 'Bookmark this address') + (key && key !== 'Not set' ? ' (' + key + ')' : '');
   }
   function toggleCurrentBookmark() {
     var u = safeUrl(urlInput.value);
@@ -2223,7 +2237,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       d.setAttribute('role', 'tab'); d.tabIndex = 0;
       d.setAttribute('aria-selected', t.id === activeId ? 'true' : 'false');
       d.setAttribute('data-testid', 'tab-' + t.id);
-      d.title = t.title + ' (Alt+' + (i + 1) + ')';
+      var tabShortcut = shortcutMap && shortcutMap['tab' + (i + 1)];
+      d.title = t.title + (tabShortcut ? ' (' + shortcutLabel(tabShortcut) + ')' : '');
       d.innerHTML = '<span class="t"></span><button class="x" type="button" aria-label="Close tab" title="Close tab">' + ic('x') + '</button>';
       d.querySelector('.t').textContent = t.title;
       d.addEventListener('click', function (e) { if (e.target.closest('.x')) closeTab(t.id); else activateTab(t.id); });
@@ -2518,30 +2533,120 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   // =====================================================
   var MOD = isMac ? 'Cmd' : 'Ctrl';
   var SHORTCUTS = [
-    { keys: [MOD, 'K'], desc: 'Open command palette' },
-    { keys: ['Alt', 'T'], desc: 'New viewer tab' },
-    { keys: ['Alt', 'W'], desc: 'Close current tab' },
-    { keys: ['Alt', '[ / ]'], desc: 'Previous / next tab' },
-    { keys: ['Alt', '1-9'], desc: 'Jump to tab number' },
-    { keys: ['Alt', 'O'], desc: 'Open a local file' },
-    { keys: ['Alt', 'L'], desc: 'Focus the address bar' },
-    { keys: ['Alt', 'B'], desc: 'Bookmark / unbookmark address' },
-    { keys: ['Alt', 'S'], desc: 'Find in text (Enter / Shift+Enter to step)' },
-    { keys: ['Alt', 'X'], desc: 'Edit text' },
-    { keys: [MOD, 'Z'], desc: 'Undo in editor (add Shift to redo)' },
-    { keys: [MOD, 'S'], desc: 'Save changes in editor' },
-    { keys: ['Alt', 'N'], desc: 'Jump to notes' },
-    { keys: ['Alt', 'P'], desc: 'Start / pause focus timer' },
-    { keys: ['Alt', 'Z'], desc: 'Toggle focus mode' },
-    { keys: ['Alt', 'M'], desc: 'Show / hide sidebar' },
-    { keys: ['?'], desc: 'Show this help (outside text fields)' },
-    { keys: ['Esc'], desc: 'Close dialogs, find bar and editor' },
-    { keys: ['Esc', 'x4'], desc: 'Panic redirect' }
+    { id: 'palette', desc: 'Open command palette', fallback: MOD + '+KeyK' },
+    { id: 'newTab', desc: 'New viewer tab', fallback: 'Alt+KeyT' },
+    { id: 'closeTab', desc: 'Close current tab', fallback: 'Alt+KeyW' },
+    { id: 'nextTab', desc: 'Next tab', fallback: 'Alt+BracketRight' },
+    { id: 'prevTab', desc: 'Previous tab', fallback: 'Alt+BracketLeft' },
+    { id: 'openFile', desc: 'Open a local file', fallback: 'Alt+KeyO' },
+    { id: 'address', desc: 'Focus the address bar', fallback: 'Alt+KeyL' },
+    { id: 'bookmark', desc: 'Bookmark / unbookmark address', fallback: 'Alt+KeyB' },
+    { id: 'find', desc: 'Find in text', fallback: 'Alt+KeyS' },
+    { id: 'edit', desc: 'Edit text', fallback: 'Alt+KeyX' },
+    { id: 'notes', desc: 'Jump to notes', fallback: 'Alt+KeyN' },
+    { id: 'timer', desc: 'Start / pause focus timer', fallback: 'Alt+KeyP' },
+    { id: 'focus', desc: 'Toggle focus mode', fallback: 'Alt+KeyZ' },
+    { id: 'sidebar', desc: 'Show / hide sidebar', fallback: 'Alt+KeyM' },
+    ...Array.from({ length: 9 }, (_, i) => ({
+      id: 'tab' + (i + 1), desc: 'Switch to tab ' + (i + 1), fallback: ''
+    }))
   ];
-  var helpModal = el('helpModal');
+  var savedShortcuts = NT.getJSON('disguise_shortcuts', {});
+  var shortcutMap = {};
+  SHORTCUTS.forEach(function (s) {
+    var stored = savedShortcuts && typeof savedShortcuts[s.id] === 'string' ? savedShortcuts[s.id] : s.fallback;
+    shortcutMap[s.id] = /^(?:(?:Ctrl|Cmd|Alt|Shift)\+)+(?:Key[A-Z]|Digit[0-9]|Numpad[0-9]|BracketLeft|BracketRight|Slash|Backslash|Comma|Period|Semicolon|Quote|Backquote|Minus|Equal|Space|ArrowUp|ArrowDown|ArrowLeft|ArrowRight|Home|End|PageUp|PageDown|Insert|Delete|F[1-9]|F1[0-2])$/.test(stored) ? stored : '';
+  });
+  var recordingShortcut = null;
+  function shortcutLabel(chord) {
+    if (!chord) return 'Not set';
+    return chord.split('+').map(function (part) {
+      if (part === 'Key' || part === 'Digit') return part;
+      if (/^Key[A-Z]$/.test(part)) return part.slice(3);
+      if (/^Digit[0-9]$/.test(part)) return part.slice(5);
+      if (part === 'BracketLeft') return '[';
+      if (part === 'BracketRight') return ']';
+      if (part === 'Slash') return '/';
+      if (part === 'Backslash') return '\\';
+      if (part === 'Comma') return ',';
+      if (part === 'Period') return '.';
+      if (part === 'Semicolon') return ';';
+      if (part === 'Quote') return "'";
+      if (part === 'Backquote') return '`';
+      if (part === 'Minus') return '-';
+      if (part === 'Equal') return '=';
+      if (part === 'Space') return 'Space';
+      return part;
+    }).join('+');
+  }
+  function chordForEvent(e) {
+    var parts = [];
+    if (e.ctrlKey) parts.push('Ctrl');
+    if (e.metaKey) parts.push('Cmd');
+    if (e.altKey) parts.push('Alt');
+    if (e.shiftKey) parts.push('Shift');
+    var code = e.code;
+    if (/^(?:Control|Meta|Alt|Shift)(?:Left|Right)$/.test(code) || !code) return '';
+    return parts.length ? parts.concat(code).join('+') : '';
+  }
+  function matchesShortcut(e, chord) {
+    return !!chord && chordForEvent(e) === chord;
+  }
+  function displayShortcut(id) { return shortcutLabel(shortcutMap[id]); }
+  NT.shortcutDisplay = displayShortcut;
+  function syncShortcutTitles() {
+    function title(id, label) {
+      var key = displayShortcut(id);
+      var text = label + (key === 'Not set' ? '' : ' (' + key + ')');
+      return text;
+    }
+    el('paletteBtn').title = title('palette', 'Command palette');
+    el('newTabBtn').title = title('newTab', 'New viewer tab');
+    el('focusModeBtn').title = title('focus', 'Expand view / toggle focus mode');
+    el('sidebarToggle').title = el('sidebarToggleDesk').title = title('sidebar', 'Toggle sidebar');
+    document.querySelector('label[for="fileInput"]').title = title('openFile', 'Open local file');
+    el('bmCurrentBtn').title = title('bookmark', 'Bookmark this address');
+    el('findBtn').title = title('find', 'Find in text');
+    el('editBtn').title = title('edit', 'Edit text');
+    el('timerPill').title = title('timer', 'Focus timer');
+    tabs.forEach(function (t, i) {
+      var key = displayShortcut('tab' + (i + 1));
+      var tab = tabStrip.querySelector('[data-testid="tab-' + t.id + '"]');
+      if (tab) tab.title = t.title + (key === 'Not set' ? '' : ' (' + key + ')');
+    });
+  }
+  function saveShortcutMap() {
+    var custom = {};
+    SHORTCUTS.forEach(function (s) {
+      if (shortcutMap[s.id] !== s.fallback) custom[s.id] = shortcutMap[s.id];
+    });
+    if (!Object.keys(custom).length) { localStorage.removeItem('disguise_shortcuts'); return true; }
+    return NT.setJSON('disguise_shortcuts', custom);
+  }
   function buildHelp() {
     var box = el('helpList'); box.innerHTML = '';
     SHORTCUTS.forEach(function (s) {
+      var r = document.createElement('div'); r.className = 'help-row';
+      var description = document.createElement('span'); description.textContent = s.desc;
+      var keys = document.createElement('span'); keys.className = 'keys';
+      var chord = shortcutMap[s.id];
+      if (chord) {
+        shortcutLabel(chord).split('+').forEach(function (k) {
+          var kb = document.createElement('kbd'); kb.textContent = k; keys.appendChild(kb);
+        });
+      } else {
+        var unset = document.createElement('span'); unset.className = 'muted small'; unset.textContent = 'Not set';
+        keys.appendChild(unset);
+      }
+      r.append(description, keys); box.appendChild(r);
+    });
+    [
+      { keys: [MOD, 'Z'], desc: 'Undo in editor (add Shift to redo)' },
+      { keys: [MOD, 'S'], desc: 'Save changes in editor' },
+      { keys: ['?'], desc: 'Show this help (outside text fields)' },
+      { keys: ['Esc'], desc: 'Close dialogs, find bar and editor' },
+      { keys: ['Esc', 'x4'], desc: 'Panic redirect' }
+    ].forEach(function (s) {
       var r = document.createElement('div'); r.className = 'help-row';
       r.innerHTML = '<span></span><span class="keys"></span>';
       r.firstChild.textContent = s.desc;
@@ -2549,7 +2654,46 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       box.appendChild(r);
     });
   }
+  var helpModal = el('helpModal');
   buildHelp();
+  var shortcutList = el('shortcutList');
+  function renderShortcutSettings() {
+    shortcutList.innerHTML = '';
+    SHORTCUTS.forEach(function (s) {
+      var row = document.createElement('div'); row.className = 'shortcut-row';
+      var label = document.createElement('span'); label.textContent = s.desc;
+      var binding = document.createElement('kbd'); binding.textContent = shortcutLabel(shortcutMap[s.id]);
+      var record = document.createElement('button'); record.type = 'button'; record.className = 'btn sm';
+      record.dataset.record = s.id;
+      record.setAttribute('aria-label', 'Record shortcut for ' + s.desc);
+      record.addEventListener('click', function () {
+        recordingShortcut = s.id;
+        renderShortcutSettings(); buildHelp();
+        var focused = shortcutList.querySelector('[data-record="' + s.id + '"]');
+        if (focused) focused.focus();
+      });
+      record.textContent = recordingShortcut === s.id ? 'Press keys…' : 'Record';
+      var clear = document.createElement('button'); clear.type = 'button'; clear.className = 'icon-btn';
+      clear.textContent = '×'; clear.title = 'Clear shortcut';
+      clear.setAttribute('aria-label', 'Clear shortcut for ' + s.desc);
+      clear.addEventListener('click', function () {
+        recordingShortcut = null; shortcutMap[s.id] = '';
+        saveShortcutMap(); buildHelp(); renderShortcutSettings(); syncShortcutTitles();
+        if (palOpen()) renderPalette();
+      });
+      row.append(label, binding, record, clear); shortcutList.appendChild(row);
+    });
+  }
+  renderShortcutSettings();
+  syncShortcutTitles();
+  el('resetShortcutsBtn').addEventListener('click', function () {
+    recordingShortcut = null;
+    SHORTCUTS.forEach(function (s) { shortcutMap[s.id] = s.fallback; });
+    localStorage.removeItem('disguise_shortcuts');
+    buildHelp(); renderShortcutSettings(); syncShortcutTitles();
+    if (palOpen()) renderPalette();
+    toast('Default keyboard shortcuts restored');
+  });
   function openHelp() { closePalette(); helpModal.classList.remove('hidden'); el('helpClose').focus(); }
   function closeHelp() { helpModal.classList.add('hidden'); }
   el('helpBtn').addEventListener('click', openHelp);
@@ -2557,31 +2701,35 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   el('helpClose').addEventListener('click', closeHelp);
   helpModal.addEventListener('mousedown', function (e) { if (e.target === helpModal) closeHelp(); });
 
-  function C(label, icon, run, kb, kw) { return { label: label, icon: icon, run: run, kb: kb || [], kw: kw || '' }; }
+  function C(label, icon, run, shortcutId, kw) {
+    var chord = shortcutId && shortcutMap[shortcutId];
+    return { label: label, icon: icon, run: run, kb: shortcutId === '?' ? ['?'] : (chord ? shortcutLabel(chord).split('+') : []), kw: kw || '' };
+  }
   function commands() {
     var list = [
-      C('Open a local file', 'file', NT.pickFile, ['Alt', 'O'], 'upload browse'),
-      C('Focus address bar', 'globe', function () { urlInput.focus(); urlInput.select(); }, ['Alt', 'L'], 'url web load'),
-      C('New viewer tab', 'plus', function () { newTab(); }, ['Alt', 'T']),
-      C('Close current tab', 'x', function () { closeTab(activeId); }, ['Alt', 'W']),
-      C('Next tab', 'chevronDown', function () { cycleTab(1); }, ['Alt', ']']),
-      C('Previous tab', 'chevronUp', function () { cycleTab(-1); }, ['Alt', '[']),
-      C('Bookmark current address', 'star', toggleCurrentBookmark, ['Alt', 'B'], 'favorite'),
-      C('Find in text', 'search', openFind, ['Alt', 'S'], 'search highlight'),
-      C('Edit text', 'edit', function () { if (V.saved || V.isText) NT.openEditor(); else toast('Open a text file first', 'error'); }, ['Alt', 'X']),
+      C('Open command palette', 'command', openPalette, 'palette', 'commands search'),
+      C('Open a local file', 'file', NT.pickFile, 'openFile', 'upload browse'),
+      C('Focus address bar', 'globe', function () { urlInput.focus(); urlInput.select(); }, 'address', 'url web load'),
+      C('New viewer tab', 'plus', function () { newTab(); }, 'newTab'),
+      C('Close current tab', 'x', function () { closeTab(activeId); }, 'closeTab'),
+      C('Next tab', 'chevronDown', function () { cycleTab(1); }, 'nextTab'),
+      C('Previous tab', 'chevronUp', function () { cycleTab(-1); }, 'prevTab'),
+      C('Bookmark current address', 'star', toggleCurrentBookmark, 'bookmark', 'favorite'),
+      C('Find in text', 'search', openFind, 'find', 'search highlight'),
+      C('Edit text', 'edit', function () { if (V.saved || V.isText) NT.openEditor(); else toast('Open a text file first', 'error'); }, 'edit'),
       C('Render as HTML', 'code', NT.renderHere, [], 'preview'),
       C('Copy text', 'copy', NT.copyText),
       C('Download file', 'download', NT.download),
       C('Open in about:blank', 'window', NT.openBlank, [], 'cloak'),
       C('Refresh viewer', 'refresh', NT.refresh),
       C('Toggle fullscreen', 'maximize', NT.toggleFullscreen),
-      C('Toggle focus mode', 'eye', NT.toggleFocus, ['Alt', 'Z']),
+      C('Toggle focus mode', 'eye', NT.toggleFocus, 'focus'),
       C('Show or hide toolbar', 'sliders', NT.toggleToolbar),
       C('Increase font size', 'type', function () { NT.fontStep(2); }, [], 'bigger larger'),
       C('Decrease font size', 'type', function () { NT.fontStep(-2); }, [], 'smaller'),
-      C('Toggle sidebar', 'panel', NT.toggleSidebar, ['Alt', 'M']),
-      C('Jump to notes', 'note', focusNotes, ['Alt', 'N'], 'write'),
-      C(tRun ? 'Pause focus timer' : 'Start focus timer', 'timer', timerToggle, ['Alt', 'P'], 'pomodoro'),
+      C('Toggle sidebar', 'panel', NT.toggleSidebar, 'sidebar'),
+      C('Jump to notes', 'note', focusNotes, 'notes', 'write'),
+      C(tRun ? 'Pause focus timer' : 'Start focus timer', 'timer', timerToggle, 'timer', 'pomodoro'),
       C('Reset focus timer', 'refresh', timerReset),
       C('Open bookmarks panel', 'bookmark', function () { NT.openGroup('grp-bookmarks'); }),
       C('Open recent pages panel', 'history', function () { NT.openGroup('grp-recents'); }),
@@ -2589,15 +2737,56 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       C('Open panic settings', 'alert', function () { NT.openGroup('grp-panic'); }),
       C('Claim daily reward', 'gem', NT.claimDaily, [], 'points streak'),
       C('Export configuration', 'download', NT.exportConfig, [], 'backup'),
-      C('Keyboard shortcuts', 'keyboard', openHelp, ['?']),
+      C('Keyboard shortcuts', 'keyboard', openHelp, '?'),
+      C('Customize keyboard shortcuts', 'keyboard', openShortcutSettings, null, 'change keys commands'),
       C('Reset all settings', 'trash', NT.resetAll, [], 'delete clear')
     ];
+    SHORTCUTS.filter(function (s) { return /^tab[1-9]$/.test(s.id); }).forEach(function (s) {
+      var number = Number(s.id.slice(3));
+      list.push(C(s.desc, 'panel', function () { var t = tabs[number - 1]; if (t) activateTab(t.id); }, s.id, 'switch viewer tab'));
+    });
     bookmarks.forEach(function (b) { var c = C('Open: ' + b.title, 'star', function () { NT.openUrl(b.url); }, [], 'bookmark ' + b.url); c.sub = hostOf(b.url); list.push(c); });
     recents.slice(0, 5).forEach(function (r) { var c = C('Open: ' + hostOf(r.url), 'history', function () { NT.openUrl(r.url); }, [], 'recent ' + r.url); c.sub = 'recent'; list.push(c); });
     return list;
   }
   var pal = el('palette'), palInput = el('paletteInput'), palList = el('paletteList'), palItems = [], palIdx = 0;
   function palOpen() { return !pal.classList.contains('hidden'); }
+  function openShortcutSettings() {
+    NT.openGroup('grp-settings');
+    el('shortcutSettings').open = true;
+    setTimeout(function () { el('shortcutSettings').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 60);
+  }
+  function runShortcut(id) {
+    if (id === 'palette') openPalette();
+    else if (id === 'newTab') newTab();
+    else if (id === 'closeTab') closeTab(activeId);
+    else if (id === 'nextTab') cycleTab(1);
+    else if (id === 'prevTab') cycleTab(-1);
+    else if (/^tab[1-9]$/.test(id)) { var t = tabs[Number(id.slice(3)) - 1]; if (t) activateTab(t.id); }
+    else if (id === 'openFile') NT.pickFile();
+    else if (id === 'address') { urlInput.focus(); urlInput.select(); }
+    else if (id === 'bookmark') toggleCurrentBookmark();
+    else if (id === 'find') openFind();
+    else if (id === 'edit') { if (V.saved || V.isText) NT.openEditor(); else toast('Open a text file first', 'error'); }
+    else if (id === 'notes') focusNotes();
+    else if (id === 'timer') timerToggle();
+    else if (id === 'focus') NT.toggleFocus();
+    else if (id === 'sidebar') NT.toggleSidebar();
+  }
+  function assignShortcut(id, chord) {
+    var collision = SHORTCUTS.find(function (s) { return s.id !== id && chord && shortcutMap[s.id] === chord; });
+    if (collision) {
+      toast('That shortcut is already assigned to ' + collision.desc, 'error');
+      renderShortcutSettings(); buildHelp(); return false;
+    }
+    var previous = shortcutMap[id];
+    shortcutMap[id] = chord;
+    if (!saveShortcutMap()) { shortcutMap[id] = previous; renderShortcutSettings(); return false; }
+    buildHelp(); renderShortcutSettings(); syncShortcutTitles();
+    if (palOpen()) renderPalette();
+    toast(chord ? 'Shortcut saved: ' + shortcutLabel(chord) : 'Shortcut cleared');
+    return true;
+  }
   function renderPalette() {
     var q = palInput.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
     palItems = commands().filter(function (c) { var hay = (c.label + ' ' + c.kw).toLowerCase(); return q.every(function (w) { return hay.indexOf(w) > -1; }); });
@@ -2636,9 +2825,27 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   el('paletteBtn').addEventListener('click', openPalette);
 
   document.addEventListener('keydown', function (e) {
+    if (recordingShortcut) {
+      if (e.key === 'Escape') {
+        e.preventDefault(); e.stopImmediatePropagation();
+        recordingShortcut = null; renderShortcutSettings(); buildHelp(); return;
+      }
+      var chord = chordForEvent(e);
+      if (!chord) return;
+      e.preventDefault(); e.stopImmediatePropagation();
+      if (!/^(?:(?:Ctrl|Cmd|Alt|Shift)\+)+(?:Key[A-Z]|Digit[0-9]|Numpad[0-9]|BracketLeft|BracketRight|Slash|Backslash|Comma|Period|Semicolon|Quote|Backquote|Minus|Equal|Space|ArrowUp|ArrowDown|ArrowLeft|ArrowRight|Home|End|PageUp|PageDown|Insert|Delete|F[1-9]|F1[0-2])$/.test(chord)) {
+        toast('Choose a letter, number, or supported key with a modifier', 'error'); return;
+      }
+      var targetId = recordingShortcut;
+      recordingShortcut = null;
+      assignShortcut(targetId, chord);
+      renderShortcutSettings(); buildHelp();
+      return;
+    }
     if (NT.confirmOpen) return;
     var mod = e.ctrlKey || e.metaKey;
-    if (mod && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'k') { e.preventDefault(); e.stopPropagation(); palOpen() ? closePalette() : openPalette(); return; }
+    var matched = SHORTCUTS.find(function (s) { return matchesShortcut(e, shortcutMap[s.id]); });
+    if (matched) { e.preventDefault(); e.stopPropagation(); runShortcut(matched.id); return; }
     if (e.key === 'Escape') {
       if (palOpen()) { e.preventDefault(); e.stopPropagation(); closePalette(); return; }
       if (!helpModal.classList.contains('hidden')) { e.preventDefault(); e.stopPropagation(); closeHelp(); return; }
@@ -2648,25 +2855,6 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
     if (palOpen()) return;
     if (e.key === '?' && !mod && !e.altKey && !NT.isTyping()) { e.preventDefault(); openHelp(); return; }
-    if (!e.altKey || mod) return;
-    var handled = true, c = e.code;
-    if (c === 'KeyT') newTab();
-    else if (c === 'KeyW') closeTab(activeId);
-    else if (c === 'BracketRight') cycleTab(1);
-    else if (c === 'BracketLeft') cycleTab(-1);
-    else if (/^Digit[1-9]$/.test(c)) { var t = tabs[parseInt(c.slice(5), 10) - 1]; if (t) activateTab(t.id); }
-    else if (c === 'KeyO') NT.pickFile();
-    else if (c === 'KeyL') { urlInput.focus(); urlInput.select(); }
-    else if (c === 'KeyB') toggleCurrentBookmark();
-    else if (c === 'KeyS') openFind();
-    else if (c === 'KeyX') { if (V.saved || V.isText) NT.openEditor(); else toast('Open a text file first', 'error'); }
-    else if (c === 'KeyN') focusNotes();
-    else if (c === 'KeyP') timerToggle();
-    else if (c === 'KeyZ') NT.toggleFocus();
-    else if (c === 'KeyM') NT.toggleSidebar();
-    else if (c === 'Slash') openHelp();
-    else handled = false;
-    if (handled) { e.preventDefault(); e.stopPropagation(); }
   }, true);
 
   // ---------- boot ----------
