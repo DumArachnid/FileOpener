@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>New Tab</title> <!--Do not modify-->
+<title>Study Desk — Learning Workspace</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23d4451f'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -363,7 +363,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 
 <aside class="sidebar" id="sidebar" aria-label="Settings and tools">
 <div class="side-head">
-<div class="side-title"><span class="logo-mark"></span><h2>Desk</h2></div>
+<div class="side-title"><span class="logo-mark"></span><h2>Study Desk</h2></div>
 <div id="clockDisplay">00:00:00</div>
 </div>
 
@@ -533,15 +533,16 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </div>
 </details>
 
-<!-- Disguiser -->
+<!-- Tab appearance -->
 <details class="sidebar-group" id="grp-disguise">
-<summary><i data-ic="window"></i>Disguiser</summary>
+<summary><i data-ic="window"></i>Tab appearance</summary>
 <div class="sidebar-group-content">
 <div id="disguiseLock" class="locked-box">
-<p class="small muted tight">Tab disguise system is locked.</p>
+<p class="small muted tight">Tab appearance tools are locked.</p>
 <button class="btn primary sm" id="unlockDisguiseBtn"><i data-ic="gem"></i>Unlock for 175</button>
 </div>
 <div id="disguiseBody" class="hidden stack">
+<p class="small muted tight">Customize this workspace's browser title, icon, and local address. These settings do not change which sites are available or override school restrictions.</p>
 <div>
 <label for="titleInput">Page title</label>
 <div class="flex nowrap">
@@ -550,7 +551,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </div>
 </div>
 <div>
-<label for="blankTitleInput">about:blank tab title</label>
+<label for="blankTitleInput">Blank-window tab title</label>
 <div class="flex nowrap">
 <input id="blankTitleInput" type="text" placeholder="New tab" style="flex:1"/>
 <button class="btn primary" id="applyBlankTitleBtn">Set</button>
@@ -567,10 +568,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div class="img-preview" id="imagePreview" style="margin-top:8px;"><div class="muted small">No image</div></div>
 </div>
 <div>
-<label for="cloakPathInput">History cloaking</label>
+<label for="cloakPathInput">Workspace address (browser URL)</label>
 <div class="flex nowrap">
-<input id="cloakPathInput" type="text" placeholder="?q=calculus" value="?q=calculus+homework+help" style="flex:1">
-<button class="btn primary" id="cloakUrlBtn">Cloak</button>
+<input id="cloakPathInput" type="text" placeholder="?q=course-notes" value="?q=calculus+homework+help" style="flex:1">
+<button class="btn primary" id="cloakUrlBtn">Update address</button>
 <button class="btn" id="resetUrlBtn">Undo</button>
 </div>
 </div>
@@ -615,7 +616,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </div>
 
 <div>
-<label for="presetSelect">Tab disguise preset</label>
+<label for="presetSelect">Tab appearance preset</label>
 <select id="presetSelect">
 <option value="">Presets...</option>
 <option value="nosotros">Nosotros Online</option>
@@ -676,7 +677,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div class="topbar">
 <button class="icon-btn mobile-only" id="sidebarToggle" title="Toggle sidebar (Alt+M)" aria-label="Toggle sidebar"><i data-ic="menu"></i></button>
 <button class="icon-btn desk-only hide-in-focus" id="sidebarToggleDesk" title="Toggle sidebar (Alt+M)" aria-label="Toggle sidebar"><i data-ic="panel"></i></button>
-<div class="brand hide-in-focus"><span class="logo-mark"></span><span>Workspace</span></div>
+<div class="brand hide-in-focus"><span class="logo-mark"></span><span>Study Desk</span></div>
 <div class="tabstrip" id="tabStrip" role="tablist" aria-label="Viewer tabs"></div>
 <button class="icon-btn" id="newTabBtn" title="New viewer tab (Alt+T)" aria-label="New viewer tab"><i data-ic="plus"></i></button>
 <span class="topbar-gap"></span>
@@ -718,7 +719,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 
 <div class="preview-wrap">
 <div id="previewArea" class="preview-area" aria-live="polite"></div>
-<div id="iframeWarning" class="iframe-warning">If the site refuses to load, it blocks embedding.</div>
+<div id="iframeWarning" class="iframe-warning">If a site refuses to load, it may block embedding or be restricted by browser or school policy. This workspace cannot override those restrictions.</div>
 
 <div id="editorPanel" class="editor-panel hidden">
 <div class="editor-head">
@@ -740,7 +741,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div id="fileActions" class="file-actions hidden" role="group" aria-label="File actions">
 <button class="btn primary" id="saveFileBtn" title="Save text file to localStorage"><i data-ic="download"></i>Save text</button>
 <button class="btn" id="downloadBtn"><i data-ic="download"></i>Download</button>
-<button class="btn" id="openBlankBtn" title="Open in new blank window"><i data-ic="window"></i>about:blank</button>
+<button class="btn" id="openBlankBtn" title="Open in a blank window"><i data-ic="window"></i>Open blank window</button>
 <button class="btn" id="openHereBtn" title="Render as HTML"><i data-ic="code"></i>Render HTML</button>
 <button class="btn" id="editBtn" title="Edit text (Alt+X)"><i data-ic="edit"></i>Edit text</button>
 <button class="btn" id="copyBtn"><i data-ic="copy"></i>Copy</button>
@@ -765,8 +766,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div class="sheet s2"><i data-ic="link"></i></div>
 <div class="sheet s3"><i data-ic="file"></i></div>
 </div>
-<h3>Your desk is empty.</h3>
-<p>Drop a file anywhere on this page, paste a web address, or start with a note. Everything stays in your device.</p>
+<h3>Your study desk is ready.</h3>
+<p>Bring course materials, notes, and reference pages together while you work. Open a file, paste a web address, or start with a note. Notes and settings stay in this browser.</p>
 <div class="flex center-flex">
 <button class="btn primary" data-act="open-file"><i data-ic="file"></i>Open a file</button>
 <button class="btn" data-act="focus-url"><i data-ic="globe"></i>Load a web page</button>
@@ -810,6 +811,16 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </div>
 
 <div id="toasts" class="toasts" aria-live="polite"></div>
+<dialog id="educationalUseNotice" aria-labelledby="educationalUseTitle" aria-describedby="educationalUseCopy" style="max-width:560px;width:calc(100% - 32px);max-height:85vh;overflow:auto;padding:28px;border:2px solid var(--border-strong);border-radius:16px;background:var(--panel);color:var(--text);box-shadow:6px 6px 0 var(--ink-shadow)">
+<h2 id="educationalUseTitle">Welcome to Study Desk</h2>
+<div id="educationalUseCopy">
+<p>A browser workspace for organizing class notes, course materials, and reference pages while you study.</p>
+<p><strong>Use this site only for educational work and legitimate multitasking.</strong></p>
+<p>This is not a way to bypass school firewalls or device and network restrictions. Embedded pages, downloads, popups, and clipboard actions may be limited by your browser or school. Follow your school's acceptable-use rules.</p>
+<p class="small muted">Designed primarily for ChromeOS with Chrome. Other systems may have limited support.</p>
+</div>
+<button class="btn primary" id="educationalUseContinue" type="button">I understand — continue</button>
+</dialog>
 <div aria-live="polite">
 <button id="compatibilityToast" class="compatibility-toast" type="button" aria-haspopup="dialog" aria-controls="compatibilityNotice" hidden>
 <strong>Made for ChromeOS</strong>
@@ -820,7 +831,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <dialog id="compatibilityNotice" aria-labelledby="compatibilityTitle" style="max-width:540px;width:calc(100% - 32px);max-height:85vh;overflow:auto;padding:28px;border:2px solid var(--border-strong);border-radius:16px;background:var(--panel);color:var(--text);box-shadow:6px 6px 0 var(--ink-shadow)">
 <h2 id="compatibilityTitle">Made for ChromeOS</h2>
 <p id="compatibilityDetected" style="font-weight:700"></p>
-<p>New Tab is a school-focused website designed primarily for <strong>ChromeOS using an up-to-date Google Chrome browser</strong>.</p>
+<p>Study Desk is a browser-based learning and multitasking workspace designed primarily for <strong>ChromeOS using an up-to-date Google Chrome browser</strong>.</p>
 <p><strong>Other systems:</strong> Windows, macOS, and Linux with a modern browser may work, but are not the primary support target. Android, iPhone, and iPad may have limited file viewing, keyboard shortcuts, downloads, and fullscreen support.</p>
 <p>OS detection is only an estimate, not a compatibility test. School-managed Chromebooks may restrict websites, embedded pages, popups, clipboard access, or downloads. This website cannot override school policies or websites that block embedding. Follow your school’s acceptable-use rules.</p>
 <p>Notes and settings stay in this browser, not a school account or cloud backup. Export important work before clearing browser data or moving devices. Google Fonts and online pages need internet access.</p>
@@ -1122,9 +1133,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   const FEATURES = [
     { id: 'feature_calc', name: 'Calculator', cost: 50, currency: 'pts' },
     { id: 'feature_fonts', name: 'Font system', cost: 200, currency: 'pts' },
-    { id: 'feature_disguise', name: 'Tab disguiser', cost: 175, currency: 'pts' },
+    { id: 'feature_disguise', name: 'Tab appearance tools', cost: 175, currency: 'pts' },
     { id: 'feature_download', name: 'File downloads', cost: 30, currency: 'pts' },
-    { id: 'feature_about_blank', name: 'about:blank launcher', cost: 10, currency: 'shards' }
+    { id: 'feature_about_blank', name: 'Open a blank workspace', cost: 10, currency: 'shards' }
   ];
 
   function flash(btn, msg) {
@@ -1643,8 +1654,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     TOP.location.replace(dest);
   });
   cloakUrlBtn.addEventListener('click', () => {
-    try { TOP.history.replaceState({}, '', cloakPathInput.value.trim() || '?q=search'); flash(cloakUrlBtn, 'Cloaked'); }
-    catch (e) { toast('That path cannot be used for cloaking', 'error'); }
+    try { TOP.history.replaceState({}, '', cloakPathInput.value.trim() || '?q=search'); flash(cloakUrlBtn, 'Updated'); }
+    catch (e) { toast('That workspace address is not valid', 'error'); }
   });
   resetUrlBtn.addEventListener('click', () => { try { TOP.history.replaceState({}, '', TOP.location.pathname); } catch (e) {} });
 
@@ -1743,15 +1754,15 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
   }
 
-  // ---------- about:blank launcher (sandboxed without allow-same-origin) ----------
+  // ---------- blank workspace window (sandboxed without allow-same-origin) ----------
   async function openBlank() {
-    if (!(await requireFeature('feature_about_blank', 'Unlock the about:blank launcher for 10 shards?'))) return;
+    if (!(await requireFeature('feature_about_blank', 'Unlock the blank workspace window for 10 shards?'))) return;
     let targetUrl = '';
     if (V.saved || V.isText) targetUrl = URL.createObjectURL(new Blob([savedText()], { type: 'text/html' }));
     else if (V.blobURL) targetUrl = V.blobURL;
     if (!targetUrl) { toast('Open something first', 'error'); return; }
     const w = window.open('about:blank', '_blank');
-    if (!w) { toast('Pop-up blocked. Allow pop-ups to use about:blank', 'error'); return; }
+    if (!w) { toast('Pop-up blocked. Allow pop-ups to open a blank window', 'error'); return; }
     const d = w.document;
     d.title = localStorage.getItem('disguise_blank_title') || 'New tab';
     const fav = localStorage.getItem('disguise_favicon') || '';
@@ -2720,7 +2731,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       C('Render as HTML', 'code', NT.renderHere, [], 'preview'),
       C('Copy text', 'copy', NT.copyText),
       C('Download file', 'download', NT.download),
-      C('Open in about:blank', 'window', NT.openBlank, [], 'cloak'),
+      C('Open in a blank window', 'window', NT.openBlank, [], 'blank page'),
       C('Refresh viewer', 'refresh', NT.refresh),
       C('Toggle fullscreen', 'maximize', NT.toggleFullscreen),
       C('Toggle focus mode', 'eye', NT.toggleFocus, 'focus'),
@@ -2869,6 +2880,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 (function () {
   'use strict';
   var notice = document.getElementById('compatibilityNotice');
+  var educationalNotice = document.getElementById('educationalUseNotice');
+  var educationalContinue = document.getElementById('educationalUseContinue');
   var ua = navigator.userAgent || '';
   var platform = navigator.userAgentData && navigator.userAgentData.platform || '';
   var os = /CrOS/i.test(ua) || /Chrome OS/i.test(platform) ? 'ChromeOS'
@@ -2883,9 +2896,21 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       : 'Your setup is outside our primary ChromeOS + Chrome target; some features may be limited.');
   var cornerNotice = document.getElementById('compatibilityToast');
   var cornerTimer;
+  var compatibilitySeen = false;
+  var educationalUseSeen = false;
+  try {
+    compatibilitySeen = localStorage.getItem('disguise_compatibility_seen') === '1';
+    educationalUseSeen = localStorage.getItem('disguise_educational_use_seen') === '1';
+  } catch (e) {}
+  function showCornerNotice() {
+    if (compatibilitySeen) return;
+    cornerNotice.hidden = false;
+    cornerTimer = setTimeout(hideCornerNotice, 10000);
+  }
   function hideCornerNotice() {
     clearTimeout(cornerTimer);
     cornerNotice.hidden = true;
+    compatibilitySeen = true;
     window.NT.setItem('disguise_compatibility_seen', '1');
   }
   function showNotice() {
@@ -2897,12 +2922,15 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   document.getElementById('compatibilityAccept').addEventListener('click', function () { notice.close(); });
   notice.addEventListener('close', function () { window.NT.setItem('disguise_compatibility_seen', '1'); });
   notice.addEventListener('keydown', function (e) { if (e.key === 'Escape') e.stopPropagation(); });
-  var seen = false;
-  try { seen = localStorage.getItem('disguise_compatibility_seen') === '1'; } catch (e) {}
-  if (!seen) {
-    cornerNotice.hidden = false;
-    cornerTimer = setTimeout(hideCornerNotice, 10000);
-  }
+  educationalNotice.addEventListener('cancel', function (e) { e.preventDefault(); });
+  educationalContinue.addEventListener('click', function () {
+    educationalUseSeen = true;
+    window.NT.setItem('disguise_educational_use_seen', '1');
+    educationalNotice.close();
+    showCornerNotice();
+  });
+  if (!educationalUseSeen) educationalNotice.showModal();
+  else showCornerNotice();
 })();
 </script>
 </body>

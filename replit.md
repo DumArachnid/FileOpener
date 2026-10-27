@@ -42,6 +42,7 @@ _Describe the high-level user-facing capabilities of this app once they exist._
 - Keep viewer pages loaded when switching tabs so users can copy and paste between sites without losing their place. Offer a configurable loaded-tab limit, including 2–5 tabs for lower-memory devices.
 - Put long control descriptions behind a nearby “?” tooltip instead of taking up space inline.
 - Make app keyboard shortcuts customizable. ChromeOS reserves Alt+1–9 for app launching, so leave tab-number shortcuts unset by default.
+- Present the product as Study Desk, a workspace for educational work and legitimate multitasking only. State clearly that it does not override school, browser, or network restrictions.
 
 ## Gotchas
 
