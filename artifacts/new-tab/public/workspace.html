@@ -355,13 +355,14 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 .help-trigger:hover, .help-trigger:focus-visible, .help-trigger[aria-expanded="true"] { background: var(--accent-soft); color: var(--accent-ink); border-color: currentColor; }
 .help-tooltip { position: fixed; z-index: 1500; width: min(320px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow-y: auto; padding: 12px 14px; border: 1.5px solid var(--border-strong); border-radius: 10px; background: var(--panel); color: var(--text); box-shadow: 3px 3px 0 var(--ink-shadow); font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
 .help-tooltip[hidden] { display: none; }
-.shortcut-settings { margin-top: 10px; }
+.shortcut-settings-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 8px; margin-top: 10px; }
+.shortcut-settings { min-width: 0; }
+.shortcut-settings-row > .help-trigger { margin-top: 6px; }
 .shortcut-settings > summary { font-size: 12.5px; font-weight: 600; color: var(--text); cursor: pointer; padding: 9px 0; }
 .shortcut-list { display: grid; gap: 6px; max-height: 360px; overflow-y: auto; padding: 2px; }
 .shortcut-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: 6px; align-items: center; font-size: 12px; }
 .shortcut-row > span:first-child { min-width: 0; }
 .shortcut-row kbd { min-width: 72px; text-align: center; }
-.shortcut-note { margin: 6px 0; line-height: 1.45; }
 </style>
 </head>
 <body>
@@ -668,12 +669,15 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <p id="tabMemoryHelp" class="sr-only">Keeps your most recently used pages loaded, including the current tab. Older pages reload when reopened and may lose unsaved website form entries. Uses more memory; does not survive a browser refresh. Background pages may keep playing audio.</p>
 </div>
 <button class="btn" id="helpOpenBtn"><i data-ic="keyboard"></i>Keyboard shortcuts</button>
+<div class="shortcut-settings-row">
 <details class="shortcut-settings" id="shortcutSettings">
 <summary>Customize keyboard shortcuts</summary>
-<p class="small muted shortcut-note">Select “Record,” then press a key combination with Ctrl, Alt, Shift, or Cmd. ChromeOS may reserve some combinations; if one does nothing, try another. Press Escape to cancel a recording. Tab-number shortcuts are unset by default.</p>
 <div class="shortcut-list" id="shortcutList"></div>
 <button class="btn sm" id="resetShortcutsBtn" type="button" style="margin-top:8px">Restore default shortcuts</button>
 </details>
+<button type="button" class="help-trigger" data-help="shortcutSettingsHelp" aria-label="About customizing keyboard shortcuts" aria-describedby="shortcutSettingsHelp" aria-expanded="false">?</button>
+</div>
+<p id="shortcutSettingsHelp" class="sr-only">Select “Record,” then press a key combination with Ctrl, Alt, Shift, or Cmd. ChromeOS may reserve some combinations; if one does nothing, try another. Press Escape to cancel a recording. Tab-number shortcuts are unset by default.</p>
 <button class="btn primary" id="unlockEverythingBtn"><i data-ic="unlock"></i>Unlock everything (free)</button>
 <button class="btn" id="compatibilityBtn">ChromeOS &amp; compatibility</button>
 <button class="btn danger-ghost" id="resetAllBtn"><i data-ic="trash"></i>Reset all settings</button>
