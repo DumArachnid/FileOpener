@@ -552,6 +552,14 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div id="disguiseBody" class="hidden stack">
 <p class="small muted tight">Customize this workspace's browser title, icon, and local address. These settings do not change which sites are available or override school restrictions.</p>
 <div>
+<label for="tabLookSelect">Quick tab appearance</label>
+<select id="tabLookSelect">
+<option value="">Choose a tab look...</option>
+<option value="transparent">Transparent icon + blank title</option>
+<option value="default">Restore default tab appearance</option>
+</select>
+</div>
+<div>
 <label for="titleInput">Page title</label>
 <div class="flex nowrap">
 <input id="titleInput" type="text" placeholder="Custom title..." style="flex:1"/>
@@ -1086,6 +1094,12 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   const el = id => document.getElementById(id);
   // The workspace runs in a same-origin iframe; tab title / favicon / history belong to the top window.
   const TOP = (function () { try { void window.top.document.title; return window.top; } catch (e) { return window; } })();
+  const DEFAULT_TAB_TITLE = TOP.document.title || 'New Tab';
+  const DEFAULT_FAVICON_HREF = (function () {
+    const icon = TOP.document.querySelector('link[rel="icon"], link[rel="shortcut icon"]');
+    return icon ? icon.href : '';
+  })();
+  const TRANSPARENT_FAVICON = 'data:image/svg+xml,%3Csvg xmlns=%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox=%220 0 16 16%22%3E%3C%2Fsvg%3E';
 
   const app = el('app');
   let previewArea = el('previewArea');
@@ -1105,7 +1119,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   const imageInput = el('imageInput'), base64FaviconInput = el('base64FaviconInput');
   const applyBase64Btn = el('applyBase64Btn'), imagePreview = el('imagePreview'), clearFaviconBtn = el('clearFaviconBtn');
   const panicLink = el('panicLink'), panicBtn = el('panicBtn'), panicHotkey = el('panicHotkey');
-  const idleTimer = el('idleTimer'), presetSelect = el('presetSelect');
+  const idleTimer = el('idleTimer'), presetSelect = el('presetSelect'), tabLookSelect = el('tabLookSelect');
   const opacitySlider = el('opacitySlider'), opacityVal = el('opacityVal');
   const fontIncBtn = el('fontIncBtn'), fontDecBtn = el('fontDecBtn');
   const cloakPathInput = el('cloakPathInput'), cloakUrlBtn = el('cloakUrlBtn'), resetUrlBtn = el('resetUrlBtn');
@@ -1436,9 +1450,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 
   function updateClock() { clockDisplay.textContent = new Date().toLocaleTimeString(); }
   setInterval(updateClock, 1000); updateClock();
-  if (typeof navigator.getBattery === 'function') {
+  const batteryNavigator = TOP.navigator && typeof TOP.navigator.getBattery === 'function' ? TOP.navigator : navigator;
+  if (typeof batteryNavigator.getBattery === 'function') {
     try {
-      navigator.getBattery().then(function (battery) {
+      batteryNavigator.getBattery().then(function (battery) {
         function updateBatteryDisplay() {
           if (battery.charging !== false || typeof battery.level !== 'number' || !Number.isFinite(battery.level)) {
             el('batteryDisplay').hidden = true;
@@ -1646,6 +1661,33 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     setFavicon(p.favicon); showImagePreview(p.favicon); base64FaviconInput.value = p.favicon; saveConfigKey('disguise_favicon', p.favicon);
     e.target.value = '';
     toast('Disguise applied');
+  });
+  tabLookSelect.addEventListener('change', e => {
+    if (e.target.value === 'transparent') {
+      const blankTitle = '\u200B';
+      TOP.document.title = blankTitle;
+      titleInput.value = blankTitle;
+      saveConfigKey('disguise_title', blankTitle);
+      setFavicon(TRANSPARENT_FAVICON);
+      showImagePreview(TRANSPARENT_FAVICON);
+      base64FaviconInput.value = TRANSPARENT_FAVICON;
+      imageInput.value = '';
+      saveConfigKey('disguise_favicon', TRANSPARENT_FAVICON);
+      toast('Transparent icon and blank title applied');
+    } else if (e.target.value === 'default') {
+      TOP.document.title = DEFAULT_TAB_TITLE;
+      titleInput.value = '';
+      localStorage.removeItem('disguise_title');
+      if (DEFAULT_FAVICON_HREF) setFavicon(DEFAULT_FAVICON_HREF);
+      else TOP.document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]').forEach(n => n.remove());
+      localStorage.removeItem('disguise_favicon');
+      base64FaviconInput.value = '';
+      imageInput.value = '';
+      if (DEFAULT_FAVICON_HREF) showImagePreview(DEFAULT_FAVICON_HREF);
+      else imagePreview.innerHTML = '<div class="muted small">No image</div>';
+      toast('Default tab appearance restored');
+    }
+    e.target.value = '';
   });
 
   function applyOpacity(raw = opacitySlider.value) {
