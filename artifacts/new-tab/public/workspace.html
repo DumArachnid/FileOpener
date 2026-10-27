@@ -696,8 +696,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <button class="icon-btn" id="newTabBtn" title="New viewer tab (Alt+T)" aria-label="New viewer tab"><i data-ic="plus"></i></button>
 <span class="topbar-gap"></span>
 <button class="timer-pill hidden" id="timerPill" title="Focus timer (Alt+P to pause)"><i data-ic="timer"></i><span id="timerPillText">25:00</span></button>
-<button class="btn sm hide-in-focus" id="paletteBtn" title="Command palette (Ctrl/Cmd+K)"><i data-ic="command"></i><span class="hide-sm">Commands</span></button>
 <button class="icon-btn hide-in-focus" id="helpBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"><i data-ic="keyboard"></i></button>
+<button class="btn sm hide-in-focus" id="paletteBtn" title="Command palette (Ctrl/Cmd+K)"><i data-ic="command"></i><span class="hide-sm"></span></button>
 <button class="btn sm" id="focusModeBtn" title="Expand view / toggle focus mode (Alt+Z)"><i data-ic="eye"></i><span>Focus</span></button>
 </div>
 
@@ -2519,7 +2519,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   // (6) Focus timer
   // =====================================================
   var CIRC = 276.46;
-  var tMin = Math.min(180, Math.max(1, parseInt(localStorage.getItem('disguise_timer_minutes') || '25', 10) || 25));
+  var tMin = Math.min(360, Math.max(1, parseInt(localStorage.getItem('disguise_timer_minutes') || '25', 10) || 25));
   var tTotal = tMin * 60000, tLeft = tTotal, tEnd = 0, tRun = false, tInt = null;
   var timerBox = el('timerBox'), tDisp = el('timerDisplay'), tRing = el('timerRing'), tLabel = el('timerLabel');
   var tStart = el('timerStartBtn'), tMinInput = el('timerMinutes'), tPill = el('timerPill');
@@ -2570,7 +2570,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
   tMinInput.addEventListener('change', function () {
     var v = parseInt(tMinInput.value, 10);
-    if (isNaN(v) || v < 1 || v > 180) { toast('Pick between 1 and 180 minutes', 'error'); tMinInput.value = tMin; return; }
+    if (isNaN(v) || v < 1 || v > 360) { toast('Pick between 1 and 360 minutes', 'error'); tMinInput.value = tMin; return; }
     tMin = v; localStorage.setItem('disguise_timer_minutes', String(v)); tTotal = v * 60000;
     if (!tRun) { tLeft = tTotal; drawTimer(); } else toast('New length applies after reset');
   });
