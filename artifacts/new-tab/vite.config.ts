@@ -47,7 +47,7 @@ function sourceFiles(directory: string): string[] {
 
 function getStudyDeskBuildId(): string {
   const inputs = [
-    path.join(artifactRoot, 'public', 'workspace.html'),
+    ...sourceFiles(path.join(artifactRoot, 'public')),
     path.join(artifactRoot, 'index.html'),
     path.join(artifactRoot, 'vite.config.ts'),
     ...sourceFiles(path.join(artifactRoot, 'src')),

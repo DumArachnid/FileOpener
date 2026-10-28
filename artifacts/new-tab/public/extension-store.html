@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Browse, review, and install extensions for Study Desk.">
+  <meta name="theme-color" content="#f2ebdd">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <title>Extension Store · Study Desk</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f2ebdd;
+      --panel: #fbf7ee;
+      --ink: #25211b;
+      --muted: #777264;
+      --border: #d8d0bf;
+      --border-strong: #9e927a;
+      --accent: #d4451f;
+      --accent-soft: #f7e6dc;
+      --danger: #a83932;
+      --shadow: #d5cab5;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; color: var(--ink); background: var(--paper); }
+    button, input, textarea { font: inherit; }
+    button { color: inherit; }
+    .shell { width: min(1080px, calc(100% - 32px)); margin: 0 auto; padding: 24px 0 48px; }
+    .topbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .brand { display: flex; align-items: center; gap: 10px; margin-right: auto; font-weight: 800; letter-spacing: -.03em; }
+    .brand-mark { width: 30px; height: 30px; border: 2px solid var(--ink); border-radius: 9px 9px 9px 3px; background: var(--accent-soft); box-shadow: 2px 2px 0 var(--shadow); }
+    .btn { min-height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 13px; border: 1.5px solid var(--border-strong); border-radius: 9px; background: var(--panel); box-shadow: 2px 2px 0 var(--shadow); cursor: pointer; font-weight: 700; text-decoration: none; }
+    .btn:hover:not(:disabled) { transform: translateY(-1px); }
+    .btn:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid #83aaa0; outline-offset: 2px; }
+    .btn:disabled { cursor: not-allowed; opacity: .58; }
+    .btn.primary { color: #fff; border-color: var(--accent); background: var(--accent); box-shadow: 2px 2px 0 #244d45; }
+    .btn.ghost-danger { color: var(--danger); }
+    .cart { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .hero { padding: clamp(22px, 5vw, 42px); border: 1.5px solid var(--border-strong); border-radius: 16px; background: var(--panel); box-shadow: 4px 4px 0 var(--shadow); }
+    .eyebrow { display: inline-block; padding: 6px 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: .1em; }
+    h1 { margin: 14px 0 9px; font-size: clamp(28px, 4vw, 42px); line-height: 1.08; letter-spacing: -.045em; }
+    h2 { margin: 0; font-size: 20px; letter-spacing: -.025em; }
+    h3 { margin: 0; font-size: 16px; }
+    p { color: var(--muted); line-height: 1.55; }
+    .hero-copy { max-width: 690px; margin: 0; }
+    .trust-note { display: flex; align-items: flex-start; gap: 9px; margin-top: 20px; padding: 11px 13px; border: 1px solid var(--border); border-radius: 10px; background: #f8f4e9; color: #4d5f53; font-size: 13px; }
+    .section { margin-top: 22px; padding: clamp(16px, 3vw, 24px); border: 1.5px solid var(--border-strong); border-radius: 14px; background: var(--panel); box-shadow: 3px 3px 0 var(--shadow); }
+    .section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+    .section-head p { margin: 6px 0 0; font-size: 13px; }
+    .status { margin: 10px 0; color: var(--muted); font-size: 13px; }
+    .status.error { color: var(--danger); }
+    .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .card { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0; padding: 15px; border: 1.5px solid var(--border); border-radius: 12px; background: #fffefa; }
+    .card-head { display: flex; align-items: center; gap: 9px; width: 100%; }
+    .card-title { min-width: 0; overflow-wrap: anywhere; font-weight: 800; }
+    .badge { margin-left: auto; flex: none; padding: 4px 7px; border: 1px solid var(--border); border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 9px; font-weight: 800; letter-spacing: .08em; }
+    .badge.unavailable { color: var(--muted); background: #f3f0e8; }
+    .card p { margin: 0; font-size: 13px; }
+    .card .btn { margin-top: auto; }
+    .row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: #faf7ef; }
+    .row + .row { margin-top: 8px; }
+    .row-copy { min-width: 180px; flex: 1; }
+    .row-copy strong { display: block; }
+    .row-copy small { display: block; margin-top: 3px; color: var(--muted); line-height: 1.45; }
+    .row-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+    .account-state { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+    .account-state strong { color: var(--ink); }
+    .developer-panel { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+    .developer-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+    .search-row { display: flex; gap: 8px; }
+    input, textarea { width: 100%; padding: 10px 11px; border: 1.5px solid var(--border-strong); border-radius: 8px; background: #fffefa; color: var(--ink); }
+    textarea { resize: vertical; line-height: 1.45; }
+    label { display: block; margin: 12px 0 6px; font-size: 13px; font-weight: 700; }
+    .update-notice { position: sticky; top: 10px; z-index: 4; display: none; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; padding: 10px 12px; border: 1.5px solid var(--accent); border-radius: 10px; background: var(--accent-soft); box-shadow: 2px 2px 0 var(--shadow); }
+    .update-notice.visible { display: flex; }
+    .update-notice p { margin: 0; color: var(--ink); font-size: 13px; }
+    dialog { width: min(760px, calc(100% - 24px)); max-height: min(86vh, 900px); padding: 0; border: 1.5px solid var(--border-strong); border-radius: 14px; background: var(--panel); color: var(--ink); box-shadow: 5px 5px 0 var(--shadow); }
+    dialog::backdrop { background: #28251e99; }
+    .dialog-body { padding: 20px; overflow: auto; max-height: 86vh; }
+    .dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .dialog-body pre { max-height: 300px; overflow: auto; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: #f6f1e7; white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .dialog-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .muted { color: var(--muted); }
+    .hidden { display: none !important; }
+    @media (max-width: 640px) {
+      .shell { width: min(100% - 20px, 1080px); padding-top: 12px; }
+      .topbar { flex-wrap: wrap; }
+      .brand { flex: 1 1 100%; }
+      .cards { grid-template-columns: 1fr; }
+      .section-head { align-items: stretch; flex-direction: column; }
+      .search-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="update-notice" id="updateNotice" role="status">
+      <p>A newer Study Desk version is available.</p>
+      <button class="btn primary" id="refreshUpdateBtn" type="button">Refresh now</button>
+    </div>
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span>Study Desk · Extension Store</span></div>
+      <div class="account-state" id="accountState" aria-live="polite">Checking account…</div>
+      <button class="btn" id="accountActionBtn" type="button">Account</button>
+      <button class="btn" id="backToDeskBtn" type="button">← Back to Study Desk</button>
+    </header>
+
+    <section class="hero">
+      <span class="eyebrow"><svg class="cart" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h2l2.4 11.5a2 2 0 0 0 2 1.5h8.7a2 2 0 0 0 2-1.5L22 7H6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg> EXTENSION STORE</span>
+      <h1>Extensions for your study desk</h1>
+      <p class="hero-copy">Browse approved community extensions and Study Desk demos. Review the source and permissions before installing. Installed extensions stay off until you enable them in your workspace.</p>
+      <div class="trust-note"><strong aria-hidden="true">ⓘ</strong><span>Extensions run in an isolated sandbox. They cannot read page contents, files, tabs, or access the network. Only install code you trust.</span></div>
+    </section>
+
+    <section class="section" aria-labelledby="onlineStoreTitle">
+      <div class="section-head">
+        <div><h2 id="onlineStoreTitle">Online community store</h2><p>Browse published extensions or create a private draft. Submissions become public only after moderator approval.</p></div>
+        <button class="btn primary" id="createExtensionBtn" type="button">＋ Create extension</button>
+      </div>
+      <div class="status" id="storeStatus" role="status">Connecting to the online store…</div>
+      <div id="ownedExtensions" aria-label="Your extensions"></div>
+      <div class="cards" id="communityExtensions" aria-label="Published community extensions"></div>
+    </section>
+
+    <section class="section" aria-labelledby="demoTitle">
+      <div class="section-head"><div><h2 id="demoTitle">Study Desk demos</h2><p>These examples are installable. Installing saves the source but does not enable it automatically.</p></div></div>
+      <div class="cards" id="demoExtensions"></div>
+    </section>
+
+    <section class="section" aria-labelledby="unavailableTitle">
+      <div class="section-head"><div><h2 id="unavailableTitle">Coming later</h2><p>More extensions will be added as the store develops.</p></div></div>
+      <article class="card"><div class="card-head"><strong class="card-title">Citation Helper</strong><span class="badge unavailable">UNAVAILABLE</span></div><p>Format citation drafts while studying. This item is not installable yet.</p><button class="btn" type="button" disabled>Coming soon</button></article>
+    </section>
+
+    <section class="section" aria-labelledby="developerTitle">
+      <div class="section-head"><div><h2 id="developerTitle">Developer controls</h2><p>Authorized developers can assign or remove Study Desk admin and developer ranks.</p></div></div>
+      <div class="status" id="developerStatus" role="status">Checking developer access…</div>
+      <div class="developer-actions">
+        <button class="btn" id="developerLoginBtn" type="button">Developer sign in</button>
+        <button class="btn hidden" id="developerLogoutBtn" type="button">Sign out developer</button>
+      </div>
+      <form class="hidden" id="roleSearchForm">
+        <label for="usernameSearch">Find a Study Desk account by exact username</label>
+        <div class="search-row"><input id="usernameSearch" minlength="3" maxlength="24" autocomplete="off" required><button class="btn primary" type="submit">Search</button></div>
+      </form>
+      <div id="developerAccount" role="status" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <dialog id="detailsDialog" aria-labelledby="detailsTitle">
+    <div class="dialog-body">
+      <div class="dialog-head"><h2 id="detailsTitle"></h2><button class="btn" data-close="detailsDialog" type="button" aria-label="Close extension details">Close</button></div>
+      <p id="detailsDescription"></p>
+      <p class="muted" id="detailsPermissions"></p>
+      <h3>Source code</h3><pre id="detailsSource"></pre>
+      <p class="muted">Review the source before installing. The extension is saved but remains disabled until you enable it from the Extensions menu.</p>
+      <div class="dialog-actions"><button class="btn primary" id="installBtn" type="button">Install disabled</button><button class="btn hidden" id="installedBtn" disabled type="button">Already installed</button></div>
+    </div>
+  </dialog>
+
+  <dialog id="editorDialog" aria-labelledby="editorTitle">
+    <div class="dialog-body">
+      <div class="dialog-head"><h2 id="editorTitle">Create a store extension</h2><button class="btn" data-close="editorDialog" type="button" aria-label="Close extension editor">Close</button></div>
+      <p class="muted">Your draft stays private while you work. Submissions become public only after moderator approval. Review your JavaScript carefully and never include personal information or secrets.</p>
+      <form id="extensionForm">
+        <label for="extensionName">Extension name</label><input id="extensionName" maxlength="60" required>
+        <label for="extensionDescription">Description</label><textarea id="extensionDescription" rows="3" maxlength="500" required></textarea>
+        <label for="extensionSource">JavaScript source</label><textarea id="extensionSource" rows="10" maxlength="200000" spellcheck="false" required></textarea>
+        <div class="dialog-actions"><button class="btn" id="saveDraftBtn" type="submit">Save private draft</button><button class="btn primary" id="submitExtensionBtn" type="button">Submit for approval</button></div>
+      </form>
+      <div class="status" id="editorStatus" role="status" aria-live="polite"></div>
+    </div>
+  </dialog>
+
+  <script>
+  (function () {
+    'use strict';
+    var $ = function (id) { return document.getElementById(id); };
+    var state = { user: null, developer: { user: null, authorized: false }, owned: [], public: [], selected: null, editing: null };
+    var detailsDialog = $('detailsDialog');
+    var editorDialog = $('editorDialog');
+    var storeChannel = 'BroadcastChannel' in window ? new BroadcastChannel('study-desk-store') : null;
+    var developerNotice = new URLSearchParams(location.search).get('developerAuthError') === 'unauthorized'
+      ? 'That account is not on the developer access list.'
+      : new URLSearchParams(location.search).get('developerAuthError') === 'failed'
+        ? 'Developer sign-in failed. Please try again.' : '';
+
+    function desk() {
+      try { return window.opener && !window.opener.closed && window.opener.NT ? window.opener.NT : null; }
+      catch (error) { return null; }
+    }
+    function request(path, options) {
+      options = options || {};
+      var headers = Object.assign({ Accept: 'application/json' }, options.headers || {});
+      var body = options.body;
+      if (body !== undefined) { headers['Content-Type'] = 'application/json'; body = JSON.stringify(body); }
+      return fetch('/api' + path, { method: options.method || 'GET', credentials: 'same-origin', headers: headers, body: body })
+        .then(async function (response) {
+          if (response.status === 204) return null;
+          var data = {};
+          try { data = await response.json(); } catch (error) {}
+          if (!response.ok) throw new Error(data.error || 'The request could not be completed.');
+          return data;
+        });
+    }
+    function text(tag, className, value) {
+      var node = document.createElement(tag);
+      if (className) node.className = className;
+      if (value !== undefined) node.textContent = value;
+      return node;
+    }
+    function button(label, handler, className) {
+      var node = text('button', 'btn' + (className ? ' ' + className : ''), label);
+      node.type = 'button';
+      node.addEventListener('click', handler);
+      return node;
+    }
+    function setStatus(message, error) {
+      $('storeStatus').textContent = message;
+      $('storeStatus').classList.toggle('error', !!error);
+    }
+    function applyDeskTheme() {
+      var defaults = { accent: '#d4451f', bg: '#f2ebdd', panel: '#fbf7ee', text: '#25211b' };
+      try {
+        var saved = JSON.parse(localStorage.getItem('disguise_colors') || '{}');
+        Object.keys(defaults).forEach(function (key) {
+          var value = saved && typeof saved[key] === 'string' ? saved[key] : '';
+          if (/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(value)) defaults[key] = value;
+        });
+      } catch (error) {}
+      var root = document.documentElement.style;
+      root.setProperty('--accent', defaults.accent);
+      root.setProperty('--paper', defaults.bg);
+      root.setProperty('--panel', defaults.panel);
+      root.setProperty('--ink', defaults.text);
+      root.setProperty('--accent-soft', 'color-mix(in srgb, ' + defaults.accent + ' 12%, white)');
+      root.setProperty('--border', 'color-mix(in srgb, ' + defaults.text + ' 17%, white)');
+      root.setProperty('--border-strong', 'color-mix(in srgb, ' + defaults.text + ' 48%, white)');
+      root.setProperty('--shadow', 'color-mix(in srgb, ' + defaults.bg + ' 78%, ' + defaults.text + ')');
+    }
+    function refreshWorkspace() {
+      try { if (storeChannel) storeChannel.postMessage({ type: 'refresh' }); } catch (error) {}
+    }
+    function askForAccount(mode) {
+      var app = desk();
+      if (app && typeof app.openAccount === 'function') {
+        app.openAccount(mode || 'login');
+        setStatus('Sign in or create an account in your Study Desk tab, then return here.', false);
+      } else {
+        setStatus('Open the Extension Store from your Study Desk tab to sign in and install extensions.', true);
+      }
+    }
+    function updateAccountState() {
+      var signedIn = !!state.user;
+      $('accountState').replaceChildren();
+      $('accountState').appendChild(text('span', '', signedIn ? 'Signed in as ' : ''));
+      if (signedIn) $('accountState').appendChild(text('strong', '', state.user.username));
+      else $('accountState').appendChild(text('span', '', 'Not signed in'));
+      $('accountActionBtn').textContent = signedIn ? 'Account settings' : 'Sign in';
+    }
+    async function loadAccount() {
+      try { state.user = (await request('/auth/me')).user; }
+      catch (error) { state.user = null; }
+      updateAccountState();
+      await Promise.all([loadOwned(), loadDeveloperAuth()]);
+      if (!state.user) setStatus(state.public.length ? 'Browse approved extensions. Sign in from Study Desk to create or manage your extensions.' : 'Online store is ready. Sign in from Study Desk to create an extension.', false);
+    }
+    function renderOwned() {
+      var host = $('ownedExtensions');
+      host.replaceChildren();
+      if (!state.user) return;
+      var title = text('h3', '', 'Your extensions');
+      title.style.margin = '18px 0 9px';
+      host.appendChild(title);
+      if (!state.owned.length) {
+        host.appendChild(text('p', 'status', 'You have no drafts or submissions yet.'));
+        return;
+      }
+      state.owned.forEach(function (item) {
+        var row = text('div', 'row');
+        var copy = text('div', 'row-copy');
+        copy.appendChild(text('strong', '', item.name));
+        var status = item.approvalStatus === 'pending' ? 'Waiting for moderator approval'
+          : item.approvalStatus === 'rejected' ? 'Not approved — edit and resubmit'
+          : item.approvalStatus === 'removed' ? 'Removed from the public store — edit or resubmit'
+          : item.approvalStatus === 'approved' && item.published ? 'Approved and public' : 'Private draft';
+        copy.appendChild(text('small', '', status + (item.moderationNote ? ' · ' + item.moderationNote : '')));
+        var actions = text('div', 'row-actions');
+        actions.appendChild(button('Edit', async function () {
+          try { openEditor(await request('/store/extensions/' + encodeURIComponent(item.id))); }
+          catch (error) { setStatus(error.message, true); }
+        }));
+        if (!item.published) actions.appendChild(button('Submit for approval', async function () {
+          try {
+            await request('/store/extensions/' + encodeURIComponent(item.id) + '/publish', { method: 'POST' });
+            await refreshLists();
+            setStatus('Extension submitted for moderator approval.', false);
+          } catch (error) { setStatus(error.message, true); }
+        }, 'primary'));
+        actions.appendChild(button('Delete', async function () {
+          if (!window.confirm('Permanently delete this extension?')) return;
+          try {
+            await request('/store/extensions/' + encodeURIComponent(item.id), { method: 'DELETE' });
+            await refreshLists();
+            setStatus('Extension deleted.', false);
+          } catch (error) { setStatus(error.message, true); }
+        }, 'ghost-danger'));
+        row.append(copy, actions);
+        host.appendChild(row);
+      });
+    }
+    async function loadOwned() {
+      if (!state.user) { state.owned = []; renderOwned(); return; }
+      try { state.owned = await request('/store/mine'); }
+      catch (error) { state.owned = []; }
+      renderOwned();
+    }
+    function openDetails(item, source, permissions) {
+      state.selected = { item: item, source: source || '', permissions: permissions || '' };
+      $('detailsTitle').textContent = item.name;
+      $('detailsDescription').textContent = item.description || '';
+      $('detailsPermissions').textContent = permissions || '';
+      $('detailsSource').textContent = source || '';
+      var app = desk();
+      var installed = app && typeof app.isStoreItemInstalled === 'function' && app.isStoreItemInstalled(item.id);
+      $('installBtn').classList.toggle('hidden', !!installed);
+      $('installedBtn').classList.toggle('hidden', !installed);
+      $('installBtn').disabled = !app;
+      $('installBtn').textContent = app ? 'Install disabled' : 'Open Store from Study Desk to install';
+      detailsDialog.showModal();
+    }
+    async function reviewPublic(item) {
+      try {
+        var detail = await request('/store/extensions/' + encodeURIComponent(item.id));
+        openDetails(item, detail.code, 'Published by ' + detail.publisherUsername + '. Review the source before enabling this extension.');
+      } catch (error) { setStatus(error.message, true); }
+    }
+    function renderPublic() {
+      var host = $('communityExtensions');
+      host.replaceChildren();
+      state.public.forEach(function (item) {
+        var card = text('article', 'card');
+        var head = text('div', 'card-head');
+        head.append(text('strong', 'card-title', item.name), text('span', 'badge', 'PUBLIC'));
+        card.append(head, text('p', '', item.description), text('p', 'muted', 'By ' + item.publisherUsername + ' · ' + item.version));
+        card.appendChild(button('Review source', function () { reviewPublic(item); }));
+        host.appendChild(card);
+      });
+      if (!state.public.length) host.appendChild(text('p', 'status', 'No public community extensions yet.'));
+    }
+    async function loadPublic() {
+      try {
+        state.public = await request('/store/extensions');
+        renderPublic();
+        setStatus(state.user ? 'Signed in as ' + state.user.username + ' · online store is up to date.' : 'Online store is available.', false);
+      } catch (error) {
+        state.public = [];
+        renderPublic();
+        setStatus('Online store is unavailable: ' + error.message, true);
+      }
+    }
+    async function refreshLists() {
+      await Promise.all([loadPublic(), loadOwned()]);
+      refreshWorkspace();
+    }
+    function renderDemos() {
+      var host = $('demoExtensions');
+      host.replaceChildren();
+      var app = desk();
+      var items = app && typeof app.getStoreCatalog === 'function' ? app.getStoreCatalog() : [];
+      if (!items.length) {
+        host.appendChild(text('p', 'status', 'Open the Extension Store from Study Desk to install the local demos.'));
+        return;
+      }
+      items.forEach(function (item) {
+        var installed = app.isStoreItemInstalled(item.id);
+        var card = text('article', 'card');
+        var head = text('div', 'card-head');
+        head.append(text('strong', 'card-title', item.name), text('span', 'badge', installed ? 'INSTALLED' : 'AVAILABLE'));
+        card.append(head, text('p', '', item.description));
+        card.appendChild(button(installed ? 'View details' : 'Review details', function () {
+          openDetails(item, item.source, item.permissions);
+        }));
+        host.appendChild(card);
+      });
+    }
+    function openEditor(item) {
+      if (!state.user) { askForAccount('signup'); return; }
+      state.editing = item || null;
+      $('editorTitle').textContent = item ? 'Edit store extension' : 'Create a store extension';
+      $('extensionName').value = item ? item.name : '';
+      $('extensionDescription').value = item ? item.description : '';
+      $('extensionSource').value = item ? item.code : '';
+      $('editorStatus').textContent = '';
+      $('saveDraftBtn').textContent = item && item.published ? 'Save as private draft' : 'Save private draft';
+      editorDialog.showModal();
+      $('extensionName').focus();
+    }
+    async function saveExtension(publish) {
+      if (!state.user) { askForAccount('signup'); return; }
+      var name = $('extensionName').value.trim();
+      var description = $('extensionDescription').value.trim();
+      var code = $('extensionSource').value;
+      if (!name || !description || !code.trim() || code.length > 200000) {
+        $('editorStatus').textContent = 'Enter a name, description, and JavaScript source under 200 KB.';
+        return;
+      }
+      $('saveDraftBtn').disabled = true;
+      $('submitExtensionBtn').disabled = true;
+      try {
+        var input = { name: name, description: description, code: code };
+        var item = state.editing
+          ? await request('/store/extensions/' + encodeURIComponent(state.editing.id), { method: 'PATCH', body: input })
+          : await request('/store/extensions', { method: 'POST', body: input });
+        if (publish) {
+          await request('/store/extensions/' + encodeURIComponent(item.id) + '/publish', { method: 'POST' });
+          setStatus('Extension submitted for moderator approval.', false);
+        } else setStatus('Private draft saved.', false);
+        editorDialog.close();
+        await refreshLists();
+      } catch (error) { $('editorStatus').textContent = error.message; }
+      finally { $('saveDraftBtn').disabled = false; $('submitExtensionBtn').disabled = false; }
+    }
+    async function loadDeveloperAuth() {
+      try { state.developer = await request('/developer/auth/user'); }
+      catch (error) { state.developer = { user: null, authorized: false }; }
+      renderDeveloperAuth();
+    }
+    function renderDeveloperAuth() {
+      var auth = state.developer || {};
+      var authorized = !!auth.authorized;
+      $('developerLoginBtn').classList.toggle('hidden', authorized);
+      $('developerLogoutBtn').classList.toggle('hidden', !authorized);
+      $('roleSearchForm').classList.toggle('hidden', !authorized);
+      $('developerStatus').textContent = authorized
+        ? 'Developer access active for ' + auth.user.email + '. Select an account below.'
+        : auth.user ? 'This account is not authorized to manage Study Desk roles.'
+        : developerNotice || 'Sign in with an authorized developer account to assign or remove admin and developer ranks.';
+    }
+    function beginDeveloperSignIn() {
+      developerNotice = '';
+      var loginUrl = '/api/developer/login?returnTo=' + encodeURIComponent('/api/developer/auth/complete');
+      var popup = window.open(loginUrl, 'studyDeskDeveloperLogin', 'popup,width=560,height=720');
+      if (!popup) { $('developerStatus').textContent = 'Allow the developer sign-in popup, then try again.'; return; }
+      $('developerStatus').textContent = 'Complete Replit sign-in in the new window…';
+      var attempts = 0;
+      var timer = setInterval(async function () {
+        attempts += 1;
+        await loadDeveloperAuth();
+        if ((state.developer && state.developer.authorized) || popup.closed || attempts >= 90) {
+          clearInterval(timer);
+          if (state.developer && state.developer.authorized && !popup.closed) popup.close();
+        }
+      }, 1500);
+    }
+    function renderDeveloperAccount(user) {
+      var host = $('developerAccount');
+      host.replaceChildren();
+      var row = text('div', 'row');
+      var copy = text('div', 'row-copy');
+      copy.appendChild(text('strong', '', user.username + (user.role === 'dev' ? ' · dev' : user.role === 'moderator' ? ' · admin' : ' · regular account')));
+      copy.appendChild(text('small', '', user.banned ? 'Banned · restore before promoting' : user.role === 'dev' ? 'Dev rank includes the online count and existing Admin tools.' : 'Account is active'));
+      var actions = text('div', 'row-actions');
+      async function assignRole(role, label) {
+        var prompt = role === 'dev' ? 'This account keeps Admin tools and gains the aggregate online count.'
+          : role === 'moderator' ? 'This account keeps Admin tools but loses the developer-only online count.'
+          : 'This account will lose Admin and developer access immediately.';
+        if (!window.confirm(prompt)) return;
+        try {
+          var updated = await request('/developer/accounts/' + encodeURIComponent(user.username) + '/role', { method: 'PATCH', body: { role: role } });
+          var app = desk();
+          if (app && typeof app.updateAccountRole === 'function') app.updateAccountRole(updated);
+          renderDeveloperAccount(updated);
+          setStatus(label + ' updated for ' + updated.username + '.', false);
+        } catch (error) { setStatus(error.message, true); }
+      }
+      if (!user.banned && user.role === 'user') {
+        actions.appendChild(button('Make admin', function () { assignRole('moderator', 'Admin role'); }, 'primary'));
+        actions.appendChild(button('Make dev', function () { assignRole('dev', 'Developer rank'); }, 'primary'));
+      } else if (user.role === 'moderator') {
+        if (!user.banned) actions.appendChild(button('Make dev', function () { assignRole('dev', 'Developer rank'); }, 'primary'));
+        actions.appendChild(button('Remove admin', function () { assignRole('user', 'Privileged access'); }, 'ghost-danger'));
+      } else if (user.role === 'dev') {
+        actions.appendChild(button('Remove dev rank', function () { assignRole('moderator', 'Developer rank'); }));
+        actions.appendChild(button('Remove admin', function () { assignRole('user', 'Privileged access'); }, 'ghost-danger'));
+      }
+      row.append(copy, actions);
+      host.appendChild(row);
+    }
+    $('accountActionBtn').addEventListener('click', function () { askForAccount('login'); });
+    $('createExtensionBtn').addEventListener('click', function () { openEditor(null); });
+    $('installBtn').addEventListener('click', function () {
+      if (!state.selected) return;
+      var app = desk();
+      if (!app || typeof app.installStoreExtension !== 'function') return;
+      var item = Object.assign({}, state.selected.item, { source: state.selected.source, code: state.selected.source });
+      if (app.installStoreExtension(item)) {
+        $('installBtn').classList.add('hidden');
+        $('installedBtn').classList.remove('hidden');
+        if (detailsDialog.open) detailsDialog.close();
+        renderDemos();
+      }
+    });
+    $('saveDraftBtn').addEventListener('click', function (event) { event.preventDefault(); saveExtension(false); });
+    $('extensionForm').addEventListener('submit', function (event) { event.preventDefault(); saveExtension(false); });
+    $('submitExtensionBtn').addEventListener('click', function () { saveExtension(true); });
+    document.querySelectorAll('[data-close]').forEach(function (closeButton) {
+      closeButton.addEventListener('click', function () { $(closeButton.getAttribute('data-close')).close(); });
+    });
+    $('developerLoginBtn').addEventListener('click', beginDeveloperSignIn);
+    $('developerLogoutBtn').addEventListener('click', function () {
+      location.href = '/api/developer/logout?returnTo=' + encodeURIComponent(location.pathname);
+    });
+    $('roleSearchForm').addEventListener('submit', async function (event) {
+      event.preventDefault();
+      if (!state.developer || !state.developer.authorized) return;
+      $('developerAccount').textContent = 'Searching…';
+      try {
+        renderDeveloperAccount(await request('/developer/accounts?username=' + encodeURIComponent($('usernameSearch').value.trim())));
+      } catch (error) { $('developerAccount').textContent = error.message; }
+    });
+    $('backToDeskBtn').addEventListener('click', function () {
+      if (window.opener && !window.opener.closed) { window.close(); return; }
+      location.href = new URL('./', location.href).href;
+    });
+    $('refreshUpdateBtn').addEventListener('click', function () { location.reload(); });
+    window.addEventListener('message', function (event) {
+      if (event.origin !== location.origin || !event.data || event.data.type !== 'study-desk-developer-auth') return;
+      if (event.data.error === 'unauthorized') developerNotice = 'That account is not on the developer access list.';
+      else if (event.data.error === 'failed') developerNotice = 'Developer sign-in failed. Please try again.';
+      loadDeveloperAuth();
+    });
+    window.addEventListener('storage', function (event) {
+      if (event.key === 'disguise_colors') applyDeskTheme();
+    });
+    if (storeChannel) storeChannel.addEventListener('message', function (event) {
+      if (event.data && event.data.type === 'refresh') refreshLists();
+    });
+    async function renderBuildUpdate() {
+      var current = new URLSearchParams(location.search).get('build');
+      if (!current) return;
+      try {
+        var response = await fetch(new URL('index.html', location.href).href, { cache: 'no-store' });
+        if (!response.ok) return;
+        var html = await response.text();
+        var match = html.match(/<meta\s+name=["']study-desk-build["']\s+content=["']([^"']+)["']/i);
+        if (match && match[1] !== current) $('updateNotice').classList.add('visible');
+      } catch (error) {}
+    }
+    var buildCheck = setInterval(renderBuildUpdate, 60000);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) { loadAccount(); renderDemos(); renderBuildUpdate(); }
+    });
+    window.addEventListener('beforeunload', function () { clearInterval(buildCheck); if (storeChannel) storeChannel.close(); });
+    applyDeskTheme();
+    renderDemos();
+    Promise.all([loadPublic(), loadAccount(), loadDeveloperAuth()]);
+    renderBuildUpdate();
+    setInterval(function () { loadAccount(); loadPublic(); }, 30000);
+  })();
+  </script>
+</body>
+</html>

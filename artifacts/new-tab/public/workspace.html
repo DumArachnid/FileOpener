@@ -236,32 +236,6 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .preview-area.tab-parked { position: absolute; top: 0; left: 0; visibility: hidden; pointer-events: none; }
 .preview-area iframe, .preview-area img { width: 100%; height: 100%; border: 0; display: block; object-fit: contain; background: #fff; }
 .preview-area pre { width: 100%; height: 100%; margin: 0; padding: 20px; white-space: pre-wrap; word-break: break-word; overflow: auto; font-size: var(--font-size, 14px); font-family: var(--mono); line-height: 1.6; background: var(--panel); align-self: stretch; }
-.store-overlay { position: absolute; inset: 0; z-index: 30; display: grid; place-items: center; padding: 16px; overflow: auto; border: 1.5px solid var(--border-strong); border-radius: var(--radius); background: var(--input-bg); animation: fadeIn .18s ease both; }
-.store-empty { width: min(820px, 100%); max-width: 820px; padding: 18px 20px; }
-.store-kicker { padding: 5px 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); font-size: 10px; font-weight: 700; letter-spacing: .12em; }
-.store-status { display: inline-flex; align-items: center; gap: 7px; padding: 7px 11px; border: 1px solid var(--border-strong); border-radius: 999px; background: var(--panel); font-size: 12px; font-weight: 700; }
-.store-status .ic { width: 14px; height: 14px; color: var(--accent-ink); }
-.store-note { font-size: 12px; }
-.store-section-title { margin: 22px 0 9px; text-align: left; font-size: 13px; }
-.store-catalog-grid, .store-demo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: 100%; text-align: left; }
-.store-card { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0; padding: 16px; border: 1.5px solid var(--border-strong); border-radius: 12px; background: var(--panel); box-shadow: 2px 2px 0 var(--ink-shadow); }
-.store-card p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
-.store-card .btn { margin-top: auto; }
-.store-card-head { display: flex; align-items: center; gap: 10px; width: 100%; }
-.store-badge { padding: 4px 7px; border: 1px solid var(--border); border-radius: 999px; color: var(--accent-ink); background: var(--accent-soft); font: 700 9px var(--mono); letter-spacing: .08em; }
-.store-badge.unavailable { color: var(--muted); background: var(--input-bg); }
-.store-demo-card { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0; padding: 16px; border: 1.5px solid var(--border-strong); border-radius: 12px; background: var(--panel); box-shadow: 2px 2px 0 var(--ink-shadow); }
-.store-demo-head { display: flex; align-items: center; gap: 10px; width: 100%; }
-.store-demo-icon { display: grid; place-items: center; width: 38px; height: 38px; flex: none; border-radius: 10px; color: var(--accent-ink); background: var(--accent-soft); }
-.store-demo-icon .ic { width: 19px; height: 19px; }
-.store-demo-title { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; }
-.store-demo-badge { padding: 4px 7px; border: 1px solid var(--border); border-radius: 999px; color: var(--accent-ink); background: var(--accent-soft); font: 700 9px var(--mono); letter-spacing: .08em; }
-.store-demo-card p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
-.store-demo-label { margin-top: auto; padding-top: 3px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
-.store-detail { position: absolute; inset: 12px; z-index: 2; overflow: auto; padding: 20px; border: 1.5px solid var(--border-strong); border-radius: 12px; background: var(--panel); box-shadow: 3px 3px 0 var(--ink-shadow); text-align: left; }
-.store-detail h3 { margin: 12px 0 8px; }
-.store-detail pre { max-height: 220px; overflow: auto; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.5 var(--mono); }
-.store-detail-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .extension-input-dialog { width: min(560px, calc(100% - 32px)); max-width: 560px; max-height: 85vh; padding: 0; overflow: hidden; border: 1.5px solid var(--border-strong); border-radius: 14px; background: var(--panel); color: var(--text); box-shadow: 5px 5px 0 var(--ink-shadow); }
 .extension-input-dialog::backdrop { background: color-mix(in srgb, var(--text) 42%, transparent); }
 .extension-input-panel { display: flex; flex-direction: column; gap: 12px; max-height: 85vh; padding: 20px; }
@@ -269,28 +243,24 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .extension-input-panel p { margin: 0; color: var(--muted); line-height: 1.5; }
 .extension-input-panel textarea { width: 100%; min-height: 180px; max-height: 55vh; resize: vertical; font-family: var(--main-font); line-height: 1.5; }
 .extension-input-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
-.account-dialog, .community-dialog { width: min(540px, calc(100% - 28px)); max-width: 540px; max-height: 88vh; padding: 0; overflow: auto; border: 1.5px solid var(--border-strong); border-radius: 14px; background: var(--panel); color: var(--text); box-shadow: 5px 5px 0 var(--ink-shadow); }
+.account-dialog { width: min(540px, calc(100% - 28px)); max-width: 540px; max-height: 88vh; padding: 0; overflow: auto; border: 1.5px solid var(--border-strong); border-radius: 14px; background: var(--panel); color: var(--text); box-shadow: 5px 5px 0 var(--ink-shadow); }
 .admin-dialog { width: min(900px, calc(100% - 28px)); max-width: 900px; max-height: 90vh; padding: 0; overflow: auto; border: 1.5px solid var(--border-strong); border-radius: 14px; background: var(--panel); color: var(--text); box-shadow: 5px 5px 0 var(--ink-shadow); }
-.account-dialog::backdrop, .community-dialog::backdrop, .admin-dialog::backdrop { background: color-mix(in srgb, var(--text) 45%, transparent); backdrop-filter: blur(3px); }
-.account-panel, .community-panel { display: flex; flex-direction: column; gap: 12px; padding: 22px; }
-.account-panel h2, .community-panel h2 { margin: 0; font-size: 20px; }
-.account-panel p, .community-panel p { margin: 0; color: var(--muted); line-height: 1.5; }
+.account-dialog::backdrop, .admin-dialog::backdrop { background: color-mix(in srgb, var(--text) 45%, transparent); backdrop-filter: blur(3px); }
+.account-panel { display: flex; flex-direction: column; gap: 12px; padding: 22px; }
+.account-panel h2 { margin: 0; font-size: 20px; }
+.account-panel p { margin: 0; color: var(--muted); line-height: 1.5; }
 .admin-panel { display: flex; flex-direction: column; gap: 12px; padding: 22px; }
 .admin-panel h2 { margin: 0; font-size: 20px; }
 .admin-panel > p { margin: 0; color: var(--muted); line-height: 1.5; }
 .admin-panel .moderator-tools { border-top: 0; padding-top: 0; }
 .share-tabs-setting { display: flex; align-items: flex-start; gap: 8px; margin-top: 10px; color: var(--text); font-size: 12px; line-height: 1.45; }
 .share-tabs-setting input { margin-top: 2px; }
-.account-form, .community-form { display: grid; gap: 10px; }
-.account-actions, .community-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+.account-form { display: grid; gap: 10px; }
+.account-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
 .account-link { border: 0; padding: 0; background: none; color: var(--accent-ink); text-decoration: underline; cursor: pointer; font: inherit; }
 .account-error { min-height: 1.2em; color: var(--danger); font-size: 12px; }
 .recovery-code-box { padding: 12px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--input-bg); }
 .recovery-code-box code { display: block; margin: 8px 0; overflow-wrap: anywhere; font: 700 15px var(--mono); }
-.online-store-tools { display: grid; gap: 10px; margin: 16px 0; padding: 14px; border: 1.5px solid var(--border); border-radius: 12px; background: var(--panel); text-align: left; }
-.online-store-heading { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
-.online-store-heading h4 { margin: 0 0 5px; font-size: 13px; }
-.online-store-heading p { margin: 0; max-width: 560px; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .online-store-status { font-size: 12px; color: var(--muted); }
 .community-list { display: grid; gap: 8px; }
 .community-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 9px; background: var(--input-bg); }
@@ -299,14 +269,10 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .moderator-tools { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--border); }
 .moderator-tools h4 { margin: 0; font-size: 13px; }
 .moderator-tools p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
-.developer-tools { border-top: 1px solid var(--border); }
-.developer-control-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .moderation-search { display: grid; gap: 8px; }
 .moderation-search-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .moderation-search-row input { flex: 1; min-width: 160px; }
 .moderation-source { max-height: 240px; overflow: auto; margin: 8px 0; padding: 10px; border-radius: 8px; background: var(--input-bg); font: 11px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
-.community-grid { margin-top: 10px; }
-.community-grid:empty { display: none; }
 #helpBtn, #paletteBtn, #storeBtn, #adminPanelBtn { min-width: 32px; padding-inline: 6px; }
 .large-html-card { width: min(620px, calc(100% - 32px)); padding: 22px; border: 1.5px solid var(--border-strong); border-radius: var(--radius); background: var(--panel); color: var(--text); text-align: center; box-shadow: 3px 3px 0 var(--ink-shadow); }
 .large-html-card h3 { margin-bottom: 8px; font-size: 18px; }
@@ -417,8 +383,6 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   .status-mid { display: none; }
   .file-actions { grid-template-columns: repeat(2, 1fr); }
   .overlay { padding-top: 6vh; }
-  .store-demo-grid, .store-catalog-grid { grid-template-columns: 1fr; }
-  .store-empty { padding: 14px 10px; }
 }
 @media (min-width: 921px) { .app.sidebar-collapsed .sidebar { display: none; } }
 
@@ -834,7 +798,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <span class="topbar-gap"></span>
 <button class="timer-pill hidden" id="timerPill" title="Focus timer (Alt+P to pause)"><i data-ic="timer"></i><span id="timerPillText">25:00</span></button>
 <button class="btn sm hide-in-focus" id="helpBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"><i data-ic="keyboard"></i></button>
-<button class="btn sm hide-in-focus" id="storeBtn" title="Open the Extension Store" aria-label="Open the Extension Store" aria-expanded="false"><i data-ic="cart"></i></button>
+<button class="btn sm hide-in-focus" id="storeBtn" type="button" title="Open the Extension Store in a new tab" aria-label="Open the Extension Store"><i data-ic="cart"></i></button>
 <button class="btn sm hide-in-focus hidden" id="adminPanelBtn" type="button" title="Open admin panel" aria-label="Open admin panel"><i data-ic="shield"></i></button>
 <button class="btn sm hide-in-focus hidden" id="devOnlineBtn" type="button" title="Signed-in accounts active within the last 90 seconds" aria-live="polite">Online: …</button>
 <button class="btn sm hide-in-focus" id="accountBtn" type="button" title="Sign in to sync your workspace"><i data-ic="user"></i><span id="accountBtnText">Account</span></button>
@@ -875,61 +839,6 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div class="preview-wrap">
 <div id="previewArea" class="preview-area" aria-live="polite"></div>
 <div id="iframeWarning" class="iframe-warning">If a site refuses to load, it may block embedding or be restricted by browser or school policy. This workspace cannot override those restrictions.</div>
-<div class="store-overlay hidden" id="storeOverlay" role="region" aria-labelledby="storeHeading" aria-label="Extension Store">
-<div class="empty store-empty">
-<div class="empty-art" aria-hidden="true"><div class="sheet s1"><i data-ic="cart"></i></div><div class="sheet s2"><i data-ic="sparkle"></i></div><div class="sheet s3"><i data-ic="code"></i></div></div>
-<span class="store-kicker">STUDY DESK · EXTENSION STORE</span>
-<h3 id="storeHeading">Extensions for your study desk</h3>
-<p>Review an extension’s source and permissions before installing. Installed extensions stay off until you enable them.</p>
-<div class="store-status"><i data-ic="shield"></i><span>Runs in an isolated sandbox with no page or network access.</span></div>
-<section class="online-store-tools" aria-label="Online extension store">
-<div class="online-store-heading">
-<div><h4>Online community store</h4><p>Browse approved extensions, review their source, and install only what you trust. Creator submissions appear publicly after moderator approval.</p></div>
-<button class="btn sm primary" id="createCommunityExtensionBtn" type="button"><i data-ic="plus"></i>Create extension</button>
-</div>
-<div class="online-store-status" id="onlineStoreStatus" role="status">Connecting to the online store…</div>
-<div class="community-list" id="myCommunityExtensions" aria-label="Your extensions"></div>
-<section class="moderator-tools developer-tools" id="developerTools" aria-labelledby="developerToolsTitle">
-<div><h4 id="developerToolsTitle">Developer controls</h4><p>Authorized developers can assign or remove Study Desk admin and developer ranks.</p></div>
-<div class="online-store-status" id="developerAuthStatus" role="status">Checking developer access…</div>
-<div class="developer-control-actions">
-<button class="btn sm" id="developerLoginBtn" type="button">Developer sign in</button>
-<button class="btn sm hidden" id="developerLogoutBtn" type="button">Sign out developer</button>
-</div>
-<form class="moderation-search hidden" id="developerRoleSearchForm">
-<label for="developerUsernameSearch">Find a Study Desk account by exact username</label>
-<div class="moderation-search-row"><input id="developerUsernameSearch" minlength="3" maxlength="24" required><button class="btn sm primary" type="submit">Search</button></div>
-</form>
-<div class="community-list" id="developerAccountResult" role="status" aria-live="polite"></div>
-</section>
-</section>
-<h4 class="store-section-title">Available to install</h4>
-<div class="store-catalog-grid" id="storeCatalogGrid" aria-label="Available extensions"></div>
-<div class="store-catalog-grid community-grid" id="communityStoreGrid" aria-label="Published community extensions"></div>
-<h4 class="store-section-title">Unavailable</h4>
-<article class="store-card" aria-label="Unavailable extension: Citation Helper">
-<div class="store-card-head"><strong class="store-demo-title">Citation Helper</strong><span class="store-badge unavailable">UNAVAILABLE</span></div>
-<p>Format citation drafts while studying. This item is not installable yet.</p>
-<button class="btn sm" type="button" disabled>Coming soon</button>
-</article>
-<p class="store-note">Study Sprint and Reading Highlights are installable demos. Citation Helper is not available yet.</p>
-<button class="btn primary" id="storeCloseBtn" type="button"><i data-ic="arrowLeft"></i>Back to your workspace</button>
-</div>
-</div>
-<section class="store-detail hidden" id="storeDetail" role="dialog" aria-modal="true" aria-labelledby="storeDetailTitle">
-<button class="btn sm" id="storeDetailClose" type="button"><i data-ic="arrowLeft"></i>Back to store</button>
-<div class="store-card-head" style="margin-top:14px"><span class="store-demo-icon" id="storeDetailIcon"><i data-ic="timer"></i></span><span class="store-badge">AVAILABLE</span></div>
-<h3 id="storeDetailTitle"></h3>
-<p id="storeDetailDescription"></p>
-<p class="small muted" id="storeDetailPermissions"></p>
-<h4 class="store-section-title">Source code</h4>
-<pre id="storeDetailSource" aria-label="Extension source code"></pre>
-<p class="small muted">Installing saves this source in your browser but does not run it. Review it above, then enable it from Extensions when you’re ready.</p>
-<div class="store-detail-actions">
-<button class="btn primary" id="storeInstallBtn" type="button">Install disabled</button>
-<button class="btn hidden" id="storeInstalledBtn" type="button" disabled>Already installed</button>
-</div>
-</section>
 </div>
 <dialog id="adminDialog" class="admin-dialog" aria-labelledby="adminDialogTitle">
 <div class="admin-panel">
@@ -988,6 +897,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div class="account-panel">
 <div class="row-between"><h2 id="accountDialogTitle">Study Desk account</h2><button class="icon-btn" id="accountCloseBtn" type="button" aria-label="Close account dialog">×</button></div>
 <p id="accountDialogIntro">Create an account to sync preferences, notes, and bookmarks across your devices.</p>
+<p class="small muted" id="accountSyncStatus" role="status" aria-live="polite"></p>
 <div class="recovery-code-box hidden" id="accountSignedInPanel"><strong>Signed in as <span id="accountUsername"></span></strong><p class="small">Your preferences, notes, and bookmarks sync to your account.</p><label class="share-tabs-setting"><input id="shareTabsToggle" type="checkbox"><span>Share open web-tab titles and site names with admins. This shares no page contents, local file names, or full URLs. You can turn it off at any time.</span></label><button class="btn sm" id="accountSignoutBtn" type="button">Sign out</button></div>
 <form class="account-form" id="accountLoginForm">
 <label for="loginUsername">Username</label><input id="loginUsername" name="username" autocomplete="username" minlength="3" maxlength="24" required>
@@ -1016,20 +926,6 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <button class="btn sm" id="copyRecoveryCodeBtn" type="button">Copy recovery code</button>
 </div>
 <div class="account-error" id="accountError" role="status" aria-live="polite"></div>
-</div>
-</dialog>
-
-<dialog id="communityExtensionDialog" class="community-dialog" aria-labelledby="communityDialogTitle">
-<div class="community-panel">
-<div class="row-between"><h2 id="communityDialogTitle">Create a store extension</h2><button class="icon-btn" id="communityCloseBtn" type="button" aria-label="Close extension editor">×</button></div>
-<p>Your draft stays private while you work. Submissions become public only after moderator approval. Review your JavaScript carefully and never include personal information or secrets.</p>
-<form class="community-form" id="communityExtensionForm">
-<label for="communityExtensionName">Extension name</label><input id="communityExtensionName" maxlength="60" required>
-<label for="communityExtensionDescription">Description</label><textarea id="communityExtensionDescription" rows="3" maxlength="500" required></textarea>
-<label for="communityExtensionSource">JavaScript source</label><textarea id="communityExtensionSource" class="extension-editor" rows="10" maxlength="200000" spellcheck="false" required></textarea>
-<div class="community-actions"><button class="btn" id="saveCommunityDraftBtn" type="submit">Save private draft</button><button class="btn primary" id="publishCommunityBtn" type="button">Submit for approval</button></div>
-</form>
-<div class="account-error" id="communityExtensionError" role="status" aria-live="polite"></div>
 </div>
 </dialog>
 
@@ -1527,19 +1423,14 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     q('[data-act=palette]').onclick = () => NT.openPalette && NT.openPalette();
     if (NT.afterEmpty) NT.afterEmpty();
   }
-  const storeOverlay = el('storeOverlay'), storeButton = el('storeBtn'), storeCloseButton = el('storeCloseBtn');
-  function setStoreOpen(open) {
-    storeOverlay.classList.toggle('hidden', !open);
-    storeButton.setAttribute('aria-expanded', open ? 'true' : 'false');
-    if (open) storeCloseButton.focus();
-    else storeButton.focus();
-  }
+  const storeButton = el('storeBtn');
   storeButton.addEventListener('click', function () {
-    setStoreOpen(storeOverlay.classList.contains('hidden'));
+    const storeUrl = new URL('extension-store.html', location.href);
+    const buildId = new URLSearchParams(location.search).get('build');
+    if (buildId) storeUrl.searchParams.set('build', buildId);
+    const storeWindow = window.open(storeUrl.href, '_blank');
+    if (!storeWindow) toast('Allow pop-ups to open the Extension Store in a new tab.', 'error');
   });
-  storeCloseButton.addEventListener('click', function () { setStoreOpen(false); });
-  NT.openStore = function () { setStoreOpen(true); };
-  NT.closeStore = function () { setStoreOpen(false); };
   function updateActions(has) {
     if (optionsHidden) fileActions.classList.add('hidden');
     else fileActions.classList.toggle('hidden', !has);
@@ -3471,10 +3362,6 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   var extensionInputValue = $('extensionInputValue');
   var pendingExtensionInput = null;
   var extensionInputReturnFocus = null;
-  var storeGrid = $('storeCatalogGrid');
-  var storeDetail = $('storeDetail');
-  var selectedStoreItem = null;
-  var storeReturnFocus = null;
   var STORE_CATALOG = [{
     id: 'studydesk-demo-study-sprint-v1',
     name: 'Study Sprint',
@@ -3618,6 +3505,46 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
   STORE_CATALOG[0].source = '(' + studySprintExtension.toString() + ')();';
   STORE_CATALOG[1].source = '(' + readingHighlightsExtension.toString() + ')();';
+  NT.getStoreCatalog = function () {
+    return STORE_CATALOG.map(function (item) { return Object.assign({}, item); });
+  };
+  NT.isStoreItemInstalled = function (id) {
+    return extensions.some(function (extension) {
+      return extension.catalogId === id || extension.id === id;
+    });
+  };
+  NT.installStoreExtension = function (item) {
+    if (!item || typeof item.id !== 'string' || typeof item.name !== 'string') return false;
+    var source = typeof item.source === 'string' ? item.source : typeof item.code === 'string' ? item.code : '';
+    if (!source || source.length > MAX_SOURCE_LENGTH) {
+      NT.toast('This extension has no valid source to install.', 'error');
+      return false;
+    }
+    if (NT.isStoreItemInstalled(item.id)) {
+      NT.toast(item.name + ' is already installed.');
+      return false;
+    }
+    if (extensions.length >= MAX_EXTENSIONS) {
+      NT.toast('You can add up to 20 extensions', 'error');
+      return false;
+    }
+    var extension = {
+      id: item.id,
+      name: item.name.slice(0, 60),
+      code: source,
+      enabled: false,
+      catalogId: item.id,
+      storage: '{}'
+    };
+    extensions.push(extension);
+    if (!persist()) {
+      extensions = extensions.filter(function (entry) { return entry.id !== extension.id; });
+      return false;
+    }
+    render();
+    NT.toast(item.name + ' installed. Review it before enabling.');
+    return true;
+  };
   function persist() {
     return NT.setJSON('disguise_extensions', extensions);
   }
@@ -3772,62 +3699,6 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       actions.appendChild(button);
     });
   }
-  function installedStoreItem(item) {
-    return extensions.find(function (extension) {
-      return extension.catalogId === item.id || extension.id === item.id;
-    });
-  }
-  function openStoreDetails(item, trigger) {
-    selectedStoreItem = item;
-    storeReturnFocus = trigger || null;
-    $('storeDetailTitle').textContent = item.name;
-    $('storeDetailDescription').textContent = item.description;
-    $('storeDetailPermissions').textContent = item.permissions;
-    $('storeDetailSource').textContent = item.source;
-    $('storeDetailIcon').innerHTML = NT.ic(item.icon || 'code');
-    updateStoreDetailState();
-    storeDetail.classList.remove('hidden');
-    $('storeDetailClose').focus();
-  }
-  NT.openStoreDetails = openStoreDetails;
-  function updateStoreDetailState() {
-    if (!selectedStoreItem) return;
-    var isInstalled = Boolean(installedStoreItem(selectedStoreItem));
-    $('storeInstallBtn').classList.toggle('hidden', isInstalled);
-    $('storeInstalledBtn').classList.toggle('hidden', !isInstalled);
-  }
-  function renderStoreCatalog() {
-    if (!storeGrid) return;
-    storeGrid.replaceChildren();
-    STORE_CATALOG.forEach(function (item) {
-      var installed = installedStoreItem(item);
-      var card = document.createElement('article');
-      card.className = 'store-card';
-      var head = document.createElement('div');
-      head.className = 'store-card-head';
-      var icon = document.createElement('span');
-      icon.className = 'store-demo-icon';
-      icon.innerHTML = NT.ic(item.icon || 'code');
-      var title = document.createElement('strong');
-      title.className = 'store-demo-title';
-      title.textContent = item.name;
-      var badge = document.createElement('span');
-      badge.className = 'store-badge';
-      badge.textContent = installed ? (installed.enabled ? 'ENABLED' : 'INSTALLED') : 'AVAILABLE';
-      head.append(icon, title, badge);
-      var description = document.createElement('p');
-      description.textContent = item.description;
-      var details = document.createElement('button');
-      details.type = 'button';
-      details.className = 'btn sm';
-      details.textContent = installed ? 'View details' : 'Review details';
-      details.addEventListener('click', function () { openStoreDetails(item, details); });
-      card.append(head, description, details);
-      storeGrid.appendChild(card);
-    });
-    updateStoreDetailState();
-    if (NT.renderOnlineStore) NT.renderOnlineStore();
-  }
   function render() {
     $('extensionCount').textContent = String(extensions.length);
     $('extensionEmptyState').classList.toggle('hidden', extensions.length > 0);
@@ -3912,7 +3783,6 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       var card = cardById.get(extension.id);
       if (card) renderActions(extension, card);
     });
-    renderStoreCatalog();
   }
   function resetEditor() {
     editingId = null;
@@ -3949,37 +3819,6 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     NT.toast('Extension saved. Enable it when you are ready.');
   });
   cancelButton.addEventListener('click', resetEditor);
-  $('storeInstallBtn').addEventListener('click', function () {
-    var item = selectedStoreItem;
-    if (!item || installedStoreItem(item)) { updateStoreDetailState(); return; }
-    if (extensions.length >= MAX_EXTENSIONS) { NT.toast('You can add up to 20 extensions', 'error'); return; }
-    var extension = { id: item.id, name: item.name, code: item.source, enabled: false, catalogId: item.id, storage: '{}' };
-    extensions.push(extension);
-    if (!persist()) {
-      extensions = extensions.filter(function (entry) { return entry.id !== extension.id; });
-      return;
-    }
-    render();
-    NT.toast(item.name + ' installed. Review it before enabling.');
-    storeDetail.classList.add('hidden');
-    if (storeReturnFocus) storeReturnFocus.focus();
-  });
-  $('storeDetailClose').addEventListener('click', function () {
-    storeDetail.classList.add('hidden');
-    if (storeReturnFocus) storeReturnFocus.focus();
-  });
-  $('storeOverlay').addEventListener('click', function (event) {
-    if (event.target === $('storeOverlay') && !storeDetail.classList.contains('hidden')) {
-      storeDetail.classList.add('hidden');
-      if (storeReturnFocus) storeReturnFocus.focus();
-    }
-  });
-  document.addEventListener('keydown', function (event) {
-    if (event.key === 'Escape' && !storeDetail.classList.contains('hidden')) {
-      storeDetail.classList.add('hidden');
-      if (storeReturnFocus) storeReturnFocus.focus();
-    }
-  });
   fileInput.addEventListener('change', function () {
     if (NT.requireCloudAccount && !NT.requireCloudAccount()) { fileInput.value = ''; return; }
     var file = fileInput.files && fileInput.files[0];
@@ -4198,26 +4037,13 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   var $ = function (id) { return document.getElementById(id); };
   var accountDialog = $('accountDialog');
   var adminDialog = $('adminDialog');
-  var communityDialog = $('communityExtensionDialog');
   var accountError = $('accountError');
-  var communityError = $('communityExtensionError');
   var accountUser = null;
-  var developerAuthState = { user: null, authorized: false };
-  var developerAuthNotice = new URLSearchParams(window.location.search).get('developerAuthError') === 'unauthorized'
-    ? 'That account is not on the developer access list.'
-    : new URLSearchParams(window.location.search).get('developerAuthError') === 'failed'
-      ? 'Developer sign-in failed. Please try again.'
-      : '';
   var pendingModerationExtensions = [];
   var publishedModerationExtensions = [];
   var adminListsLoaded = false;
   var adminListsLoading = false;
   var moderatedUser = null;
-  var pendingCreator = false;
-  var onlineExtensions = [];
-  var storeLoadFailed = false;
-  var ownedExtensions = [];
-  var editingCommunityId = null;
   var revision = 0;
   var lastLocalSnapshot = null;
   var syncBusy = false;
@@ -4231,6 +4057,12 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     'disguise_admin_tab_sharing', 'disguise_shared_tabs'
   ];
   var ownerKey = 'disguise_cloud_owner';
+  var storeChannel = 'BroadcastChannel' in window ? new BroadcastChannel('study-desk-store') : null;
+  function refreshStorePage() {
+    if (storeChannel) {
+      try { storeChannel.postMessage({ type: 'refresh' }); } catch (error) {}
+    }
+  }
 
   function api(path, options) {
     options = options || {};
@@ -4302,7 +4134,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     if (keys.length) window.dispatchEvent(new CustomEvent('study-desk-cloud-sync', { detail: { keys: keys } }));
   }
   function setCloudStatus(message, isError) {
-    var status = $('onlineStoreStatus');
+    var status = $('accountSyncStatus');
+    if (!status) return;
     status.textContent = message;
     status.style.color = isError ? 'var(--danger)' : '';
   }
@@ -4489,6 +4322,17 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     var first = accountUser ? $('accountSignoutBtn') : mode === 'signup' ? $('signupUsername') : $('loginUsername');
     if (first) first.focus();
   }
+  NT.openAccount = openAccount;
+  NT.requireCloudAccount = function () {
+    if (accountUser) return true;
+    openAccount('login');
+    accountError.textContent = 'Sign in or create an account before adding an extension.';
+    return false;
+  };
+  NT.updateAccountRole = function (updatedUser) {
+    if (!accountUser || !updatedUser || accountUser.username !== updatedUser.username) return;
+    setAccountUser(Object.assign({}, accountUser, { role: updatedUser.role }));
+  };
   function displayRecoveryCode(code) {
     if (!code) return;
     $('recoveryCodeValue').textContent = code;
@@ -4621,10 +4465,6 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     await loadMyExtensions();
     await loadPublicExtensions();
     if (!keepAccountOpen && accountDialog.open) accountDialog.close();
-    if (pendingCreator && !keepAccountOpen) {
-      pendingCreator = false;
-      openCommunityEditor();
-    }
   }
 
   function setBusy(form, busy) {
@@ -4740,12 +4580,6 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
   });
   accountDialog.addEventListener('click', function (event) { if (event.target === accountDialog) accountDialog.close(); });
-  accountDialog.addEventListener('close', function () {
-    if (pendingCreator && accountUser) {
-      pendingCreator = false;
-      openCommunityEditor();
-    }
-  });
   $('accountSignoutBtn').addEventListener('click', async function () {
     try { await api('/auth/logout', { method: 'POST' }); } catch (error) {}
     setAccountUser(null);
@@ -4769,136 +4603,13 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     button.addEventListener('click', handler);
     return button;
   }
-  function renderOnlineStore() {
-    var grid = $('communityStoreGrid');
-    if (!grid) return;
-    grid.replaceChildren();
-    onlineExtensions.forEach(function (item) {
-      var card = document.createElement('article');
-      card.className = 'store-card';
-      var head = document.createElement('div');
-      head.className = 'store-card-head';
-      var icon = document.createElement('span');
-      icon.className = 'store-demo-icon';
-      icon.innerHTML = NT.ic('code');
-      var title = document.createElement('strong');
-      title.className = 'store-demo-title';
-      title.textContent = item.name;
-      var badge = document.createElement('span');
-      badge.className = 'store-badge';
-      badge.textContent = 'PUBLIC';
-      head.append(icon, title, badge);
-      var description = document.createElement('p');
-      description.textContent = item.description;
-      var publisher = document.createElement('p');
-      publisher.textContent = 'By ' + item.publisherUsername + ' · ' + item.version;
-      var review = makeButton('Review source', 'btn sm', async function () {
-        review.disabled = true;
-        try {
-          var detail = await api('/store/extensions/' + encodeURIComponent(item.id));
-          NT.openStoreDetails(Object.assign({}, item, {
-            icon: 'code',
-            permissions: 'Published by ' + detail.publisherUsername + '. Runs only after you install and enable it. Review this source before enabling.',
-            source: detail.code
-          }), review);
-        } catch (error) { NT.toast(readError(error), 'error'); }
-        finally { review.disabled = false; }
-      });
-      card.append(head, description, publisher, review);
-      grid.appendChild(card);
-    });
-    if (!onlineExtensions.length && !storeLoadFailed) {
-      var empty = document.createElement('p');
-      empty.className = 'small muted';
-      empty.textContent = 'No public community extensions yet.';
-      grid.appendChild(empty);
-    }
+  function loadPublicExtensions() {
+    refreshStorePage();
+    return Promise.resolve([]);
   }
-  NT.renderOnlineStore = renderOnlineStore;
-
-  async function loadPublicExtensions() {
-    try {
-      onlineExtensions = await api('/store/extensions');
-      storeLoadFailed = false;
-      renderOnlineStore();
-      if (accountUser) setCloudStatus('Signed in as ' + accountUser.username + ' · online store is up to date.', false);
-      else if (onlineExtensions.length) setCloudStatus('Online store is available. Sign in to create extensions.', false);
-      else setCloudStatus('Online store is ready. No public extensions have been published yet.', false);
-    } catch (error) {
-      onlineExtensions = [];
-      storeLoadFailed = true;
-      renderOnlineStore();
-      setCloudStatus('Online store is unavailable: ' + readError(error), true);
-    }
-  }
-
-  function renderOwnedExtensions() {
-    var container = $('myCommunityExtensions');
-    container.replaceChildren();
-    if (!accountUser || !ownedExtensions.length) return;
-    var title = document.createElement('strong');
-    title.textContent = 'Your extensions';
-    container.appendChild(title);
-    ownedExtensions.forEach(function (item) {
-      var row = document.createElement('div');
-      row.className = 'community-row';
-      var label = document.createElement('div');
-      var name = document.createElement('strong');
-      name.textContent = item.name;
-      var state = document.createElement('div');
-      state.className = 'small muted';
-      state.textContent = item.approvalStatus === 'pending'
-        ? 'Waiting for moderator approval'
-        : item.approvalStatus === 'rejected'
-          ? 'Not approved — edit and resubmit'
-          : item.approvalStatus === 'removed'
-            ? 'Removed from the public store — edit or resubmit'
-          : item.approvalStatus === 'approved' && item.published
-            ? 'Approved and public'
-            : 'Private draft';
-      label.append(name, state);
-      if ((item.approvalStatus === 'rejected' || item.approvalStatus === 'removed') && item.moderationNote) {
-        var moderationNote = document.createElement('div');
-        moderationNote.className = 'small muted';
-        moderationNote.textContent = 'Admin note: ' + item.moderationNote;
-        label.appendChild(moderationNote);
-      }
-      var actions = document.createElement('div');
-      actions.className = 'community-row-actions';
-      actions.appendChild(makeButton('Edit', 'btn sm', async function () {
-        try {
-          var detail = await api('/store/extensions/' + encodeURIComponent(item.id));
-          openCommunityEditor(detail);
-        } catch (error) { NT.toast(readError(error), 'error'); }
-      }));
-      if (!item.published) actions.appendChild(makeButton('Submit for approval', 'btn sm primary', async function () {
-        try {
-          await api('/store/extensions/' + encodeURIComponent(item.id) + '/publish', { method: 'POST' });
-          await loadMyExtensions(); await loadPublicExtensions();
-          NT.toast(item.name + ' was submitted for moderator approval.');
-        } catch (error) { NT.toast(readError(error), 'error'); }
-      }));
-      actions.appendChild(makeButton('Delete', 'btn sm danger-ghost', async function () {
-        if (!(await NT.confirmDialog('Delete extension?', 'This permanently removes your online draft or published extension.', 'Delete', true))) return;
-        try {
-          await api('/store/extensions/' + encodeURIComponent(item.id), { method: 'DELETE' });
-          await loadMyExtensions(); await loadPublicExtensions();
-          NT.toast('Extension deleted.');
-        } catch (error) { NT.toast(readError(error), 'error'); }
-      }));
-      row.append(label, actions);
-      container.appendChild(row);
-    });
-  }
-  async function loadMyExtensions() {
-    if (!accountUser) {
-      ownedExtensions = [];
-      renderOwnedExtensions();
-      return;
-    }
-    try { ownedExtensions = await api('/store/mine'); }
-    catch (error) { ownedExtensions = []; }
-    renderOwnedExtensions();
+  function loadMyExtensions() {
+    refreshStorePage();
+    return Promise.resolve([]);
   }
 
   function renderModerationQueue() {
@@ -5299,229 +5010,6 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
   });
 
-  function renderDeveloperAuthState() {
-    var authorized = !!developerAuthState.authorized;
-    var email = developerAuthState.user && developerAuthState.user.email;
-    $('developerLoginBtn').classList.toggle('hidden', authorized);
-    $('developerLogoutBtn').classList.toggle('hidden', !authorized);
-    $('developerRoleSearchForm').classList.toggle('hidden', !authorized);
-    if (authorized) {
-      $('developerAuthStatus').textContent = 'Developer access active for ' + email + '. Select a Study Desk account below.';
-    } else if (developerAuthState.user) {
-      $('developerAuthStatus').textContent = 'This account is not authorized to manage Study Desk roles.';
-    } else if (developerAuthNotice) {
-      $('developerAuthStatus').textContent = developerAuthNotice;
-    } else {
-      $('developerAuthStatus').textContent = 'Sign in with an authorized developer account to assign or remove admin and developer ranks.';
-    }
-  }
-
-  async function refreshDeveloperAuthState() {
-    try {
-      developerAuthState = await api('/developer/auth/user');
-    } catch (error) {
-      developerAuthState = { user: null, authorized: false };
-    }
-    renderDeveloperAuthState();
-    return developerAuthState;
-  }
-
-  function beginDeveloperSignIn() {
-    var url = '/api/developer/login?returnTo=' + encodeURIComponent('/api/developer/auth/complete');
-    developerAuthNotice = '';
-    var popup = window.open(url, 'studyDeskDeveloperLogin', 'popup,width=560,height=720');
-    if (!popup) {
-      window.location.href = '/api/developer/login?returnTo=%2F';
-      return;
-    }
-    $('developerAuthStatus').textContent = 'Complete Replit sign-in in the new window…';
-    var attempts = 0;
-    var timer = setInterval(async function () {
-      attempts += 1;
-      var state = await refreshDeveloperAuthState();
-      if (state.authorized || popup.closed || attempts >= 90) {
-        clearInterval(timer);
-        if (state.authorized && !popup.closed) popup.close();
-      }
-    }, 1500);
-  }
-
-  window.addEventListener('message', function (event) {
-    if (event.origin !== window.location.origin || !event.data || event.data.type !== 'study-desk-developer-auth') return;
-    if (event.data.error === 'unauthorized') developerAuthNotice = 'That account is not on the developer access list.';
-    else if (event.data.error === 'failed') developerAuthNotice = 'Developer sign-in failed. Please try again.';
-    refreshDeveloperAuthState();
-  });
-  $('developerLoginBtn').addEventListener('click', beginDeveloperSignIn);
-  $('developerLogoutBtn').addEventListener('click', function () {
-    window.location.href = '/api/developer/logout?returnTo=%2F';
-  });
-
-  function renderDeveloperAccount(user) {
-    var container = $('developerAccountResult');
-    container.replaceChildren();
-    var row = document.createElement('div');
-    row.className = 'community-row';
-    var label = document.createElement('div');
-    var title = document.createElement('strong');
-    title.textContent = user.username + (
-      user.role === 'dev' ? ' · dev' :
-      user.role === 'moderator' ? ' · admin' : ' · regular account'
-    );
-    var detail = document.createElement('div');
-    detail.className = 'small muted';
-    detail.textContent = user.banned
-      ? 'Banned' + (user.banReason ? ' · ' + user.banReason : '') + ' · restore before promoting'
-      : user.role === 'dev'
-        ? 'Dev rank includes the online count and existing Admin tools.'
-        : 'Account is active';
-    label.append(title, detail);
-    row.appendChild(label);
-    var actions = document.createElement('div');
-    actions.className = 'community-row-actions';
-    async function assignRole(nextRole, labelText) {
-      var isRemoval = nextRole === 'user';
-      var prompt = nextRole === 'dev'
-        ? 'This account keeps the existing Admin tools and also gains access to the aggregate online count.'
-        : nextRole === 'moderator'
-          ? 'This account keeps Admin tools but loses the developer-only online count.'
-          : 'This account will lose Admin and developer access immediately.';
-      if (!(await NT.confirmDialog(
-        nextRole === 'dev' ? 'Assign developer rank?' : isRemoval ? 'Remove privileged access?' : 'Assign admin rank?',
-        prompt,
-        labelText,
-        isRemoval,
-      ))) return;
-      try {
-        var updated = await api('/developer/accounts/' + encodeURIComponent(user.username) + '/role', {
-          method: 'PATCH',
-          body: { role: nextRole },
-        });
-        renderDeveloperAccount(updated);
-        if (accountUser && accountUser.username === updated.username) {
-          accountUser.role = updated.role;
-          setAccountUser(accountUser);
-        }
-        NT.toast(nextRole === 'dev'
-          ? 'Developer rank granted.'
-          : nextRole === 'moderator'
-            ? 'Admin rank set.'
-            : 'Privileged access removed.');
-      } catch (error) {
-        NT.toast(readError(error), 'error');
-      }
-    }
-    if (user.role === 'user') {
-      if (!user.banned) {
-        actions.appendChild(makeButton('Make admin', 'btn sm primary', function () {
-          assignRole('moderator', 'Make admin');
-        }));
-        actions.appendChild(makeButton('Make dev', 'btn sm primary', function () {
-          assignRole('dev', 'Make dev');
-        }));
-      }
-    } else if (user.role === 'moderator') {
-      if (!user.banned) {
-        actions.appendChild(makeButton('Make dev', 'btn sm primary', function () {
-          assignRole('dev', 'Make dev');
-        }));
-      }
-      actions.appendChild(makeButton('Remove admin', 'btn sm danger-ghost', function () {
-        assignRole('user', 'Remove access');
-      }));
-    } else if (user.role === 'dev') {
-      actions.appendChild(makeButton('Remove dev rank', 'btn sm', function () {
-        assignRole('moderator', 'Remove dev rank');
-      }));
-      actions.appendChild(makeButton('Remove admin', 'btn sm danger-ghost', function () {
-        assignRole('user', 'Remove access');
-      }));
-    }
-    if (actions.childNodes.length) row.appendChild(actions);
-    container.appendChild(row);
-  }
-
-  $('developerRoleSearchForm').addEventListener('submit', async function (event) {
-    event.preventDefault();
-    if (!developerAuthState.authorized) return;
-    var username = $('developerUsernameSearch').value.trim();
-    var container = $('developerAccountResult');
-    container.textContent = 'Searching…';
-    try {
-      var user = await api('/developer/accounts?username=' + encodeURIComponent(username));
-      renderDeveloperAccount(user);
-    } catch (error) {
-      container.textContent = readError(error);
-    }
-  });
-
-  function openCommunityEditor(item) {
-    if (!accountUser) {
-      pendingCreator = true;
-      openAccount('signup');
-      return;
-    }
-    editingCommunityId = item ? item.id : null;
-    $('communityDialogTitle').textContent = item ? 'Edit store extension' : 'Create a store extension';
-    $('communityExtensionName').value = item ? item.name : '';
-    $('communityExtensionDescription').value = item ? item.description : '';
-    $('communityExtensionSource').value = item ? item.code : '';
-    $('saveCommunityDraftBtn').textContent = item && item.published ? 'Save as private draft' : 'Save private draft';
-    $('communityExtensionError').textContent = '';
-    communityDialog.showModal();
-    $('communityExtensionName').focus();
-  }
-  NT.requireCloudAccount = function () {
-    if (accountUser) return true;
-    openAccount('login');
-    accountError.textContent = 'Sign in or create an account before adding an extension.';
-    return false;
-  };
-  $('createCommunityExtensionBtn').addEventListener('click', function () {
-    if (!accountUser) {
-      pendingCreator = true;
-      openAccount('signup');
-      return;
-    }
-    openCommunityEditor();
-  });
-  $('communityCloseBtn').addEventListener('click', function () { communityDialog.close(); });
-  communityDialog.addEventListener('click', function (event) { if (event.target === communityDialog) communityDialog.close(); });
-
-  async function saveCommunityExtension(publish) {
-    if (!accountUser) { NT.requireCloudAccount(); return; }
-    var name = $('communityExtensionName').value.trim();
-    var description = $('communityExtensionDescription').value.trim();
-    var code = $('communityExtensionSource').value;
-    if (!name || !description || !code.trim() || code.length > 200000) {
-      communityError.textContent = 'Enter a name, description, and source under 200 KB.';
-      return;
-    }
-    var saveButton = $('saveCommunityDraftBtn');
-    saveButton.disabled = true;
-    $('publishCommunityBtn').disabled = true;
-    communityError.textContent = '';
-    try {
-      var input = { name: name, description: description, code: code };
-      var item = editingCommunityId
-        ? await api('/store/extensions/' + encodeURIComponent(editingCommunityId), { method: 'PATCH', body: input })
-        : await api('/store/extensions', { method: 'POST', body: input });
-      if (publish) {
-        item = await api('/store/extensions/' + encodeURIComponent(item.id) + '/publish', { method: 'POST' });
-        NT.toast('Extension submitted for moderator approval.');
-      } else NT.toast('Private draft saved.');
-      communityDialog.close();
-      await loadMyExtensions();
-      await loadPublicExtensions();
-    } catch (error) { communityError.textContent = readError(error); }
-    finally { saveButton.disabled = false; $('publishCommunityBtn').disabled = false; }
-  }
-  $('communityExtensionForm').addEventListener('submit', function (event) {
-    event.preventDefault();
-    saveCommunityExtension(false);
-  });
-  $('publishCommunityBtn').addEventListener('click', function () { saveCommunityExtension(true); });
-
   async function restoreSession() {
     try {
       var result = await api('/auth/me');
@@ -5534,7 +5022,6 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       }
     }
   }
-  refreshDeveloperAuthState();
   restoreSession();
   setInterval(saveLocalChanges, 2500);
   setInterval(async function () {
