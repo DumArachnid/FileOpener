@@ -262,6 +262,13 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .store-detail h3 { margin: 12px 0 8px; }
 .store-detail pre { max-height: 220px; overflow: auto; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.5 var(--mono); }
 .store-detail-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.extension-input-dialog { width: min(560px, calc(100% - 32px)); max-width: 560px; max-height: 85vh; padding: 0; overflow: hidden; border: 1.5px solid var(--border-strong); border-radius: 14px; background: var(--panel); color: var(--text); box-shadow: 5px 5px 0 var(--ink-shadow); }
+.extension-input-dialog::backdrop { background: color-mix(in srgb, var(--text) 42%, transparent); }
+.extension-input-panel { display: flex; flex-direction: column; gap: 12px; max-height: 85vh; padding: 20px; }
+.extension-input-panel h2 { font-size: 18px; }
+.extension-input-panel p { margin: 0; color: var(--muted); line-height: 1.5; }
+.extension-input-panel textarea { width: 100%; min-height: 180px; max-height: 55vh; resize: vertical; font-family: var(--main-font); line-height: 1.5; }
+.extension-input-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 #helpBtn, #paletteBtn, #storeBtn { min-width: 32px; padding-inline: 6px; }
 .large-html-card { width: min(620px, calc(100% - 32px)); padding: 22px; border: 1.5px solid var(--border-strong); border-radius: var(--radius); background: var(--panel); color: var(--text); text-align: center; box-shadow: 3px 3px 0 var(--ink-shadow); }
 .large-html-card h3 { margin-bottom: 8px; font-size: 18px; }
@@ -698,7 +705,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <p class="small muted tight">Add JavaScript extensions and actions here.</p>
 <button type="button" class="help-trigger" data-help="extensionsHelp" aria-label="About extensions" aria-describedby="extensionsHelp" aria-expanded="false">?</button>
 </div>
-<p id="extensionsHelp" class="sr-only">Add JavaScript extensions that provide their own actions in this menu. Extensions run in an isolated sandbox and cannot read this page or viewer tabs. Only enable code you trust; extensions can still use browser capabilities available inside their sandbox.</p>
+<p id="extensionsHelp" class="sr-only">Add JavaScript extensions that provide their own actions in this menu. Extensions run in an isolated sandbox and cannot read pages, files, or tabs or access the network. They can ask you to enter text and save up to 100 KB of extension-specific data in this browser. Only enable code you trust.</p>
 <div>
 <label for="extensionName">Extension name</label>
 <input id="extensionName" type="text" maxlength="60" placeholder="e.g. Word counter" />
@@ -717,7 +724,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <pre class="mono tiny" style="white-space:pre-wrap;overflow-wrap:anywhere;margin:0">NewTabExtension.registerAction('Say hello', () =&gt; {
   NewTabExtension.log('Hello from my extension!');
 });</pre>
-<p class="small muted tight">Register one or more action buttons. Their callbacks run in the sandbox; use NewTabExtension.log(message) to show output here.</p>
+<p class="small muted tight">Register action buttons and use NewTabExtension.log(message) to show output. requestInput(title, hint) asks you to enter text; getData() and saveData(value) use this extension’s local browser storage (100 KB maximum).</p>
 </details>
 <div class="small muted" id="extensionEmptyState">No extensions added yet.</div>
 <div class="extension-list" id="extensionList"></div>
@@ -829,26 +836,18 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div class="store-status"><i data-ic="shield"></i><span>Runs in an isolated sandbox with no page or network access.</span></div>
 <h4 class="store-section-title">Available to install</h4>
 <div class="store-catalog-grid" id="storeCatalogGrid" aria-label="Available extensions"></div>
-<h4 class="store-section-title">Concept demos</h4>
-<div class="store-demo-grid" aria-label="Extension concept demos">
-<article class="store-demo-card">
-<div class="store-demo-head"><span class="store-demo-icon"><i data-ic="bookmark"></i></span><strong class="store-demo-title">Reading Highlights</strong><span class="store-demo-badge">DEMO</span></div>
-<p>A simple way to collect key points and review prompts while working through reading materials.</p>
-<span class="store-demo-label">Concept preview · Not installable</span>
-</article>
-</div>
 <h4 class="store-section-title">Unavailable</h4>
 <article class="store-card" aria-label="Unavailable extension: Citation Helper">
 <div class="store-card-head"><strong class="store-demo-title">Citation Helper</strong><span class="store-badge unavailable">UNAVAILABLE</span></div>
 <p>Format citation drafts while studying. This item is not installable yet.</p>
 <button class="btn sm" type="button" disabled>Coming soon</button>
 </article>
-<p class="store-note">Study Sprint is available to install after reviewing its source. Reading Highlights remains a concept preview, and Citation Helper is unavailable.</p>
+<p class="store-note">Study Sprint and Reading Highlights are installable demos. Citation Helper is not available yet.</p>
 <button class="btn primary" id="storeCloseBtn" type="button"><i data-ic="arrowLeft"></i>Back to your workspace</button>
 </div>
 <section class="store-detail hidden" id="storeDetail" role="dialog" aria-modal="true" aria-labelledby="storeDetailTitle">
 <button class="btn sm" id="storeDetailClose" type="button"><i data-ic="arrowLeft"></i>Back to store</button>
-<div class="store-card-head" style="margin-top:14px"><span class="store-demo-icon"><i data-ic="timer"></i></span><span class="store-badge">AVAILABLE</span></div>
+<div class="store-card-head" style="margin-top:14px"><span class="store-demo-icon" id="storeDetailIcon"><i data-ic="timer"></i></span><span class="store-badge">AVAILABLE</span></div>
 <h3 id="storeDetailTitle"></h3>
 <p id="storeDetailDescription"></p>
 <p class="small muted" id="storeDetailPermissions"></p>
@@ -861,6 +860,18 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </div>
 </section>
 </div>
+
+<dialog id="extensionInputDialog" class="extension-input-dialog" aria-labelledby="extensionInputTitle" aria-describedby="extensionInputHint">
+<div class="extension-input-panel">
+<h2 id="extensionInputTitle">Extension input</h2>
+<p id="extensionInputHint">Enter text for this extension.</p>
+<textarea id="extensionInputValue" maxlength="2000" aria-label="Text for extension"></textarea>
+<div class="extension-input-actions">
+<button class="btn" id="extensionInputCancel" type="button">Cancel</button>
+<button class="btn primary" id="extensionInputSubmit" type="button">Save</button>
+</div>
+</div>
+</dialog>
 
 <div id="editorPanel" class="editor-panel hidden">
 <div class="editor-head">
@@ -3157,17 +3168,29 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 
   var MAX_EXTENSIONS = 20;
   var MAX_SOURCE_LENGTH = 200000;
+  var MAX_EXTENSION_STORAGE = 100000;
   var extensions = NT.getJSON('disguise_extensions', []);
   if (!Array.isArray(extensions)) extensions = [];
   extensions = extensions.filter(function (item) {
     return item && typeof item.id === 'string' && typeof item.name === 'string' &&
       typeof item.code === 'string' && item.code.length <= MAX_SOURCE_LENGTH;
   }).slice(0, MAX_EXTENSIONS).map(function (item) {
-    return { id: item.id, name: item.name.slice(0, 60), code: item.code, enabled: item.enabled === true, catalogId: typeof item.catalogId === 'string' ? item.catalogId : null };
+    var storage = typeof item.storage === 'string' && item.storage.length <= MAX_EXTENSION_STORAGE ? item.storage : '{}';
+    try { JSON.parse(storage); } catch (e) { storage = '{}'; }
+    return {
+      id: item.id, name: item.name.slice(0, 60), code: item.code,
+      enabled: item.enabled === true,
+      catalogId: typeof item.catalogId === 'string' ? item.catalogId : null,
+      storage: storage
+    };
   });
   var editingId = null;
   var runnerById = new Map();
   var cardById = new Map();
+  var extensionInputDialog = $('extensionInputDialog');
+  var extensionInputValue = $('extensionInputValue');
+  var pendingExtensionInput = null;
+  var extensionInputReturnFocus = null;
   var storeGrid = $('storeCatalogGrid');
   var storeDetail = $('storeDetail');
   var selectedStoreItem = null;
@@ -3175,8 +3198,16 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   var STORE_CATALOG = [{
     id: 'studydesk-demo-study-sprint-v1',
     name: 'Study Sprint',
+    icon: 'timer',
     description: 'A focused work-and-break timer with pause, resume, and reset actions for study sessions.',
     permissions: 'Permissions: registers timer actions, runs while enabled, and displays status messages here. No access to page contents, files, tabs, or network.',
+    source: ''
+  }, {
+    id: 'studydesk-demo-reading-highlights-v1',
+    name: 'Reading Highlights',
+    icon: 'bookmark',
+    description: 'Save, review, and undo manually entered reading highlights. Up to 40 are saved in this browser; new ones replace the oldest when full.',
+    permissions: 'Permissions: asks you to enter text and saves up to 40 highlights in this browser under this extension only. No access to page contents, files, tabs, or network.',
     source: ''
   }];
 
@@ -3244,7 +3275,69 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       NewTabExtension.log('Timer reset. Start a focus sprint or break when ready.');
     });
   }
+  function readingHighlightsExtension() {
+    var MAX_HIGHLIGHT_LENGTH = 2000;
+    var MAX_HIGHLIGHTS = 40;
+
+    function readHighlights() {
+      var data = NewTabExtension.getData();
+      return data && Array.isArray(data.highlights) ? data.highlights : [];
+    }
+    function saveHighlights(highlights, successMessage) {
+      return NewTabExtension.saveData({ highlights: highlights }).then(function (saved) {
+        NewTabExtension.log(saved ? successMessage : 'Could not save highlights. Check available browser storage.');
+      });
+    }
+
+    NewTabExtension.registerAction('Add a highlight', function () {
+      return NewTabExtension.requestInput(
+        'Add a reading highlight',
+        'Type or paste a passage to remember (up to 2,000 characters).',
+        '',
+        false
+      ).then(function (value) {
+        if (value === null) return;
+        var text = String(value).trim();
+        if (!text) {
+          NewTabExtension.log('No highlight was saved. Enter some text first.');
+          return;
+        }
+        var highlights = readHighlights();
+        highlights.push({ text: text.slice(0, MAX_HIGHLIGHT_LENGTH), savedAt: new Date().toISOString() });
+        var replacedOldest = highlights.length > MAX_HIGHLIGHTS;
+        if (replacedOldest) highlights.shift();
+        return saveHighlights(highlights, replacedOldest
+          ? 'Highlight saved · 40 maximum reached, so the oldest was replaced.'
+          : 'Highlight saved · ' + highlights.length + ' of ' + MAX_HIGHLIGHTS);
+      });
+    });
+
+    NewTabExtension.registerAction('Review saved highlights', function () {
+      var highlights = readHighlights();
+      if (!highlights.length) {
+        NewTabExtension.log('No highlights saved yet. Choose “Add a highlight” to begin.');
+        return;
+      }
+      var reviewText = highlights.map(function (highlight, index) {
+        var date = new Date(highlight.savedAt);
+        var dateLabel = Number.isNaN(date.getTime()) ? '' : date.toLocaleString();
+        return (index + 1) + '. ' + dateLabel + (dateLabel ? '\n' : '') + highlight.text;
+      }).join('\n\n');
+      return NewTabExtension.requestInput('Saved reading highlights', 'Select and copy your notes if needed.', reviewText, true);
+    });
+
+    NewTabExtension.registerAction('Undo latest highlight', function () {
+      var highlights = readHighlights();
+      if (!highlights.length) {
+        NewTabExtension.log('There are no highlights to remove.');
+        return;
+      }
+      highlights.pop();
+      return saveHighlights(highlights, 'Latest highlight removed · ' + highlights.length + ' remaining');
+    });
+  }
   STORE_CATALOG[0].source = '(' + studySprintExtension.toString() + ')();';
+  STORE_CATALOG[1].source = '(' + readingHighlightsExtension.toString() + ')();';
   function persist() {
     return NT.setJSON('disguise_extensions', extensions);
   }
@@ -3255,25 +3348,100 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     status.textContent = text || '';
     status.style.color = error ? 'var(--danger)' : '';
   }
-  function frameDocument(source) {
+  function answerExtensionInput(value) {
+    var pending = pendingExtensionInput;
+    if (!pending) return;
+    pendingExtensionInput = null;
+    if (extensionInputDialog.open) extensionInputDialog.close();
+    pending.runner.frame.contentWindow.postMessage({
+      type: 'input-result', requestId: pending.requestId, value: value
+    }, '*');
+    if (extensionInputReturnFocus && extensionInputReturnFocus.isConnected) extensionInputReturnFocus.focus();
+    extensionInputReturnFocus = null;
+  }
+  function openExtensionInput(matched, data) {
+    var requestId = typeof data.requestId === 'string' ? data.requestId.slice(0, 80) : '';
+    if (!requestId) return;
+    if (pendingExtensionInput) {
+      matched.runner.frame.contentWindow.postMessage({ type: 'input-result', requestId: requestId, value: null }, '*');
+      return;
+    }
+    var readOnly = data.readOnly === true;
+    pendingExtensionInput = { runner: matched.runner, requestId: requestId };
+    extensionInputReturnFocus = document.activeElement;
+    $('extensionInputTitle').textContent = String(data.title || 'Extension input').slice(0, 100);
+    $('extensionInputHint').textContent = String(data.hint || (readOnly ? 'Review this text.' : 'Enter text for this extension.')).slice(0, 300);
+    extensionInputValue.value = typeof data.initialValue === 'string' ? data.initialValue.slice(0, 100000) : '';
+    extensionInputValue.readOnly = readOnly;
+    extensionInputValue.maxLength = readOnly ? 100000 : 2000;
+    extensionInputValue.setAttribute('aria-label', readOnly ? 'Saved extension text' : 'Text for extension');
+    $('extensionInputCancel').textContent = readOnly ? 'Close' : 'Cancel';
+    $('extensionInputSubmit').classList.toggle('hidden', readOnly);
+    extensionInputDialog.showModal();
+    if (readOnly) $('extensionInputCancel').focus();
+    else { extensionInputValue.focus(); extensionInputValue.setSelectionRange(extensionInputValue.value.length, extensionInputValue.value.length); }
+  }
+  $('extensionInputCancel').addEventListener('click', function () { answerExtensionInput(null); });
+  $('extensionInputSubmit').addEventListener('click', function () { answerExtensionInput(extensionInputValue.value); });
+  extensionInputDialog.addEventListener('cancel', function (event) {
+    event.preventDefault();
+    answerExtensionInput(null);
+  });
+  extensionInputDialog.addEventListener('click', function (event) {
+    if (event.target === extensionInputDialog) answerExtensionInput(null);
+  });
+  function saveExtensionData(matched, data) {
+    var requestId = typeof data.requestId === 'string' ? data.requestId.slice(0, 80) : '';
+    var extension = extensions.find(function (item) { return item.id === matched.id; });
+    var ok = false;
+    if (requestId && extension && typeof data.value === 'string' && data.value.length <= MAX_EXTENSION_STORAGE) {
+      try {
+        JSON.parse(data.value);
+        var previousStorage = extension.storage;
+        extension.storage = data.value;
+        if (persist()) ok = true;
+        else extension.storage = previousStorage;
+      } catch (e) {
+        statusFor(matched.id, 'Could not save extension data: invalid JSON.', true);
+      }
+    }
+    matched.runner.frame.contentWindow.postMessage({
+      type: 'storage-result', requestId: requestId, ok: ok
+    }, '*');
+    if (!ok) statusFor(matched.id, 'Could not save extension data. Check available browser storage.', true);
+  }
+  function frameDocument(source, storage) {
     var safeSource = JSON.stringify(source)
+      .replace(/</g, '\\u003c')
+      .replace(/\u2028/g, '\\u2028')
+      .replace(/\u2029/g, '\\u2029');
+    var safeStorage = JSON.stringify(storage || '{}')
       .replace(/</g, '\\u003c')
       .replace(/\u2028/g, '\\u2028')
       .replace(/\u2029/g, '\\u2029');
     return '<!doctype html><meta charset="utf-8"><body>' +
       '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'unsafe-inline\'; connect-src \'none\'; img-src data: blob:; style-src \'unsafe-inline\'; object-src \'none\'; base-uri \'none\'; form-action \'none\'">' +
       '<script>(function(){' +
-      'var callbacks=Object.create(null), serial=0;' +
+      'var callbacks=Object.create(null), storageRequests=Object.create(null), inputRequests=Object.create(null), serial=0;' +
+      'var extensionData={};try{extensionData=JSON.parse(' + safeStorage + ');}catch(e){}' +
       'function send(message){parent.postMessage(message,"*");}' +
       'window.NewTabExtension=Object.freeze({' +
       'registerAction:function(label,callback){' +
       'if(typeof label!=="string"||typeof callback!=="function"||!label.trim())throw new TypeError("registerAction needs a label and callback");' +
       'var id="action-"+(++serial);callbacks[id]=callback;send({type:"action",actionId:id,label:label.trim().slice(0,60)});return id;' +
       '},' +
-      'log:function(message){send({type:"log",message:String(message).slice(0,500)});}' +
+      'log:function(message){send({type:"log",message:String(message).slice(0,500)});},' +
+      'getData:function(){return JSON.parse(JSON.stringify(extensionData));},' +
+      'saveData:function(value){var serialized;try{serialized=JSON.stringify(value);}catch(e){throw new TypeError("Extension data must be JSON serializable");}' +
+      'if(typeof serialized!=="string"||serialized.length>100000)throw new RangeError("Extension data must be under 100 KB");' +
+      'var requestId="storage-"+(++serial);return new Promise(function(resolve){storageRequests[requestId]={serialized:serialized,resolve:resolve};send({type:"storage",requestId:requestId,value:serialized});});},' +
+      'requestInput:function(title,hint,initialValue,readOnly){' +
+      'var requestId="input-"+(++serial);return new Promise(function(resolve){inputRequests[requestId]=resolve;send({type:"input",requestId:requestId,title:String(title||"Extension input").slice(0,100),hint:String(hint||"").slice(0,300),initialValue:String(initialValue||"").slice(0,100000),readOnly:readOnly===true});});}' +
       '});' +
-      'window.addEventListener("message",function(event){if(event.source!==parent||!event.data||event.data.type!=="run")return;' +
-      'var callback=callbacks[event.data.actionId];if(!callback)return;' +
+      'window.addEventListener("message",function(event){if(event.source!==parent||!event.data)return;var data=event.data;' +
+      'if(data.type==="input-result"){var inputResolve=inputRequests[data.requestId];if(inputResolve){delete inputRequests[data.requestId];inputResolve(typeof data.value==="string"?data.value:null);}return;}' +
+      'if(data.type==="storage-result"){var storageRequest=storageRequests[data.requestId];if(storageRequest){delete storageRequests[data.requestId];if(data.ok)extensionData=JSON.parse(storageRequest.serialized);storageRequest.resolve(data.ok===true);}return;}' +
+      'if(data.type!=="run")return;var callback=callbacks[data.actionId];if(!callback)return;' +
       'try{Promise.resolve(callback()).catch(function(error){send({type:"error",message:String(error&&error.message||error).slice(0,500)});});}' +
       'catch(error){send({type:"error",message:String(error&&error.message||error).slice(0,500)});}' +
       '});' +
@@ -3285,6 +3453,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
   function stopRunner(id) {
     var runner = runnerById.get(id);
+    if (runner && pendingExtensionInput && pendingExtensionInput.runner === runner) answerExtensionInput(null);
     if (runner) runner.frame.remove();
     runnerById.delete(id);
   }
@@ -3298,7 +3467,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     var runner = { frame: frame, actions: [] };
     runnerById.set(extension.id, runner);
     runners.appendChild(frame);
-    frame.srcdoc = frameDocument(extension.code);
+    frame.srcdoc = frameDocument(extension.code, extension.storage);
     statusFor(extension.id, 'Starting in sandbox…', false);
   }
   function reconcileRunners() {
@@ -3335,6 +3504,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     $('storeDetailDescription').textContent = item.description;
     $('storeDetailPermissions').textContent = item.permissions;
     $('storeDetailSource').textContent = item.source;
+    $('storeDetailIcon').innerHTML = NT.ic(item.icon || 'code');
     updateStoreDetailState();
     storeDetail.classList.remove('hidden');
     $('storeDetailClose').focus();
@@ -3356,7 +3526,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       head.className = 'store-card-head';
       var icon = document.createElement('span');
       icon.className = 'store-demo-icon';
-      icon.innerHTML = '<i data-ic="timer"></i>';
+      icon.innerHTML = NT.ic(item.icon || 'code');
       var title = document.createElement('strong');
       title.className = 'store-demo-title';
       title.textContent = item.name;
@@ -3484,7 +3654,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       existing.code = code;
       existing.enabled = false;
     } else {
-      extensions.push({ id: makeId(), name: name.slice(0, 60), code: code, enabled: false });
+      extensions.push({ id: makeId(), name: name.slice(0, 60), code: code, enabled: false, storage: '{}' });
     }
     if (!persist()) {
       extensions = NT.getJSON('disguise_extensions', []);
@@ -3500,7 +3670,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     var item = selectedStoreItem;
     if (!item || installedStoreItem(item)) { updateStoreDetailState(); return; }
     if (extensions.length >= MAX_EXTENSIONS) { NT.toast('You can add up to 20 extensions', 'error'); return; }
-    var extension = { id: item.id, name: item.name, code: item.source, enabled: false, catalogId: item.id };
+    var extension = { id: item.id, name: item.name, code: item.source, enabled: false, catalogId: item.id, storage: '{}' };
     extensions.push(extension);
     if (!persist()) {
       extensions = extensions.filter(function (entry) { return entry.id !== extension.id; });
@@ -3554,7 +3724,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       var extension = extensions.find(function (item) { return item.id === matched.id; });
       var card = cardById.get(matched.id);
       if (extension && card) renderActions(extension, card);
-    } else if (data.type === 'log') statusFor(matched.id, String(data.message || '').slice(0, 500), false);
+    } else if (data.type === 'storage') saveExtensionData(matched, data);
+    else if (data.type === 'input') openExtensionInput(matched, data);
+    else if (data.type === 'log') statusFor(matched.id, String(data.message || '').slice(0, 500), false);
     else if (data.type === 'error') statusFor(matched.id, String(data.message || 'Extension error').slice(0, 500), true);
   });
   render();
