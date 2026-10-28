@@ -907,6 +907,22 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <p class="store-note">Study Sprint and Reading Highlights are installable demos. Citation Helper is not available yet.</p>
 <button class="btn primary" id="storeCloseBtn" type="button"><i data-ic="arrowLeft"></i>Back to your workspace</button>
 </div>
+</div>
+<section class="store-detail hidden" id="storeDetail" role="dialog" aria-modal="true" aria-labelledby="storeDetailTitle">
+<button class="btn sm" id="storeDetailClose" type="button"><i data-ic="arrowLeft"></i>Back to store</button>
+<div class="store-card-head" style="margin-top:14px"><span class="store-demo-icon" id="storeDetailIcon"><i data-ic="timer"></i></span><span class="store-badge">AVAILABLE</span></div>
+<h3 id="storeDetailTitle"></h3>
+<p id="storeDetailDescription"></p>
+<p class="small muted" id="storeDetailPermissions"></p>
+<h4 class="store-section-title">Source code</h4>
+<pre id="storeDetailSource" aria-label="Extension source code"></pre>
+<p class="small muted">Installing saves this source in your browser but does not run it. Review it above, then enable it from Extensions when you’re ready.</p>
+<div class="store-detail-actions">
+<button class="btn primary" id="storeInstallBtn" type="button">Install disabled</button>
+<button class="btn hidden" id="storeInstalledBtn" type="button" disabled>Already installed</button>
+</div>
+</section>
+</div>
 <dialog id="adminDialog" class="admin-dialog" aria-labelledby="adminDialogTitle">
 <div class="admin-panel">
 <div class="row-between"><h2 id="adminDialogTitle">Study Desk admin panel</h2><button class="icon-btn" id="adminCloseBtn" type="button" aria-label="Close admin panel">×</button></div>
@@ -947,21 +963,6 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </section>
 </div>
 </dialog>
-<section class="store-detail hidden" id="storeDetail" role="dialog" aria-modal="true" aria-labelledby="storeDetailTitle">
-<button class="btn sm" id="storeDetailClose" type="button"><i data-ic="arrowLeft"></i>Back to store</button>
-<div class="store-card-head" style="margin-top:14px"><span class="store-demo-icon" id="storeDetailIcon"><i data-ic="timer"></i></span><span class="store-badge">AVAILABLE</span></div>
-<h3 id="storeDetailTitle"></h3>
-<p id="storeDetailDescription"></p>
-<p class="small muted" id="storeDetailPermissions"></p>
-<h4 class="store-section-title">Source code</h4>
-<pre id="storeDetailSource" aria-label="Extension source code"></pre>
-<p class="small muted">Installing saves this source in your browser but does not run it. Review it above, then enable it from Extensions when you’re ready.</p>
-<div class="store-detail-actions">
-<button class="btn primary" id="storeInstallBtn" type="button">Install disabled</button>
-<button class="btn hidden" id="storeInstalledBtn" type="button" disabled>Already installed</button>
-</div>
-</section>
-</div>
 
 <dialog id="extensionInputDialog" class="extension-input-dialog" aria-labelledby="extensionInputTitle" aria-describedby="extensionInputHint">
 <div class="extension-input-panel">
