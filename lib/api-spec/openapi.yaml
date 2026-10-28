@@ -478,6 +478,38 @@ paths:
           description: Account not found
         "409":
           description: Cannot grant rewards to this account
+  /moderation/users/{username}/unlock-all:
+    post:
+      operationId: unlockModerationUserFeatures
+      tags: [moderation]
+      summary: Unlock all study features for an account
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 24
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUnlockFeaturesInput"
+      responses:
+        "200":
+          description: All features unlocked for the account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUnlockFeaturesResult"
+        "403":
+          description: Moderator access required
+        "404":
+          description: Account not found
+        "409":
+          description: Cannot unlock features for this account
   /moderation/users/{username}/history:
     get:
       operationId: getModerationUserHistory
@@ -858,9 +890,27 @@ components:
           type: string
           minLength: 1
           maxLength: 500
+    AdminUnlockFeaturesInput:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+    AdminUnlockFeaturesResult:
+      type: object
+      required: [username, unlockedFeatures]
+      properties:
+        username:
+          type: string
+        unlockedFeatures:
+          type: array
+          items:
+            type: string
     AdminRewardGrantTotals:
       type: object
-      required: [points, shards]
+      required: [points, shards, allFeaturesUnlocked]
       properties:
         points:
           type: integer
@@ -868,6 +918,8 @@ components:
         shards:
           type: integer
           minimum: 0
+        allFeaturesUnlocked:
+          type: boolean
     AdminRewardTotals:
       type: object
       required: [username, points, shards]

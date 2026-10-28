@@ -11,4 +11,5 @@ export interface AdminRewardGrantTotals {
   points: number;
   /** @minimum 0 */
   shards: number;
+  allFeaturesUnlocked: boolean;
 }

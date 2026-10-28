@@ -24,6 +24,8 @@ import type {
   AdminRewardGrantTotals,
   AdminRewardInput,
   AdminRewardTotals,
+  AdminUnlockFeaturesInput,
+  AdminUnlockFeaturesResult,
   AuthResult,
   BeginDeveloperLoginParams,
   CommunityExtension,
@@ -1956,6 +1958,95 @@ export const useGrantModerationUserRewards = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getGrantModerationUserRewardsMutationOptions(options));
+    }
+
+export const getUnlockModerationUserFeaturesUrl = (username: string,) => {
+
+
+
+
+  return `/api/moderation/users/${username}/unlock-all`
+}
+
+/**
+ * @summary Unlock all study features for an account
+ */
+export const unlockModerationUserFeatures = async (username: string,
+    adminUnlockFeaturesInput: AdminUnlockFeaturesInput, options?: Parameters<typeof customFetch>[1]): Promise<AdminUnlockFeaturesResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AdminUnlockFeaturesResult>(getUnlockModerationUserFeaturesUrl(username),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(adminUnlockFeaturesInput)
+  }
+);}
+
+
+
+
+
+export const getUnlockModerationUserFeaturesMutationKey = () => ['unlockModerationUserFeatures'] as const;
+
+export const getUnlockModerationUserFeaturesMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlockModerationUserFeatures>>, TError,UnlockModerationUserFeaturesMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unlockModerationUserFeatures>>, TError,UnlockModerationUserFeaturesMutationVariables, TContext> => {
+
+const mutationKey = getUnlockModerationUserFeaturesMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unlockModerationUserFeatures>>, UnlockModerationUserFeaturesMutationVariables> = (props) => {
+          const {username,data} = props ?? {};
+
+          return  unlockModerationUserFeatures(username,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnlockModerationUserFeaturesMutationResult = NonNullable<Awaited<ReturnType<typeof unlockModerationUserFeatures>>>
+    export type UnlockModerationUserFeaturesMutationBody = BodyType<AdminUnlockFeaturesInput>
+    export type UnlockModerationUserFeaturesMutationError = ErrorType<void>
+    export type UnlockModerationUserFeaturesMutationVariables = {username: string;data: BodyType<AdminUnlockFeaturesInput>}
+
+    /**
+ * @summary Unlock all study features for an account
+ */
+export const useUnlockModerationUserFeatures = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unlockModerationUserFeatures>>, TError,UnlockModerationUserFeaturesMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof unlockModerationUserFeatures>>,
+        TError,
+        UnlockModerationUserFeaturesMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUnlockModerationUserFeaturesMutationOptions(options));
     }
 
 export const getGetModerationUserHistoryUrl = (username: string,) => {

@@ -378,6 +378,11 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 .toast { display: flex; align-items: center; gap: 8px; background: var(--text); color: var(--bg); padding: 9px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; box-shadow: 3px 3px 0 var(--accent); animation: toastIn .3s var(--ease) both; max-width: min(360px, 90vw); }
 .toast.error { box-shadow: 3px 3px 0 var(--danger); }
 .toast.out { opacity: 0; transform: translateY(8px); transition: .25s; }
+.account-nudge { position: fixed; right: 16px; bottom: 64px; z-index: 190; width: min(370px, calc(100vw - 32px)); padding: 16px; border: 1.5px solid var(--border-strong); border-radius: 14px; background: var(--panel); color: var(--text); box-shadow: 4px 4px 0 var(--ink-shadow); animation: rise .25s var(--ease) both; }
+.account-nudge[hidden] { display: none; }
+.account-nudge h3 { font-size: 15px; margin: 0; }
+.account-nudge p { margin: 8px 0 12px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.account-nudge-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
 @keyframes slideIn { from { opacity: 0; transform: translateX(-14px); } }
 @keyframes rise { from { opacity: 0; transform: translateY(12px); } }
@@ -808,7 +813,6 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <button class="btn sm" id="resetShortcutsBtn" type="button" style="margin-top:8px">Restore default shortcuts</button>
 </div>
 <p id="shortcutSettingsHelp" class="sr-only">Select “Record,” then press a key combination with Ctrl, Alt, Shift, or Cmd. ChromeOS may reserve some combinations; if one does nothing, try another. Press Escape to cancel a recording. Tab-number shortcuts are unset by default.</p>
-<button class="btn primary" id="unlockEverythingBtn"><i data-ic="unlock"></i>Unlock everything (free)</button>
 <button class="btn" id="compatibilityBtn">ChromeOS &amp; compatibility</button>
 <button class="btn danger-ghost" id="resetAllBtn"><i data-ic="trash"></i>Reset all settings</button>
 </div>
@@ -1115,6 +1119,11 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </div>
 
 <div id="toasts" class="toasts" aria-live="polite"></div>
+<aside id="accountNudge" class="account-nudge" role="region" aria-label="Account recommendation" hidden>
+<div class="row-between"><h3>Keep your Study Desk in sync</h3><button class="icon-btn" id="accountNudgeClose" type="button" aria-label="Dismiss account recommendation">×</button></div>
+<p>Create an account to sync your notes, bookmarks, and preferences across devices. You can keep using Study Desk without one.</p>
+<div class="account-nudge-actions"><button class="btn sm primary" id="accountNudgeCreate" type="button">Create account</button><button class="btn sm" id="accountNudgeLater" type="button">Not now</button></div>
+</aside>
 <dialog id="educationalUseNotice" aria-labelledby="educationalUseTitle" aria-describedby="educationalUseCopy" style="max-width:560px;width:calc(100% - 32px);max-height:85vh;overflow:auto;padding:28px;border:2px solid var(--border-strong);border-radius:16px;background:var(--panel);color:var(--text);box-shadow:6px 6px 0 var(--ink-shadow)">
 <h2 id="educationalUseTitle">Welcome to Study Desk</h2>
 <div id="educationalUseCopy">
@@ -1142,7 +1151,6 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <p>Notes and settings stay in this browser, not a school account or cloud backup. Export important work before clearing browser data or moving devices. Google Fonts and online pages need internet access.</p>
 <button class="btn primary" id="compatibilityAccept">Got it</button>
 </dialog>
-<div id="secretCat" hidden role="status" aria-live="polite" style="position:fixed;inset:0;z-index:2147483647;display:none;place-items:center;pointer-events:none;background:color-mix(in srgb,var(--bg) 85%,transparent);color:var(--accent);font-family:system-ui,sans-serif;font-size:clamp(150px,40vw,520px);font-weight:900;line-height:1;text-shadow:6px 6px 0 var(--panel)">:3</div>
 
 <script>
 /* New Tab workspace: shared utilities (icons, toasts, confirm dialog, URL validation). */
@@ -1894,6 +1902,21 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     localStorage.setItem('disguise_shards', shards);
     updateRewardsUI();
   };
+  NT.applyAdminFeatureUnlock = function () {
+    let changed = false;
+    FEATURES.forEach(feature => {
+      if (!unlockedItems.includes(feature.id)) {
+        unlockedItems.push(feature.id);
+        changed = true;
+      }
+    });
+    if (changed) {
+      NT.setJSON('disguise_unlocked', unlockedItems);
+      refreshPaywallUI();
+      updateRewardsUI();
+    }
+    return changed;
+  };
   NT.claimDaily = () => claimRewardBtn.click();
   function renderShop() {
     shopContainer.innerHTML = '';
@@ -2318,25 +2341,6 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
   NT.resetAll = resetAll;
   resetAllBtn.addEventListener('click', resetAll);
-
-  let unlockClicks = 0, secretCatTimer;
-  el('unlockEverythingBtn').addEventListener('click', () => {
-    unlockClicks++;
-    if (unlockClicks === 3) {
-      unlockClicks = 0;
-      const cat = el('secretCat');
-      clearTimeout(secretCatTimer);
-      cat.hidden = false; cat.style.display = 'grid';
-      secretCatTimer = setTimeout(() => { cat.hidden = true; cat.style.display = 'none'; }, 3000);
-    }
-    FEATURES.forEach(f => { if (!unlockedItems.includes(f.id)) unlockedItems.push(f.id); });
-    NT.setJSON('disguise_unlocked', unlockedItems);
-    points = Math.max(points, 99999); shards = Math.max(shards, 99999);
-    localStorage.setItem('disguise_points', points);
-    localStorage.setItem('disguise_shards', shards);
-    updateRewardsUI(); refreshPaywallUI();
-    toast('Everything is unlocked, free');
-  });
 
   // ---------- Hotkeys ----------
   let escapeCount = 0, escapeTimer;
@@ -4310,11 +4314,51 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
   NT.onTabSnapshotChange = refreshSharedTabSnapshot;
   setInterval(refreshSharedTabSnapshot, 5000);
+  var accountNudgeHideTimer = null;
+  function hideAccountNudge() {
+    var nudge = $('accountNudge');
+    nudge.hidden = true;
+    if (accountNudgeHideTimer) clearTimeout(accountNudgeHideTimer);
+    accountNudgeHideTimer = null;
+  }
+  function showAccountNudgeWhenClear(today) {
+    if (accountUser) return;
+    var blockingDialog = $('educationalUseNotice').open
+      ? $('educationalUseNotice')
+      : $('accountDialog').open ? $('accountDialog') : null;
+    if (blockingDialog) {
+      blockingDialog.addEventListener('close', function () {
+        setTimeout(function () { showAccountNudgeWhenClear(today); }, 150);
+      }, { once: true });
+      return;
+    }
+    try {
+      if (localStorage.getItem('study_desk_account_created') === 'true') return;
+      if (localStorage.getItem('study_desk_account_nudge_day') === today) return;
+      localStorage.setItem('study_desk_account_nudge_day', today);
+    } catch (error) { return; }
+    $('accountNudge').hidden = false;
+    accountNudgeHideTimer = setTimeout(hideAccountNudge, 15000);
+  }
+  function maybeShowAccountNudge() {
+    if (accountUser) return;
+    var now = new Date();
+    var today = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    try {
+      if (localStorage.getItem('study_desk_account_created') === 'true') return;
+      if (localStorage.getItem('study_desk_account_nudge_day') === today) return;
+    } catch (error) { return; }
+    setTimeout(function () { showAccountNudgeWhenClear(today); }, 12000);
+  }
   function setAccountUser(user) {
     var previousModerator = !!accountUser && accountUser.role === 'moderator';
     var previousUsername = accountUser && accountUser.username;
     accountUser = user || null;
     var isModerator = !!accountUser && accountUser.role === 'moderator';
+    if (accountUser) {
+      try { localStorage.setItem('study_desk_account_created', 'true'); } catch (error) {}
+      hideAccountNudge();
+    }
     if (!isModerator || !previousModerator || previousUsername !== accountUser.username) {
       adminListsLoaded = false;
       adminListsLoading = false;
@@ -4466,11 +4510,20 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
   }
 
+  var adminGrantsBusy = false;
   async function applyAdminRewardGrants() {
-    if (!accountUser || typeof NT.applyAdminRewardGrant !== 'function') return;
+    if (!accountUser || typeof NT.applyAdminRewardGrant !== 'function' || adminGrantsBusy) return;
+    var username = accountUser.username;
+    adminGrantsBusy = true;
     try {
       var totals = await api('/rewards/admin-grants');
-      var prefix = 'disguise_admin_grants_seen_' + accountUser.username + '_';
+      if (!accountUser || accountUser.username !== username) return;
+      if (totals.allFeaturesUnlocked && typeof NT.applyAdminFeatureUnlock === 'function') {
+        if (NT.applyAdminFeatureUnlock()) {
+          NT.toast('An administrator unlocked all features for your account.');
+        }
+      }
+      var prefix = 'disguise_admin_grants_seen_' + username + '_';
       var seenPoints = Math.max(0, Number(localStorage.getItem(prefix + 'points')) || 0);
       var seenShards = Math.max(0, Number(localStorage.getItem(prefix + 'shards')) || 0);
       var pointDelta = Math.max(0, totals.points - seenPoints);
@@ -4484,6 +4537,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     } catch (error) {
       // A reward lookup should not prevent sign-in or workspace sync.
       console.warn('Could not check administrator rewards:', error);
+    } finally {
+      adminGrantsBusy = false;
     }
   }
 
@@ -4573,6 +4628,13 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   $('showLoginFromRecoveryBtn').addEventListener('click', function () { accountMode('login'); $('loginUsername').focus(); });
   $('accountCloseBtn').addEventListener('click', function () { accountDialog.close(); });
   $('accountBtn').addEventListener('click', function () { openAccount('login'); });
+  $('accountNudgeCreate').addEventListener('click', function () {
+    hideAccountNudge();
+    openAccount('signup');
+    $('signupUsername').focus();
+  });
+  $('accountNudgeLater').addEventListener('click', hideAccountNudge);
+  $('accountNudgeClose').addEventListener('click', hideAccountNudge);
   $('adminPanelBtn').addEventListener('click', function () {
     if (!accountUser || accountUser.role !== 'moderator') return;
     if (!adminDialog.open) {
@@ -5017,7 +5079,24 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       }));
     }
     if (user.username !== accountUser.username) {
-      actions.appendChild(makeButton('Give reward', 'btn sm', function () {
+      actions.appendChild(makeButton('Unlock everything', 'btn sm', async function () {
+        if (!(await NT.confirmDialog(
+          'Unlock every feature for this account?',
+          'This permanently unlocks all built-in Study Desk features for this account and applies the unlock when the user signs in.',
+          'Unlock features',
+          false,
+        ))) return;
+        try {
+          var result = await api('/moderation/users/' + encodeURIComponent(user.username) + '/unlock-all', {
+            method: 'POST',
+            body: { reason: 'All built-in Study Desk features unlocked by an administrator.' },
+          });
+          detail.textContent += ' · All features unlocked';
+          await loadAdminHistory(result.username);
+          NT.toast('All features unlocked for ' + result.username + '.');
+        } catch (error) { NT.toast(readError(error), 'error'); }
+      }));
+      actions.appendChild(makeButton('Give points/shards', 'btn sm', function () {
         $('adminRewardUsername').textContent = user.username;
         $('adminRewardStatus').textContent = '';
         $('adminRewardForm').classList.remove('hidden');
@@ -5054,6 +5133,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
           'user.restored': 'Account restored',
           'user.promoted': 'Promoted to admin',
           'reward.granted': 'Reward granted',
+          'features.unlocked': 'All features unlocked',
           'extension.approved': 'Extension approved',
           'extension.rejected': 'Extension rejected',
           'extension.removed': 'Extension removed from public store',
@@ -5354,6 +5434,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       if (!accountUser) {
         setAccountUser(null);
         loadPublicExtensions();
+        maybeShowAccountNudge();
       }
     }
   }
@@ -5382,6 +5463,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       }
     } catch (error) { setCloudStatus('Sync paused: ' + readError(error), true); }
   }, 15000);
+  setInterval(function () {
+    if (accountUser) applyAdminRewardGrants();
+  }, 30000);
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden && accountUser) loadPublicExtensions();
   });

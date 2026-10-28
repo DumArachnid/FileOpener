@@ -13,6 +13,8 @@ export * from './adminRewardGrantTotals';
 export * from './adminRewardInput';
 export * from './adminRewardInputCurrency';
 export * from './adminRewardTotals';
+export * from './adminUnlockFeaturesInput';
+export * from './adminUnlockFeaturesResult';
 export * from './authResult';
 export * from './beginDeveloperLoginParams';
 export * from './communityExtension';

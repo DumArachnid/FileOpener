@@ -509,6 +509,32 @@ export const GrantModerationUserRewardsResponse = zod.object({
 
 
 /**
+ * @summary Unlock all study features for an account
+ */
+export const unlockModerationUserFeaturesPathUsernameMin = 3;
+export const unlockModerationUserFeaturesPathUsernameMax = 24;
+
+
+
+export const UnlockModerationUserFeaturesParams = zod.object({
+  "username": zod.coerce.string().min(unlockModerationUserFeaturesPathUsernameMin).max(unlockModerationUserFeaturesPathUsernameMax)
+})
+
+export const unlockModerationUserFeaturesBodyReasonMax = 500;
+
+
+
+export const UnlockModerationUserFeaturesBody = zod.object({
+  "reason": zod.string().min(1).max(unlockModerationUserFeaturesBodyReasonMax)
+})
+
+export const UnlockModerationUserFeaturesResponse = zod.object({
+  "username": zod.string(),
+  "unlockedFeatures": zod.array(zod.string())
+})
+
+
+/**
  * @summary Get recent administrative actions for an account
  */
 export const getModerationUserHistoryPathUsernameMin = 3;
@@ -572,7 +598,8 @@ export const getCurrentAccountAdminRewardGrantsResponseShardsMin = 0;
 
 export const GetCurrentAccountAdminRewardGrantsResponse = zod.object({
   "points": zod.number().int().min(getCurrentAccountAdminRewardGrantsResponsePointsMin),
-  "shards": zod.number().int().min(getCurrentAccountAdminRewardGrantsResponseShardsMin)
+  "shards": zod.number().int().min(getCurrentAccountAdminRewardGrantsResponseShardsMin),
+  "allFeaturesUnlocked": zod.boolean()
 })
 
 

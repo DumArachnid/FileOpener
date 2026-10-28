@@ -208,11 +208,25 @@ export interface AdminRewardInput {
   reason: string;
 }
 
+export interface AdminUnlockFeaturesInput {
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  reason: string;
+}
+
+export interface AdminUnlockFeaturesResult {
+  username: string;
+  unlockedFeatures: string[];
+}
+
 export interface AdminRewardGrantTotals {
   /** @minimum 0 */
   points: number;
   /** @minimum 0 */
   shards: number;
+  allFeaturesUnlocked: boolean;
 }
 
 export interface AdminRewardTotals {

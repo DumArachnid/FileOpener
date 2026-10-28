@@ -11,6 +11,9 @@ import {
   GrantModerationUserRewardsResponse,
   PromoteModerationUserParams,
   PromoteModerationUserResponse,
+  UnlockModerationUserFeaturesBody,
+  UnlockModerationUserFeaturesParams,
+  UnlockModerationUserFeaturesResponse,
 } from "@workspace/api-zod";
 import {
   adminAuditTable,
@@ -23,6 +26,13 @@ import { requireAccount, requireModerator } from "../middlewares/accountSession"
 
 const router: IRouter = Router();
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,24}$/;
+const ALL_FEATURE_IDS = [
+  "feature_calc",
+  "feature_fonts",
+  "feature_disguise",
+  "feature_download",
+  "feature_about_blank",
+];
 
 function normalizedUsername(value: unknown): string | null {
   if (typeof value !== "string" || !USERNAME_RE.test(value)) return null;
@@ -225,6 +235,60 @@ router.post(
   },
 );
 
+router.post(
+  "/moderation/users/:username/unlock-all",
+  requireModerator,
+  async (req, res): Promise<void> => {
+    const params = UnlockModerationUserFeaturesParams.safeParse(req.params);
+    const body = UnlockModerationUserFeaturesBody.safeParse(req.body);
+    if (!params.success || !body.success) {
+      res.status(400).json({ error: "Check the account and unlock reason." });
+      return;
+    }
+    const username = normalizedUsername(params.data.username);
+    const reason = body.data.reason.trim();
+    if (!username || !reason) {
+      res.status(400).json({ error: "Enter a valid username and reason." });
+      return;
+    }
+    const [target] = await db
+      .select({ id: studyUsersTable.id, username: studyUsersTable.username })
+      .from(studyUsersTable)
+      .where(eq(studyUsersTable.username, username))
+      .limit(1);
+    if (!target) {
+      res.status(404).json({ error: "No account found with that username." });
+      return;
+    }
+    if (target.id === req.studyDeskUser!.id) {
+      res.status(409).json({ error: "Admins cannot grant all feature unlocks to their own account." });
+      return;
+    }
+
+    const [existingGrant] = await db
+      .select({ id: adminAuditTable.id })
+      .from(adminAuditTable)
+      .where(and(
+        eq(adminAuditTable.targetUsername, target.username),
+        eq(adminAuditTable.action, "features.unlocked"),
+      ))
+      .limit(1);
+    if (!existingGrant) {
+      await db.insert(adminAuditTable).values({
+        actorUsername: req.studyDeskUser!.username,
+        targetUsername: target.username,
+        action: "features.unlocked",
+        reason,
+        details: { unlockedFeatures: ALL_FEATURE_IDS },
+      });
+    }
+    res.json(UnlockModerationUserFeaturesResponse.parse({
+      username: target.username,
+      unlockedFeatures: ALL_FEATURE_IDS,
+    }));
+  },
+);
+
 router.get(
   "/moderation/users/:username/history",
   requireModerator,
@@ -296,9 +360,18 @@ router.get(
       .from(adminRewardTotalsTable)
       .where(eq(adminRewardTotalsTable.userId, req.studyDeskUser!.id))
       .limit(1);
+    const [featureGrant] = await db
+      .select({ id: adminAuditTable.id })
+      .from(adminAuditTable)
+      .where(and(
+        eq(adminAuditTable.targetUsername, req.studyDeskUser!.username),
+        eq(adminAuditTable.action, "features.unlocked"),
+      ))
+      .limit(1);
     res.json(GetCurrentAccountAdminRewardGrantsResponse.parse({
       points: totals?.points ?? 0,
       shards: totals?.shards ?? 0,
+      allFeaturesUnlocked: !!featureGrant,
     }));
   },
 );
