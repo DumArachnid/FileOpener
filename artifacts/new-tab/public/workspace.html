@@ -364,6 +364,15 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 .shortcut-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: 6px; align-items: center; font-size: 12px; }
 .shortcut-row > span:first-child { min-width: 0; }
 .shortcut-row kbd { min-width: 72px; text-align: center; }
+.extension-list { display: grid; gap: 8px; }
+.extension-card { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 9px; background: var(--input-bg); }
+.extension-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.extension-card-name { min-width: 0; overflow-wrap: anywhere; font-weight: 700; }
+.extension-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.extension-actions .btn { white-space: normal; }
+.extension-status { min-height: 1em; overflow-wrap: anywhere; }
+.extension-editor { min-height: 180px; font-family: var(--mono); font-size: 11px; tab-size: 2; }
+.extension-runner { display: none; }
 </style>
 </head>
 <body>
@@ -649,6 +658,37 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <label>App opacity (<span id="opacityVal">100%</span>)</label>
 <input type="range" id="opacitySlider" min="0.1" max="1" step="0.05" value="1">
 </div>
+</div>
+</details>
+
+<!-- Extensions -->
+<details class="sidebar-group" id="grp-extensions">
+<summary><i data-ic="code"></i>Extensions <span class="count-pill" id="extensionCount">0</span></summary>
+<div class="sidebar-group-content">
+<p class="small muted tight">Add JavaScript extensions that provide their own actions in this menu. Extensions run in an isolated sandbox and cannot read this page or viewer tabs. Only enable code you trust; extensions can still use browser capabilities available inside their sandbox.</p>
+<div>
+<label for="extensionName">Extension name</label>
+<input id="extensionName" type="text" maxlength="60" placeholder="e.g. Word counter" />
+</div>
+<div>
+<label for="extensionCode">JavaScript source</label>
+<textarea id="extensionCode" class="extension-editor" rows="9" spellcheck="false" placeholder="NewTabExtension.registerAction('Say hello', () => NewTabExtension.log('Hello!'));"></textarea>
+</div>
+<div class="flex">
+<button class="btn primary" id="saveExtensionBtn" type="button">Add extension</button>
+<label for="extensionFileInput" class="btn" style="margin:0">Load .js file<input id="extensionFileInput" type="file" accept=".js,text/javascript,application/javascript" class="sr-only"></label>
+<button class="btn hidden" id="cancelExtensionEditBtn" type="button">Cancel edit</button>
+</div>
+<details>
+<summary class="small">Extension API example</summary>
+<pre class="mono tiny" style="white-space:pre-wrap;overflow-wrap:anywhere;margin:0">NewTabExtension.registerAction('Say hello', () =&gt; {
+  NewTabExtension.log('Hello from my extension!');
+});</pre>
+<p class="small muted tight">Register one or more action buttons. Their callbacks run in the sandbox; use NewTabExtension.log(message) to show output here.</p>
+</details>
+<div class="small muted" id="extensionEmptyState">No extensions added yet.</div>
+<div class="extension-list" id="extensionList"></div>
+<div class="extension-runner" id="extensionRunners" aria-hidden="true"></div>
 </div>
 </details>
 
@@ -3010,6 +3050,261 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   renderTabs();
 })();
 
+</script>
+<script>
+(function () {
+  'use strict';
+  var NT = window.NT;
+  var $ = function (id) { return document.getElementById(id); };
+  var nameInput = $('extensionName');
+  var codeInput = $('extensionCode');
+  var saveButton = $('saveExtensionBtn');
+  var cancelButton = $('cancelExtensionEditBtn');
+  var fileInput = $('extensionFileInput');
+  var list = $('extensionList');
+  var runners = $('extensionRunners');
+  if (!NT || !nameInput || !codeInput || !list || !runners) return;
+
+  var MAX_EXTENSIONS = 20;
+  var MAX_SOURCE_LENGTH = 200000;
+  var extensions = NT.getJSON('disguise_extensions', []);
+  if (!Array.isArray(extensions)) extensions = [];
+  extensions = extensions.filter(function (item) {
+    return item && typeof item.id === 'string' && typeof item.name === 'string' &&
+      typeof item.code === 'string' && item.code.length <= MAX_SOURCE_LENGTH;
+  }).slice(0, MAX_EXTENSIONS).map(function (item) {
+    return { id: item.id, name: item.name.slice(0, 60), code: item.code, enabled: item.enabled === true };
+  });
+  var editingId = null;
+  var runnerById = new Map();
+  var cardById = new Map();
+
+  function makeId() {
+    return 'ext-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9);
+  }
+  function persist() {
+    return NT.setJSON('disguise_extensions', extensions);
+  }
+  function statusFor(id, text, error) {
+    var card = cardById.get(id);
+    if (!card) return;
+    var status = card.querySelector('.extension-status');
+    status.textContent = text || '';
+    status.style.color = error ? 'var(--danger)' : '';
+  }
+  function frameDocument(source) {
+    var safeSource = JSON.stringify(source)
+      .replace(/</g, '\\u003c')
+      .replace(/\u2028/g, '\\u2028')
+      .replace(/\u2029/g, '\\u2029');
+    return '<!doctype html><meta charset="utf-8"><body>' +
+      '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'unsafe-inline\'; connect-src \'none\'; img-src data: blob:; style-src \'unsafe-inline\'; object-src \'none\'; base-uri \'none\'; form-action \'none\'">' +
+      '<script>(function(){' +
+      'var callbacks=Object.create(null), serial=0;' +
+      'function send(message){parent.postMessage(message,"*");}' +
+      'window.NewTabExtension=Object.freeze({' +
+      'registerAction:function(label,callback){' +
+      'if(typeof label!=="string"||typeof callback!=="function"||!label.trim())throw new TypeError("registerAction needs a label and callback");' +
+      'var id="action-"+(++serial);callbacks[id]=callback;send({type:"action",actionId:id,label:label.trim().slice(0,60)});return id;' +
+      '},' +
+      'log:function(message){send({type:"log",message:String(message).slice(0,500)});}' +
+      '});' +
+      'window.addEventListener("message",function(event){if(event.source!==parent||!event.data||event.data.type!=="run")return;' +
+      'var callback=callbacks[event.data.actionId];if(!callback)return;' +
+      'try{Promise.resolve(callback()).catch(function(error){send({type:"error",message:String(error&&error.message||error).slice(0,500)});});}' +
+      'catch(error){send({type:"error",message:String(error&&error.message||error).slice(0,500)});}' +
+      '});' +
+      'window.addEventListener("error",function(event){send({type:"error",message:String(event.message||"Extension error").slice(0,500)});});' +
+      'window.addEventListener("unhandledrejection",function(event){send({type:"error",message:String(event.reason&&event.reason.message||event.reason||"Unhandled extension error").slice(0,500)});});' +
+      'var source=' + safeSource + ';var script=document.createElement("script");script.textContent=source;document.body.appendChild(script);' +
+      'send({type:"ready"});' +
+      '})();<\/script></body>';
+  }
+  function stopRunner(id) {
+    var runner = runnerById.get(id);
+    if (runner) runner.frame.remove();
+    runnerById.delete(id);
+  }
+  function addRunner(extension) {
+    if (runnerById.has(extension.id) || !extension.enabled) return;
+    var frame = document.createElement('iframe');
+    frame.className = 'extension-runner';
+    frame.hidden = true;
+    frame.setAttribute('sandbox', 'allow-scripts');
+    frame.title = 'Isolated extension: ' + extension.name;
+    var runner = { frame: frame, actions: [] };
+    runnerById.set(extension.id, runner);
+    runners.appendChild(frame);
+    frame.srcdoc = frameDocument(extension.code);
+    statusFor(extension.id, 'Starting in sandbox…', false);
+  }
+  function reconcileRunners() {
+    var active = new Set(extensions.filter(function (item) { return item.enabled; }).map(function (item) { return item.id; }));
+    Array.from(runnerById.keys()).forEach(function (id) { if (!active.has(id)) stopRunner(id); });
+    extensions.forEach(addRunner);
+  }
+  function renderActions(extension, card) {
+    var runner = runnerById.get(extension.id);
+    var actions = card.querySelector('.extension-actions');
+    actions.replaceChildren();
+    if (!runner || !runner.actions.length) return;
+    runner.actions.forEach(function (action) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'btn sm';
+      button.textContent = action.label;
+      button.addEventListener('click', function () {
+        statusFor(extension.id, 'Running ' + action.label + '…', false);
+        runner.frame.contentWindow.postMessage({ type: 'run', actionId: action.id }, '*');
+      });
+      actions.appendChild(button);
+    });
+  }
+  function render() {
+    $('extensionCount').textContent = String(extensions.length);
+    $('extensionEmptyState').classList.toggle('hidden', extensions.length > 0);
+    list.replaceChildren();
+    cardById.clear();
+    extensions.forEach(function (extension) {
+      var card = document.createElement('section');
+      card.className = 'extension-card';
+      var head = document.createElement('div');
+      head.className = 'extension-card-head';
+      var title = document.createElement('span');
+      title.className = 'extension-card-name';
+      title.textContent = extension.name;
+      var enabledLabel = document.createElement('label');
+      enabledLabel.className = 'small';
+      enabledLabel.style.cssText = 'display:flex;align-items:center;gap:6px;margin:0;white-space:nowrap';
+      var enabled = document.createElement('input');
+      enabled.type = 'checkbox';
+      enabled.checked = extension.enabled;
+      enabled.setAttribute('aria-label', 'Enable ' + extension.name);
+      enabledLabel.append(enabled, document.createTextNode('Enabled'));
+      head.append(title, enabledLabel);
+      card.appendChild(head);
+
+      var status = document.createElement('div');
+      status.className = 'extension-status small muted';
+      status.setAttribute('role', 'status');
+      status.textContent = extension.enabled ? 'Starting in sandbox…' : 'Disabled';
+      card.appendChild(status);
+      var actions = document.createElement('div');
+      actions.className = 'extension-actions';
+      card.appendChild(actions);
+      var controls = document.createElement('div');
+      controls.className = 'flex';
+      var edit = document.createElement('button');
+      edit.type = 'button'; edit.className = 'btn sm'; edit.textContent = 'Edit';
+      edit.addEventListener('click', function () {
+        editingId = extension.id;
+        nameInput.value = extension.name;
+        codeInput.value = extension.code;
+        saveButton.textContent = 'Save changes';
+        cancelButton.classList.remove('hidden');
+        nameInput.focus();
+      });
+      var exportButton = document.createElement('button');
+      exportButton.type = 'button'; exportButton.className = 'btn sm'; exportButton.textContent = 'Export .js';
+      exportButton.addEventListener('click', function () {
+        var blob = new Blob([extension.code], { type: 'text/javascript;charset=utf-8' });
+        var link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = extension.name.replace(/[^a-z0-9_-]+/gi, '-').replace(/^-|-$/g, '') + '.js';
+        link.click();
+        setTimeout(function () { URL.revokeObjectURL(link.href); }, 1000);
+      });
+      var remove = document.createElement('button');
+      remove.type = 'button'; remove.className = 'btn sm danger-ghost'; remove.textContent = 'Remove';
+      remove.addEventListener('click', function () {
+        stopRunner(extension.id);
+        extensions = extensions.filter(function (item) { return item.id !== extension.id; });
+        if (editingId === extension.id) resetEditor();
+        persist(); render();
+      });
+      controls.append(edit, exportButton, remove);
+      card.appendChild(controls);
+      cardById.set(extension.id, card);
+      enabled.addEventListener('change', function () {
+        extension.enabled = enabled.checked;
+        if (!persist()) extension.enabled = !enabled.checked;
+        reconcileRunners();
+        render();
+      });
+      list.appendChild(card);
+    });
+    reconcileRunners();
+    extensions.forEach(function (extension) {
+      var card = cardById.get(extension.id);
+      if (card) renderActions(extension, card);
+    });
+  }
+  function resetEditor() {
+    editingId = null;
+    nameInput.value = '';
+    codeInput.value = '';
+    saveButton.textContent = 'Add extension';
+    cancelButton.classList.add('hidden');
+  }
+  saveButton.addEventListener('click', function () {
+    var name = nameInput.value.trim();
+    var code = codeInput.value;
+    if (!name) { nameInput.focus(); NT.toast('Enter an extension name', 'error'); return; }
+    if (!code.trim()) { codeInput.focus(); NT.toast('Add JavaScript source first', 'error'); return; }
+    if (code.length > MAX_SOURCE_LENGTH) { NT.toast('Extension source must be under 200 KB', 'error'); return; }
+    if (!editingId && extensions.length >= MAX_EXTENSIONS) { NT.toast('You can add up to 20 extensions', 'error'); return; }
+    if (editingId) {
+      var existing = extensions.find(function (item) { return item.id === editingId; });
+      if (!existing) { resetEditor(); return; }
+      stopRunner(existing.id);
+      existing.name = name.slice(0, 60);
+      existing.code = code;
+      existing.enabled = false;
+    } else {
+      extensions.push({ id: makeId(), name: name.slice(0, 60), code: code, enabled: false });
+    }
+    if (!persist()) {
+      extensions = NT.getJSON('disguise_extensions', []);
+      render();
+      return;
+    }
+    resetEditor();
+    render();
+    NT.toast('Extension saved. Enable it when you are ready.');
+  });
+  cancelButton.addEventListener('click', resetEditor);
+  fileInput.addEventListener('change', function () {
+    var file = fileInput.files && fileInput.files[0];
+    if (!file) return;
+    if (file.size > MAX_SOURCE_LENGTH) { NT.toast('JavaScript file must be under 200 KB', 'error'); fileInput.value = ''; return; }
+    var reader = new FileReader();
+    reader.onload = function () {
+      codeInput.value = String(reader.result || '');
+      if (!nameInput.value.trim()) nameInput.value = file.name.replace(/\.js$/i, '').slice(0, 60);
+      fileInput.value = '';
+    };
+    reader.onerror = function () { NT.toast('Could not read that JavaScript file', 'error'); fileInput.value = ''; };
+    reader.readAsText(file);
+  });
+
+  window.addEventListener('message', function (event) {
+    var matched = null;
+    runnerById.forEach(function (runner, id) {
+      if (runner.frame.contentWindow === event.source) matched = { id: id, runner: runner };
+    });
+    if (!matched || !event.data || typeof event.data !== 'object') return;
+    var data = event.data;
+    if (data.type === 'ready') statusFor(matched.id, 'Ready — sandbox has no page or network access.', false);
+    else if (data.type === 'action' && typeof data.actionId === 'string' && typeof data.label === 'string') {
+      matched.runner.actions.push({ id: data.actionId.slice(0, 80), label: data.label.slice(0, 60) });
+      var extension = extensions.find(function (item) { return item.id === matched.id; });
+      var card = cardById.get(matched.id);
+      if (extension && card) renderActions(extension, card);
+    } else if (data.type === 'log') statusFor(matched.id, String(data.message || '').slice(0, 500), false);
+    else if (data.type === 'error') statusFor(matched.id, String(data.message || 'Extension error').slice(0, 500), true);
+  });
+  render();
+})();
 </script>
 <script>
 (function () {
