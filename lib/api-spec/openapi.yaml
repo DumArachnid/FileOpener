@@ -116,6 +116,32 @@ paths:
                 $ref: "#/components/schemas/AuthResult"
         "400":
           description: Recovery details are invalid
+  /presence/heartbeat:
+    post:
+      operationId: heartbeatPresence
+      tags: [auth]
+      summary: Mark the signed-in account as recently active
+      responses:
+        "204":
+          description: Presence recorded
+        "401":
+          description: Sign in required
+  /developer/online-count:
+    get:
+      operationId: getDeveloperOnlineCount
+      tags: [developer]
+      summary: Get the number of recently active accounts
+      responses:
+        "200":
+          description: Aggregate active account count; no account identities are returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeveloperOnlineCount"
+        "401":
+          description: Sign in required
+        "403":
+          description: Developer rank required
   /sync:
     get:
       operationId: getWorkspaceSync
@@ -742,7 +768,7 @@ components:
           type: string
         role:
           type: string
-          enum: [user, moderator]
+          enum: [user, moderator, dev]
     AuthResult:
       type: object
       required: [user, recoveryCode]
@@ -858,7 +884,7 @@ components:
           type: string
         role:
           type: string
-          enum: [user, moderator]
+          enum: [user, moderator, dev]
         banned:
           type: boolean
         createdAt:
@@ -1006,5 +1032,15 @@ components:
       properties:
         role:
           type: string
-          enum: [user, moderator]
+          enum: [user, moderator, dev]
+    DeveloperOnlineCount:
+      type: object
+      required: [count, activityWindowSeconds]
+      properties:
+        count:
+          type: integer
+          minimum: 0
+        activityWindowSeconds:
+          type: integer
+          const: 90
 

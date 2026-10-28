@@ -38,7 +38,7 @@ export const SignUpBody = zod.object({
 export const SignUpResponse = zod.object({
   "user": zod.object({
   "username": zod.string(),
-  "role": zod.enum(['user', 'moderator'])
+  "role": zod.enum(['user', 'moderator', 'dev'])
 }),
   "recoveryCode": zod.string().nullable()
 })
@@ -62,7 +62,7 @@ export const LogInBody = zod.object({
 export const LogInResponse = zod.object({
   "user": zod.object({
   "username": zod.string(),
-  "role": zod.enum(['user', 'moderator'])
+  "role": zod.enum(['user', 'moderator', 'dev'])
 }),
   "recoveryCode": zod.string().nullable()
 })
@@ -80,7 +80,7 @@ export const LogOutResponse = zod.void()
 export const GetCurrentUserResponse = zod.object({
   "user": zod.object({
   "username": zod.string(),
-  "role": zod.enum(['user', 'moderator'])
+  "role": zod.enum(['user', 'moderator', 'dev'])
 })
 })
 
@@ -108,9 +108,28 @@ export const RecoverAccountBody = zod.object({
 export const RecoverAccountResponse = zod.object({
   "user": zod.object({
   "username": zod.string(),
-  "role": zod.enum(['user', 'moderator'])
+  "role": zod.enum(['user', 'moderator', 'dev'])
 }),
   "recoveryCode": zod.string().nullable()
+})
+
+
+/**
+ * @summary Mark the signed-in account as recently active
+ */
+export const HeartbeatPresenceResponse = zod.void()
+
+
+/**
+ * @summary Get the number of recently active accounts
+ */
+export const getDeveloperOnlineCountResponseCountMin = 0;
+
+
+
+export const GetDeveloperOnlineCountResponse = zod.object({
+  "count": zod.number().int().min(getDeveloperOnlineCountResponseCountMin),
+  "activityWindowSeconds": zod.literal(90)
 })
 
 
@@ -413,7 +432,7 @@ export const FindModerationUserQueryParams = zod.object({
 
 export const FindModerationUserResponse = zod.object({
   "username": zod.string(),
-  "role": zod.enum(['user', 'moderator']),
+  "role": zod.enum(['user', 'moderator', 'dev']),
   "banned": zod.boolean(),
   "createdAt": zod.coerce.date(),
   "banReason": zod.string().nullable()
@@ -443,7 +462,7 @@ export const UpdateModerationUserBanBody = zod.object({
 
 export const UpdateModerationUserBanResponse = zod.object({
   "username": zod.string(),
-  "role": zod.enum(['user', 'moderator']),
+  "role": zod.enum(['user', 'moderator', 'dev']),
   "banned": zod.boolean(),
   "createdAt": zod.coerce.date(),
   "banReason": zod.string().nullable()
@@ -464,7 +483,7 @@ export const PromoteModerationUserParams = zod.object({
 
 export const PromoteModerationUserResponse = zod.object({
   "username": zod.string(),
-  "role": zod.enum(['user', 'moderator']),
+  "role": zod.enum(['user', 'moderator', 'dev']),
   "banned": zod.boolean(),
   "createdAt": zod.coerce.date(),
   "banReason": zod.string().nullable()
@@ -663,7 +682,7 @@ export const FindDeveloperManagedAccountQueryParams = zod.object({
 
 export const FindDeveloperManagedAccountResponse = zod.object({
   "username": zod.string(),
-  "role": zod.enum(['user', 'moderator']),
+  "role": zod.enum(['user', 'moderator', 'dev']),
   "banned": zod.boolean(),
   "createdAt": zod.coerce.date(),
   "banReason": zod.string().nullable()
@@ -683,12 +702,12 @@ export const SetDeveloperManagedAccountRoleParams = zod.object({
 })
 
 export const SetDeveloperManagedAccountRoleBody = zod.object({
-  "role": zod.enum(['user', 'moderator'])
+  "role": zod.enum(['user', 'moderator', 'dev'])
 })
 
 export const SetDeveloperManagedAccountRoleResponse = zod.object({
   "username": zod.string(),
-  "role": zod.enum(['user', 'moderator']),
+  "role": zod.enum(['user', 'moderator', 'dev']),
   "banned": zod.boolean(),
   "createdAt": zod.coerce.date(),
   "banReason": zod.string().nullable()

@@ -4,7 +4,7 @@ declare global {
       studyDeskUser?: {
         id: number;
         username: string;
-        role: "user" | "moderator";
+        role: "user" | "moderator" | "dev";
         bannedAt: Date | null;
       };
       studyDeskSessionHash?: string;

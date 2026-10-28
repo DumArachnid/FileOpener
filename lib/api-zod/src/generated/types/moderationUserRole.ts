@@ -12,4 +12,5 @@ export type ModerationUserRole = typeof ModerationUserRole[keyof typeof Moderati
 export const ModerationUserRole = {
   user: 'user',
   moderator: 'moderator',
+  dev: 'dev',
 } as const;

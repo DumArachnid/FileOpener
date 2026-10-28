@@ -383,6 +383,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 .account-nudge h3 { font-size: 15px; margin: 0; }
 .account-nudge p { margin: 8px 0 12px; color: var(--muted); font-size: 12px; line-height: 1.45; }
 .account-nudge-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.update-notice { position: fixed; top: 14px; right: 14px; z-index: 999; display: flex; align-items: center; gap: 12px; width: min(560px, calc(100vw - 28px)); padding: 12px; border: 1.5px solid var(--border-strong); border-radius: 12px; background: var(--panel); color: var(--text); box-shadow: 4px 4px 0 var(--ink-shadow); }
+.update-notice p { flex: 1; margin: 0; font-size: 12px; line-height: 1.4; }
+.update-notice[hidden], .update-notice.hidden { display: none !important; }
 
 @keyframes slideIn { from { opacity: 0; transform: translateX(-14px); } }
 @keyframes rise { from { opacity: 0; transform: translateY(12px); } }
@@ -833,6 +836,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <button class="btn sm hide-in-focus" id="helpBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"><i data-ic="keyboard"></i></button>
 <button class="btn sm hide-in-focus" id="storeBtn" title="Open the Extension Store" aria-label="Open the Extension Store" aria-expanded="false"><i data-ic="cart"></i></button>
 <button class="btn sm hide-in-focus hidden" id="adminPanelBtn" type="button" title="Open admin panel" aria-label="Open admin panel"><i data-ic="shield"></i></button>
+<button class="btn sm hide-in-focus hidden" id="devOnlineBtn" type="button" title="Signed-in accounts active within the last 90 seconds" aria-live="polite">Online: …</button>
 <button class="btn sm hide-in-focus" id="accountBtn" type="button" title="Sign in to sync your workspace"><i data-ic="user"></i><span id="accountBtnText">Account</span></button>
 <button class="btn sm hide-in-focus" id="paletteBtn" title="Command palette (Ctrl/Cmd+K)"><i data-ic="command"></i></button>
 <button class="btn sm" id="focusModeBtn" title="Expand view / toggle focus mode (Alt+Z)"><i data-ic="eye"></i><span>Focus</span></button>
@@ -886,7 +890,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div class="online-store-status" id="onlineStoreStatus" role="status">Connecting to the online store…</div>
 <div class="community-list" id="myCommunityExtensions" aria-label="Your extensions"></div>
 <section class="moderator-tools developer-tools" id="developerTools" aria-labelledby="developerToolsTitle">
-<div><h4 id="developerToolsTitle">Developer controls</h4><p>Authorized developers can choose which Study Desk accounts can moderate.</p></div>
+<div><h4 id="developerToolsTitle">Developer controls</h4><p>Authorized developers can assign or remove Study Desk admin and developer ranks.</p></div>
 <div class="online-store-status" id="developerAuthStatus" role="status">Checking developer access…</div>
 <div class="developer-control-actions">
 <button class="btn sm" id="developerLoginBtn" type="button">Developer sign in</button>
@@ -1119,6 +1123,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </div>
 
 <div id="toasts" class="toasts" aria-live="polite"></div>
+<aside id="updateNotice" class="update-notice hidden" role="status" aria-live="polite">
+<p><strong>Study Desk was updated.</strong> This tab is on an older version. Refresh to load the latest version.</p>
+<button class="btn sm primary" id="refreshForUpdateBtn" type="button">Refresh now</button>
+</aside>
 <aside id="accountNudge" class="account-nudge" role="region" aria-label="Account recommendation" hidden>
 <div class="row-between"><h3>Keep your Study Desk in sync</h3><button class="icon-btn" id="accountNudgeClose" type="button" aria-label="Dismiss account recommendation">×</button></div>
 <p>Create an account to sync your notes, bookmarks, and preferences across devices. You can keep using Study Desk without one.</p>
@@ -4350,11 +4358,61 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     } catch (error) { return; }
     setTimeout(function () { showAccountNudgeWhenClear(today); }, 12000);
   }
+  function hasModeratorAccess(user) {
+    return !!user && (user.role === 'moderator' || user.role === 'dev');
+  }
+  var presenceHeartbeatTimer = null;
+  var developerOnlineCountTimer = null;
+  async function sendPresenceHeartbeat() {
+    if (!accountUser) return;
+    try { await api('/presence/heartbeat', { method: 'POST' }); } catch (error) {}
+  }
+  async function refreshDeveloperOnlineCount() {
+    if (!accountUser || accountUser.role !== 'dev') return;
+    try {
+      var result = await api('/developer/online-count');
+      $('devOnlineBtn').textContent = 'Online: ' + result.count;
+      $('devOnlineBtn').title = result.count + ' signed-in accounts active within the last ' +
+        result.activityWindowSeconds + ' seconds. Click to refresh.';
+    } catch (error) {
+      $('devOnlineBtn').textContent = 'Online: —';
+      $('devOnlineBtn').title = 'Could not load the active account count. Click to retry.';
+    }
+  }
+  function updatePresenceTracking() {
+    if (!accountUser) {
+      if (presenceHeartbeatTimer) clearInterval(presenceHeartbeatTimer);
+      presenceHeartbeatTimer = null;
+      if (developerOnlineCountTimer) clearInterval(developerOnlineCountTimer);
+      developerOnlineCountTimer = null;
+      $('devOnlineBtn').classList.add('hidden');
+      return;
+    }
+    var firstHeartbeat = null;
+    if (!presenceHeartbeatTimer) {
+      firstHeartbeat = sendPresenceHeartbeat();
+      presenceHeartbeatTimer = setInterval(sendPresenceHeartbeat, 30000);
+    }
+    var isDev = accountUser.role === 'dev';
+    $('devOnlineBtn').classList.toggle('hidden', !isDev);
+    if (isDev) {
+      if (firstHeartbeat) firstHeartbeat.then(refreshDeveloperOnlineCount);
+      else refreshDeveloperOnlineCount();
+      if (!developerOnlineCountTimer) {
+        developerOnlineCountTimer = setInterval(refreshDeveloperOnlineCount, 30000);
+      }
+    } else {
+      if (developerOnlineCountTimer) clearInterval(developerOnlineCountTimer);
+      developerOnlineCountTimer = null;
+    }
+  }
+  $('devOnlineBtn').addEventListener('click', refreshDeveloperOnlineCount);
   function setAccountUser(user) {
-    var previousModerator = !!accountUser && accountUser.role === 'moderator';
+    var previousModerator = hasModeratorAccess(accountUser);
     var previousUsername = accountUser && accountUser.username;
     accountUser = user || null;
-    var isModerator = !!accountUser && accountUser.role === 'moderator';
+    var isModerator = hasModeratorAccess(accountUser);
+    updatePresenceTracking();
     if (accountUser) {
       try { localStorage.setItem('study_desk_account_created', 'true'); } catch (error) {}
       hideAccountNudge();
@@ -4390,7 +4448,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     $('accountRecoveryForm').classList.add('hidden');
     $('accountUsername').textContent = accountUser ? accountUser.username : '';
     $('accountDialogIntro').textContent = accountUser
-      ? (accountUser.role === 'moderator'
+      ? (accountUser.role === 'dev'
+        ? 'Developer rank is active. The online count shows signed-in accounts active in the last 90 seconds; existing Admin tools are also available.'
+        : accountUser.role === 'moderator'
         ? 'Use the Admin button beside the Extension Store to review submissions, manage accounts, and grant rewards.'
         : 'Your preferences, notes, and bookmarks are connected to this account.')
       : 'Create an account to sync preferences, notes, and bookmarks across your devices.';
@@ -4416,7 +4476,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       $('accountLoginForm').classList.add('hidden');
       $('accountSignupForm').classList.add('hidden');
       $('accountRecoveryForm').classList.add('hidden');
-      $('accountDialogIntro').textContent = accountUser.role === 'moderator'
+      $('accountDialogIntro').textContent = accountUser.role === 'dev'
+        ? 'Developer rank is active. The online count shows signed-in accounts active in the last 90 seconds; existing Admin tools are also available.'
+        : accountUser.role === 'moderator'
         ? 'Use the Admin button beside the Extension Store to review submissions, manage accounts, and grant rewards.'
         : 'Your preferences, notes, and bookmarks are connected to this account.';
     }
@@ -4636,7 +4698,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   $('accountNudgeLater').addEventListener('click', hideAccountNudge);
   $('accountNudgeClose').addEventListener('click', hideAccountNudge);
   $('adminPanelBtn').addEventListener('click', function () {
-    if (!accountUser || accountUser.role !== 'moderator') return;
+    if (!hasModeratorAccess(accountUser)) return;
     if (!adminDialog.open) {
       try {
         adminDialog.showModal();
@@ -4954,7 +5016,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
 
   async function loadModerationQueue() {
-    if (!accountUser || accountUser.role !== 'moderator') return false;
+    if (!hasModeratorAccess(accountUser)) return false;
     $('moderationQueueStatus').textContent = 'Loading submissions…';
     try {
       pendingModerationExtensions = await api('/moderation/extensions');
@@ -4974,7 +5036,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
 
   async function loadPublishedModerationExtensions() {
-    if (!accountUser || accountUser.role !== 'moderator') return false;
+    if (!hasModeratorAccess(accountUser)) return false;
     $('moderationPublishedStatus').textContent = 'Loading published extensions…';
     try {
       publishedModerationExtensions = await api('/moderation/extensions/published');
@@ -5023,7 +5085,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     row.className = 'community-row';
     var label = document.createElement('div');
     var title = document.createElement('strong');
-    title.textContent = user.username + (user.role === 'moderator' ? ' · admin' : '');
+    title.textContent = user.username + (user.role === 'dev' ? ' · dev' : user.role === 'moderator' ? ' · admin' : '');
     var detail = document.createElement('div');
     detail.className = 'small muted';
     detail.textContent = user.banned
@@ -5033,7 +5095,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     row.appendChild(label);
     var actions = document.createElement('div');
     actions.className = 'community-row-actions';
-    if (user.role !== 'moderator' && user.username !== accountUser.username) {
+    if (!hasModeratorAccess(user) && user.username !== accountUser.username) {
       actions.appendChild(makeButton(user.banned ? 'Restore account' : 'Ban account',
         user.banned ? 'btn sm' : 'btn sm danger-ghost',
         async function () {
@@ -5194,7 +5256,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 
   $('adminRewardForm').addEventListener('submit', async function (event) {
     event.preventDefault();
-    if (!accountUser || accountUser.role !== 'moderator' || !moderatedUser) return;
+    if (!hasModeratorAccess(accountUser) || !moderatedUser) return;
     var form = event.currentTarget;
     setBusy(form, true);
     $('adminRewardStatus').textContent = 'Saving reward…';
@@ -5219,7 +5281,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 
   $('moderationUserSearchForm').addEventListener('submit', async function (event) {
     event.preventDefault();
-    if (!accountUser || accountUser.role !== 'moderator') return;
+    if (!hasModeratorAccess(accountUser)) return;
     var username = $('moderationUsernameSearch').value.trim();
     var container = $('moderationUserResult');
     moderatedUser = null;
@@ -5246,11 +5308,11 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     if (authorized) {
       $('developerAuthStatus').textContent = 'Developer access active for ' + email + '. Select a Study Desk account below.';
     } else if (developerAuthState.user) {
-      $('developerAuthStatus').textContent = 'This account is not authorized to manage admin access.';
+      $('developerAuthStatus').textContent = 'This account is not authorized to manage Study Desk roles.';
     } else if (developerAuthNotice) {
       $('developerAuthStatus').textContent = developerAuthNotice;
     } else {
-      $('developerAuthStatus').textContent = 'Sign in with an authorized developer account to assign or remove admin access.';
+      $('developerAuthStatus').textContent = 'Sign in with an authorized developer account to assign or remove admin and developer ranks.';
     }
   }
 
@@ -5302,46 +5364,80 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     row.className = 'community-row';
     var label = document.createElement('div');
     var title = document.createElement('strong');
-    title.textContent = user.username + (user.role === 'moderator' ? ' · admin' : ' · regular account');
+    title.textContent = user.username + (
+      user.role === 'dev' ? ' · dev' :
+      user.role === 'moderator' ? ' · admin' : ' · regular account'
+    );
     var detail = document.createElement('div');
     detail.className = 'small muted';
     detail.textContent = user.banned
       ? 'Banned' + (user.banReason ? ' · ' + user.banReason : '') + ' · restore before promoting'
-      : 'Account is active';
+      : user.role === 'dev'
+        ? 'Dev rank includes the online count and existing Admin tools.'
+        : 'Account is active';
     label.append(title, detail);
     row.appendChild(label);
-    if (user.role === 'moderator' || !user.banned) {
-      var nextRole = user.role === 'moderator' ? 'user' : 'moderator';
-      row.appendChild(makeButton(
-        nextRole === 'moderator' ? 'Make admin' : 'Remove admin',
-        nextRole === 'moderator' ? 'btn sm primary' : 'btn sm danger-ghost',
-        async function () {
-          var prompt = nextRole === 'moderator'
-            ? 'This account will be able to review extensions, manage regular accounts, and grant rewards.'
-            : 'This account will lose admin access immediately.';
-          if (!(await NT.confirmDialog(
-            nextRole === 'moderator' ? 'Promote this account?' : 'Remove admin access?',
-            prompt,
-            nextRole === 'moderator' ? 'Make admin' : 'Remove access',
-            nextRole !== 'moderator',
-          ))) return;
-          try {
-            var updated = await api('/developer/accounts/' + encodeURIComponent(user.username) + '/role', {
-              method: 'PATCH',
-              body: { role: nextRole },
-            });
-            renderDeveloperAccount(updated);
-            if (accountUser && accountUser.username === updated.username) {
-              accountUser.role = updated.role;
-              setAccountUser(accountUser);
-            }
-            NT.toast(nextRole === 'moderator' ? 'Admin access granted.' : 'Admin access removed.');
-          } catch (error) {
-            NT.toast(readError(error), 'error');
-          }
-        },
-      ));
+    var actions = document.createElement('div');
+    actions.className = 'community-row-actions';
+    async function assignRole(nextRole, labelText) {
+      var isRemoval = nextRole === 'user';
+      var prompt = nextRole === 'dev'
+        ? 'This account keeps the existing Admin tools and also gains access to the aggregate online count.'
+        : nextRole === 'moderator'
+          ? 'This account keeps Admin tools but loses the developer-only online count.'
+          : 'This account will lose Admin and developer access immediately.';
+      if (!(await NT.confirmDialog(
+        nextRole === 'dev' ? 'Assign developer rank?' : isRemoval ? 'Remove privileged access?' : 'Assign admin rank?',
+        prompt,
+        labelText,
+        isRemoval,
+      ))) return;
+      try {
+        var updated = await api('/developer/accounts/' + encodeURIComponent(user.username) + '/role', {
+          method: 'PATCH',
+          body: { role: nextRole },
+        });
+        renderDeveloperAccount(updated);
+        if (accountUser && accountUser.username === updated.username) {
+          accountUser.role = updated.role;
+          setAccountUser(accountUser);
+        }
+        NT.toast(nextRole === 'dev'
+          ? 'Developer rank granted.'
+          : nextRole === 'moderator'
+            ? 'Admin rank set.'
+            : 'Privileged access removed.');
+      } catch (error) {
+        NT.toast(readError(error), 'error');
+      }
     }
+    if (user.role === 'user') {
+      if (!user.banned) {
+        actions.appendChild(makeButton('Make admin', 'btn sm primary', function () {
+          assignRole('moderator', 'Make admin');
+        }));
+        actions.appendChild(makeButton('Make dev', 'btn sm primary', function () {
+          assignRole('dev', 'Make dev');
+        }));
+      }
+    } else if (user.role === 'moderator') {
+      if (!user.banned) {
+        actions.appendChild(makeButton('Make dev', 'btn sm primary', function () {
+          assignRole('dev', 'Make dev');
+        }));
+      }
+      actions.appendChild(makeButton('Remove admin', 'btn sm danger-ghost', function () {
+        assignRole('user', 'Remove access');
+      }));
+    } else if (user.role === 'dev') {
+      actions.appendChild(makeButton('Remove dev rank', 'btn sm', function () {
+        assignRole('moderator', 'Remove dev rank');
+      }));
+      actions.appendChild(makeButton('Remove admin', 'btn sm danger-ghost', function () {
+        assignRole('user', 'Remove access');
+      }));
+    }
+    if (actions.childNodes.length) row.appendChild(actions);
     container.appendChild(row);
   }
 
@@ -5467,7 +5563,42 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     if (accountUser) applyAdminRewardGrants();
   }, 30000);
   document.addEventListener('visibilitychange', function () {
-    if (!document.hidden && accountUser) loadPublicExtensions();
+    if (!document.hidden && accountUser) {
+      loadPublicExtensions();
+      sendPresenceHeartbeat();
+      if (accountUser.role === 'dev') refreshDeveloperOnlineCount();
+    }
+  });
+})();
+</script>
+<script>
+(function () {
+  'use strict';
+  var loadedBuild = new URLSearchParams(window.location.search).get('build');
+  var notice = document.getElementById('updateNotice');
+  if (!loadedBuild || !notice) return;
+
+  async function checkForNewerBuild() {
+    if (document.hidden || !loadedBuild) return;
+    try {
+      var indexUrl = new URL('./index.html', window.location.href);
+      indexUrl.searchParams.set('_study_desk_version_check', String(Date.now()));
+      var response = await fetch(indexUrl.href, { cache: 'no-store', credentials: 'same-origin' });
+      if (!response.ok) return;
+      var latestHtml = await response.text();
+      var latestDocument = new DOMParser().parseFromString(latestHtml, 'text/html');
+      var latestBuild = latestDocument.querySelector('meta[name="study-desk-build"]')?.getAttribute('content');
+      if (latestBuild && latestBuild !== loadedBuild) notice.classList.remove('hidden');
+    } catch (error) {}
+  }
+
+  document.getElementById('refreshForUpdateBtn').addEventListener('click', function () {
+    window.top.location.reload();
+  });
+  window.setTimeout(checkForNewerBuild, 15000);
+  window.setInterval(checkForNewerBuild, 60000);
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) checkForNewerBuild();
   });
 })();
 </script>

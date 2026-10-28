@@ -143,7 +143,7 @@ router.post(
     }
     res.json(PromoteModerationUserResponse.parse({
       username: updated.username,
-      role: updated.role === "moderator" ? "moderator" : "user",
+      role: updated.role === "moderator" || updated.role === "dev" ? updated.role : "user",
       banned: updated.bannedAt !== null,
       createdAt: updated.createdAt,
       banReason: updated.banReason,

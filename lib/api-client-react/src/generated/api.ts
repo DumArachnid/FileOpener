@@ -31,6 +31,7 @@ import type {
   CommunityExtension,
   CurrentUser,
   DeveloperAuthState,
+  DeveloperOnlineCount,
   DeveloperRoleInput,
   ExtensionInput,
   ExtensionList,
@@ -570,6 +571,157 @@ export const useRecoverAccount = <TError = ErrorType<void>,
       > => {
       return useMutation(getRecoverAccountMutationOptions(options));
     }
+
+export const getHeartbeatPresenceUrl = () => {
+
+
+
+
+  return `/api/presence/heartbeat`
+}
+
+/**
+ * @summary Mark the signed-in account as recently active
+ */
+export const heartbeatPresence = async ( options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getHeartbeatPresenceUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getHeartbeatPresenceMutationKey = () => ['heartbeatPresence'] as const;
+
+export const getHeartbeatPresenceMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof heartbeatPresence>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof heartbeatPresence>>, TError,void, TContext> => {
+
+const mutationKey = getHeartbeatPresenceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof heartbeatPresence>>, void> = () => {
+
+
+          return  heartbeatPresence(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type HeartbeatPresenceMutationResult = NonNullable<Awaited<ReturnType<typeof heartbeatPresence>>>
+
+    export type HeartbeatPresenceMutationError = ErrorType<void>
+
+
+    /**
+ * @summary Mark the signed-in account as recently active
+ */
+export const useHeartbeatPresence = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof heartbeatPresence>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof heartbeatPresence>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getHeartbeatPresenceMutationOptions(options));
+    }
+
+export const getGetDeveloperOnlineCountUrl = () => {
+
+
+
+
+  return `/api/developer/online-count`
+}
+
+/**
+ * @summary Get the number of recently active accounts
+ */
+export const getDeveloperOnlineCount = async ( options?: Parameters<typeof customFetch>[1]): Promise<DeveloperOnlineCount> => {
+
+  return customFetch<DeveloperOnlineCount>(getGetDeveloperOnlineCountUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDeveloperOnlineCountQueryKey = () => {
+    return [
+    `/api/developer/online-count`
+    ] as const;
+    }
+
+
+export const getGetDeveloperOnlineCountQueryOptions = <TData = Awaited<ReturnType<typeof getDeveloperOnlineCount>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDeveloperOnlineCount>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDeveloperOnlineCountQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDeveloperOnlineCount>>> = ({ signal }) => getDeveloperOnlineCount({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDeveloperOnlineCount>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDeveloperOnlineCountQueryResult = NonNullable<Awaited<ReturnType<typeof getDeveloperOnlineCount>>>
+export type GetDeveloperOnlineCountQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the number of recently active accounts
+ */
+
+export function useGetDeveloperOnlineCount<TData = Awaited<ReturnType<typeof getDeveloperOnlineCount>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDeveloperOnlineCount>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDeveloperOnlineCountQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetWorkspaceSyncUrl = () => {
 

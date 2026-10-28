@@ -80,7 +80,7 @@ function userSummary(row: {
 }) {
   return {
     username: row.username,
-    role: row.role === "moderator" ? "moderator" : "user",
+    role: row.role === "moderator" || row.role === "dev" ? row.role : "user",
     banned: row.bannedAt !== null,
     createdAt: row.createdAt,
     banReason: row.banReason,
@@ -280,8 +280,8 @@ router.patch(
       res.status(404).json({ error: "No Study Desk account found with that username." });
       return;
     }
-    if (body.data.role === "moderator" && target.bannedAt) {
-      res.status(409).json({ error: "Restore this account before promoting it to moderator." });
+    if (body.data.role !== "user" && target.bannedAt) {
+      res.status(409).json({ error: "Restore this account before assigning a privileged role." });
       return;
     }
     const [updated] = await db

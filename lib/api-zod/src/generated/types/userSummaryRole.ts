@@ -12,4 +12,5 @@ export type UserSummaryRole = typeof UserSummaryRole[keyof typeof UserSummaryRol
 export const UserSummaryRole = {
   user: 'user',
   moderator: 'moderator',
+  dev: 'dev',
 } as const;

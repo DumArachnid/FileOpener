@@ -60,6 +60,7 @@ export type UserSummaryRole = typeof UserSummaryRole[keyof typeof UserSummaryRol
 export const UserSummaryRole = {
   user: 'user',
   moderator: 'moderator',
+  dev: 'dev',
 } as const;
 
 export interface UserSummary {
@@ -169,6 +170,7 @@ export type ModerationUserRole = typeof ModerationUserRole[keyof typeof Moderati
 export const ModerationUserRole = {
   user: 'user',
   moderator: 'moderator',
+  dev: 'dev',
 } as const;
 
 export interface ModerationUser {
@@ -286,10 +288,17 @@ export type DeveloperRoleInputRole = typeof DeveloperRoleInputRole[keyof typeof 
 export const DeveloperRoleInputRole = {
   user: 'user',
   moderator: 'moderator',
+  dev: 'dev',
 } as const;
 
 export interface DeveloperRoleInput {
   role: DeveloperRoleInputRole;
+}
+
+export interface DeveloperOnlineCount {
+  /** @minimum 0 */
+  count: number;
+  activityWindowSeconds: 90;
 }
 
 export type FindModerationUserParams = {

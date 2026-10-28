@@ -68,7 +68,7 @@ function userSummary(row: {
 }) {
   return {
     username: row.username,
-    role: row.role === "moderator" ? "moderator" : "user",
+    role: row.role === "moderator" || row.role === "dev" ? row.role : "user",
     banned: row.bannedAt !== null,
     createdAt: row.createdAt,
     banReason: row.banReason,

@@ -1,4 +1,6 @@
 import path from 'path';
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
@@ -27,9 +29,53 @@ if (!basePath) {
   );
 }
 
+const artifactRoot = import.meta.dirname;
+const workspaceRoot = path.resolve(artifactRoot, '..', '..');
+const versionExtensions = /\.(?:css|html|js|jsx|json|ts|tsx|yaml|yml)$/;
+
+function sourceFiles(directory: string): string[] {
+  if (!existsSync(directory)) return [];
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    if (entry.isDirectory() && ['.git', '.turbo', 'dist', 'node_modules'].includes(entry.name)) {
+      return [];
+    }
+    const entryPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) return sourceFiles(entryPath);
+    return versionExtensions.test(entry.name) ? [entryPath] : [];
+  });
+}
+
+function getStudyDeskBuildId(): string {
+  const inputs = [
+    path.join(artifactRoot, 'public', 'workspace.html'),
+    path.join(artifactRoot, 'index.html'),
+    path.join(artifactRoot, 'vite.config.ts'),
+    ...sourceFiles(path.join(artifactRoot, 'src')),
+    ...sourceFiles(path.resolve(artifactRoot, '..', 'api-server', 'src')),
+    ...sourceFiles(path.join(workspaceRoot, 'lib')),
+  ].filter(existsSync).sort();
+  const hash = createHash('sha256');
+  for (const file of inputs) {
+    hash.update(path.relative(workspaceRoot, file));
+    hash.update('\0');
+    hash.update(readFileSync(file));
+    hash.update('\0');
+  }
+  return hash.digest('hex').slice(0, 16);
+}
+
+const studyDeskBuildVersion = {
+  name: 'study-desk-build-version',
+  transformIndexHtml(html: string) {
+    const tag = `<meta name="study-desk-build" content="${getStudyDeskBuildId()}">`;
+    return html.replace('</head>', `  ${tag}\n</head>`);
+  },
+};
+
 export default defineConfig({
   base: basePath,
   plugins: [
+    studyDeskBuildVersion,
     react(),
     tailwindcss(),
     runtimeErrorOverlay(),

@@ -12,4 +12,5 @@ export type DeveloperRoleInputRole = typeof DeveloperRoleInputRole[keyof typeof 
 export const DeveloperRoleInputRole = {
   user: 'user',
   moderator: 'moderator',
+  dev: 'dev',
 } as const;

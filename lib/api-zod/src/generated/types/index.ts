@@ -21,6 +21,7 @@ export * from './communityExtension';
 export * from './currentUser';
 export * from './developerAuthState';
 export * from './developerAuthUser';
+export * from './developerOnlineCount';
 export * from './developerRoleInput';
 export * from './developerRoleInputRole';
 export * from './extensionInput';

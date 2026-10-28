@@ -15,12 +15,14 @@ const queryClient = new QueryClient();
 
 function Home() {
   const ref = useRef<HTMLIFrameElement>(null);
+  const buildId =
+    document.querySelector('meta[name="study-desk-build"]')?.getAttribute('content') ?? '';
   return (
     <iframe
       ref={ref}
       title="New Tab workspace"
       data-testid="frame-workspace"
-      src={`${import.meta.env.BASE_URL}workspace.html`}
+      src={`${import.meta.env.BASE_URL}workspace.html?build=${encodeURIComponent(buildId)}`}
       className="fixed inset-0 h-[100dvh] w-full border-0"
       style={{ background: '#f2ebdd' }}
       allow="fullscreen; clipboard-write"

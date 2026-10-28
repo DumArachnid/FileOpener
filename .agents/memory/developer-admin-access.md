@@ -21,6 +21,12 @@ Admins may view a user's tab summaries only after that user opts in. Show only w
 
 **How to apply:** Default to off, keep the opt-in visible in account settings, and enforce the same privacy filter in the server response rather than relying only on the interface.
 
+Developer-rank accounts may check an aggregate count of recently active signed-in accounts; do not expose their identities or browsing details through presence features.
+
+**Why:** The user asked for a count of how many users are online, not a list of who they are.
+
+**How to apply:** Record authenticated heartbeats with a short expiry window, and keep developer presence responses aggregate-only.
+
 Keep the native admin dialog outside the Extension Store overlay.
 
 **Why:** The store overlay is hidden when closed; nesting a native dialog inside it prevents reliable modal rendering and can disrupt the client.

@@ -32,7 +32,7 @@ export const resolveAccountSession: RequestHandler = async (req, _res, next) => 
     if (session) {
       req.studyDeskUser = {
         ...session,
-        role: session.role === "moderator" ? "moderator" : "user",
+        role: session.role === "moderator" || session.role === "dev" ? session.role : "user",
       };
       req.studyDeskSessionHash = tokenHash;
     }
@@ -59,8 +59,20 @@ export const requireModerator: RequestHandler = (req, res, next) => {
     res.status(401).json({ error: "Sign in to continue." });
     return;
   }
-  if (req.studyDeskUser.bannedAt || req.studyDeskUser.role !== "moderator") {
+  if (req.studyDeskUser.bannedAt || !["moderator", "dev"].includes(req.studyDeskUser.role)) {
     res.status(403).json({ error: "Moderator access required." });
+    return;
+  }
+  next();
+};
+
+export const requireDeveloperRank: RequestHandler = (req, res, next) => {
+  if (!req.studyDeskUser) {
+    res.status(401).json({ error: "Sign in to continue." });
+    return;
+  }
+  if (req.studyDeskUser.bannedAt || req.studyDeskUser.role !== "dev") {
+    res.status(403).json({ error: "Developer rank required." });
     return;
   }
   next();
