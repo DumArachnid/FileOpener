@@ -154,7 +154,7 @@ export const ListPublicExtensionsResponseItem = zod.object({
   "version": zod.string(),
   "publisherUsername": zod.string(),
   "published": zod.boolean(),
-  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected']),
+  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected', 'removed']),
   "moderationNote": zod.string().nullish(),
   "updatedAt": zod.coerce.date()
 })
@@ -185,7 +185,7 @@ export const CreateCommunityExtensionResponse = zod.object({
   "version": zod.string(),
   "publisherUsername": zod.string(),
   "published": zod.boolean(),
-  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected']),
+  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected', 'removed']),
   "moderationNote": zod.string().nullish(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
@@ -207,7 +207,7 @@ export const GetPublicExtensionResponse = zod.object({
   "version": zod.string(),
   "publisherUsername": zod.string(),
   "published": zod.boolean(),
-  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected']),
+  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected', 'removed']),
   "moderationNote": zod.string().nullish(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
@@ -243,7 +243,7 @@ export const UpdateCommunityExtensionResponse = zod.object({
   "version": zod.string(),
   "publisherUsername": zod.string(),
   "published": zod.boolean(),
-  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected']),
+  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected', 'removed']),
   "moderationNote": zod.string().nullish(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
@@ -275,7 +275,7 @@ export const PublishCommunityExtensionResponse = zod.object({
   "version": zod.string(),
   "publisherUsername": zod.string(),
   "published": zod.boolean(),
-  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected']),
+  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected', 'removed']),
   "moderationNote": zod.string().nullish(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
@@ -293,7 +293,7 @@ export const ListMyExtensionsResponseItem = zod.object({
   "version": zod.string(),
   "publisherUsername": zod.string(),
   "published": zod.boolean(),
-  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected']),
+  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected', 'removed']),
   "moderationNote": zod.string().nullish(),
   "updatedAt": zod.coerce.date()
 })
@@ -310,13 +310,32 @@ export const ListModerationExtensionsResponseItem = zod.object({
   "version": zod.string(),
   "publisherUsername": zod.string(),
   "published": zod.boolean(),
-  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected']),
+  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected', 'removed']),
   "moderationNote": zod.string().nullish(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
   "code": zod.string()
 }))
 export const ListModerationExtensionsResponse = zod.array(ListModerationExtensionsResponseItem)
+
+
+/**
+ * @summary List approved public extensions for moderator review
+ */
+export const ListPublishedModerationExtensionsResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "version": zod.string(),
+  "publisherUsername": zod.string(),
+  "published": zod.boolean(),
+  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected', 'removed']),
+  "moderationNote": zod.string().nullish(),
+  "updatedAt": zod.coerce.date()
+}).and(zod.object({
+  "code": zod.string()
+}))
+export const ListPublishedModerationExtensionsResponse = zod.array(ListPublishedModerationExtensionsResponseItem)
 
 
 /**
@@ -342,7 +361,37 @@ export const ReviewCommunityExtensionResponse = zod.object({
   "version": zod.string(),
   "publisherUsername": zod.string(),
   "published": zod.boolean(),
-  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected']),
+  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected', 'removed']),
+  "moderationNote": zod.string().nullish(),
+  "updatedAt": zod.coerce.date()
+}).and(zod.object({
+  "code": zod.string()
+}))
+
+
+/**
+ * @summary Remove an approved extension from the public store
+ */
+export const TakeDownCommunityExtensionParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const takeDownCommunityExtensionBodyReasonMax = 500;
+
+
+
+export const TakeDownCommunityExtensionBody = zod.object({
+  "reason": zod.string().min(1).max(takeDownCommunityExtensionBodyReasonMax)
+})
+
+export const TakeDownCommunityExtensionResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "version": zod.string(),
+  "publisherUsername": zod.string(),
+  "published": zod.boolean(),
+  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected', 'removed']),
   "moderationNote": zod.string().nullish(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({

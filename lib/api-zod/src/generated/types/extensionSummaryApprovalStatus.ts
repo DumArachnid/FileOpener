@@ -14,4 +14,5 @@ export const ExtensionSummaryApprovalStatus = {
   pending: 'pending',
   approved: 'approved',
   rejected: 'rejected',
+  removed: 'removed',
 } as const;

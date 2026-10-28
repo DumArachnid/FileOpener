@@ -294,6 +294,20 @@ paths:
                 $ref: "#/components/schemas/ModerationExtensionList"
         "403":
           description: Moderator access required
+  /moderation/extensions/published:
+    get:
+      operationId: listPublishedModerationExtensions
+      tags: [moderation]
+      summary: List approved public extensions for moderator review
+      responses:
+        "200":
+          description: Public extensions with source code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModerationExtensionList"
+        "403":
+          description: Moderator access required
   /moderation/extensions/{id}/review:
     post:
       operationId: reviewCommunityExtension
@@ -322,6 +336,34 @@ paths:
           description: Moderator access required
         "404":
           description: Pending extension not found
+  /moderation/extensions/{id}/takedown:
+    post:
+      operationId: takeDownCommunityExtension
+      tags: [moderation]
+      summary: Remove an approved extension from the public store
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExtensionTakedownInput"
+      responses:
+        "200":
+          description: Extension removed from public listings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunityExtension"
+        "403":
+          description: Moderator access required
+        "404":
+          description: Published extension not found
   /moderation/users:
     get:
       operationId: findModerationUser
@@ -616,7 +658,7 @@ components:
           type: boolean
         approvalStatus:
           type: string
-          enum: [draft, pending, approved, rejected]
+          enum: [draft, pending, approved, rejected, removed]
         moderationNote:
           type: ["string", "null"]
         updatedAt:
@@ -647,6 +689,14 @@ components:
           enum: [approve, reject]
         note:
           type: string
+          maxLength: 500
+    ExtensionTakedownInput:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          minLength: 1
           maxLength: 500
     ModerationUser:
       type: object

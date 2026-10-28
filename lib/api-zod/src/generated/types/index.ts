@@ -18,6 +18,7 @@ export * from './extensionInput';
 export * from './extensionList';
 export * from './extensionSummary';
 export * from './extensionSummaryApprovalStatus';
+export * from './extensionTakedownInput';
 export * from './findDeveloperManagedAccountParams';
 export * from './findModerationUserParams';
 export * from './healthStatus';

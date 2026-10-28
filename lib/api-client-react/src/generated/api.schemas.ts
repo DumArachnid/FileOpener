@@ -117,6 +117,7 @@ export const ExtensionSummaryApprovalStatus = {
   pending: 'pending',
   approved: 'approved',
   rejected: 'rejected',
+  removed: 'removed',
 } as const;
 
 export interface ExtensionSummary {
@@ -152,6 +153,14 @@ export interface ReviewExtensionInput {
   decision: ReviewExtensionInputDecision;
   /** @maxLength 500 */
   note?: string;
+}
+
+export interface ExtensionTakedownInput {
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  reason: string;
 }
 
 export type ModerationUserRole = typeof ModerationUserRole[keyof typeof ModerationUserRole];

@@ -874,9 +874,14 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div class="online-store-status" id="onlineStoreStatus" role="status">Connecting to the online store…</div>
 <div class="community-list" id="myCommunityExtensions" aria-label="Your extensions"></div>
 <section class="moderator-tools hidden" id="moderatorTools" aria-labelledby="moderatorToolsTitle">
-<div><h4 id="moderatorToolsTitle">Moderator tools</h4><p>Review extension submissions and manage user accounts.</p></div>
+<div><h4 id="moderatorToolsTitle">Admin tools</h4><p>Approve or reject submissions, remove unsafe public extensions, and ban or restore regular accounts. Moderator accounts cannot ban themselves or other moderators.</p></div>
+<div><h5>Submissions awaiting approval</h5></div>
 <div class="online-store-status" id="moderationQueueStatus" role="status"></div>
 <div class="community-list" id="moderationQueue" aria-label="Extensions awaiting approval"></div>
+<div><h5>Published extensions</h5><p>Take an extension out of the public store without deleting the creator’s saved code.</p></div>
+<div class="online-store-status" id="moderationPublishedStatus" role="status"></div>
+<div class="community-list" id="moderationPublishedExtensions" aria-label="Published extensions available for moderation"></div>
+<div><h5>Manage an account</h5></div>
 <form class="moderation-search" id="moderationUserSearchForm">
 <label for="moderationUsernameSearch">Find an account by exact username</label>
 <div class="moderation-search-row"><input id="moderationUsernameSearch" minlength="3" maxlength="24" required><button class="btn sm" type="submit">Search</button></div>
@@ -4136,6 +4141,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       ? 'Developer sign-in failed. Please try again.'
       : '';
   var pendingModerationExtensions = [];
+  var publishedModerationExtensions = [];
   var moderatedUser = null;
   var pendingCreator = false;
   var onlineExtensions = [];
@@ -4233,13 +4239,19 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     accountUser = user || null;
     var isModerator = !!accountUser && accountUser.role === 'moderator';
     $('moderatorTools').classList.toggle('hidden', !isModerator);
-    if (isModerator) loadModerationQueue();
+    if (isModerator) {
+      loadModerationQueue();
+      loadPublishedModerationExtensions();
+    }
     else {
       pendingModerationExtensions = [];
+      publishedModerationExtensions = [];
       moderatedUser = null;
       $('moderationQueue').replaceChildren();
+      $('moderationPublishedExtensions').replaceChildren();
       $('moderationUserResult').replaceChildren();
       $('moderationQueueStatus').textContent = '';
+      $('moderationPublishedStatus').textContent = '';
     }
     $('accountBtnText').textContent = accountUser ? accountUser.username : 'Account';
     $('accountBtn').title = accountUser ? 'Signed in as ' + accountUser.username : 'Sign in to sync your workspace';
@@ -4250,7 +4262,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     $('accountUsername').textContent = accountUser ? accountUser.username : '';
     $('accountDialogIntro').textContent = accountUser
       ? (accountUser.role === 'moderator'
-        ? 'Moderator account. Open the extension store to review submissions and manage accounts.'
+        ? 'Admin tools are available in the extension store: review submissions, remove unsafe public extensions, and ban or restore regular accounts.'
         : 'Your preferences, notes, and bookmarks are connected to this account.')
       : 'Create an account to sync preferences, notes, and bookmarks across your devices.';
     if (!accountUser) $('recoveryCodePanel').classList.add('hidden');
@@ -4561,14 +4573,16 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         ? 'Waiting for moderator approval'
         : item.approvalStatus === 'rejected'
           ? 'Not approved — edit and resubmit'
+          : item.approvalStatus === 'removed'
+            ? 'Removed from the public store — edit or resubmit'
           : item.approvalStatus === 'approved' && item.published
             ? 'Approved and public'
             : 'Private draft';
       label.append(name, state);
-      if (item.approvalStatus === 'rejected' && item.moderationNote) {
+      if ((item.approvalStatus === 'rejected' || item.approvalStatus === 'removed') && item.moderationNote) {
         var moderationNote = document.createElement('div');
         moderationNote.className = 'small muted';
-        moderationNote.textContent = 'Moderator note: ' + item.moderationNote;
+        moderationNote.textContent = 'Admin note: ' + item.moderationNote;
         label.appendChild(moderationNote);
       }
       var actions = document.createElement('div');
@@ -4655,6 +4669,74 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     });
   }
 
+  function renderPublishedModerationExtensions() {
+    var container = $('moderationPublishedExtensions');
+    container.replaceChildren();
+    if (!publishedModerationExtensions.length) {
+      var empty = document.createElement('p');
+      empty.className = 'small muted';
+      empty.textContent = 'No approved extensions are currently public.';
+      container.appendChild(empty);
+      return;
+    }
+    publishedModerationExtensions.forEach(function (item) {
+      var row = document.createElement('article');
+      row.className = 'community-row';
+      var content = document.createElement('div');
+      content.style.flex = '1 1 300px';
+      var name = document.createElement('strong');
+      name.textContent = item.name + ' · by ' + item.publisherUsername;
+      var description = document.createElement('p');
+      description.textContent = item.description;
+      description.style.margin = '4px 0';
+      var details = document.createElement('details');
+      var summary = document.createElement('summary');
+      summary.textContent = 'Review published JavaScript';
+      var source = document.createElement('pre');
+      source.className = 'moderation-source';
+      source.textContent = item.code;
+      details.append(summary, source);
+      var reasonLabel = document.createElement('label');
+      reasonLabel.textContent = 'Reason shown to the creator';
+      var reason = document.createElement('input');
+      reason.maxLength = 500;
+      reason.required = true;
+      reason.placeholder = 'Explain why this extension is being removed';
+      reason.setAttribute('aria-label', 'Reason for removing ' + item.name);
+      content.append(name, description, details, reasonLabel, reason);
+      var actions = document.createElement('div');
+      actions.className = 'community-row-actions';
+      actions.appendChild(makeButton('Remove from store', 'btn sm danger-ghost', async function () {
+        var note = reason.value.trim();
+        if (!note) {
+          reason.focus();
+          NT.toast('Add a reason so the creator knows why it was removed.', 'error');
+          return;
+        }
+        if (!(await NT.confirmDialog(
+          'Remove this extension from the store?',
+          'It will no longer be listed or installable. The creator’s saved code will not be deleted.',
+          'Remove extension',
+          true,
+        ))) return;
+        try {
+          await api('/moderation/extensions/' + encodeURIComponent(item.id) + '/takedown', {
+            method: 'POST',
+            body: { reason: note },
+          });
+          await loadPublishedModerationExtensions();
+          await loadPublicExtensions();
+          await loadMyExtensions();
+          NT.toast('Extension removed from the public store.');
+        } catch (error) {
+          NT.toast(readError(error), 'error');
+        }
+      }));
+      row.append(content, actions);
+      container.appendChild(row);
+    });
+  }
+
   async function loadModerationQueue() {
     if (!accountUser || accountUser.role !== 'moderator') return;
     $('moderationQueueStatus').textContent = 'Loading submissions…';
@@ -4671,6 +4753,22 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
   }
 
+  async function loadPublishedModerationExtensions() {
+    if (!accountUser || accountUser.role !== 'moderator') return;
+    $('moderationPublishedStatus').textContent = 'Loading published extensions…';
+    try {
+      publishedModerationExtensions = await api('/moderation/extensions/published');
+      $('moderationPublishedStatus').textContent = publishedModerationExtensions.length
+        ? publishedModerationExtensions.length + ' approved extension' + (publishedModerationExtensions.length === 1 ? '' : 's') + ' in the public store.'
+        : 'No approved extensions are currently public.';
+      renderPublishedModerationExtensions();
+    } catch (error) {
+      publishedModerationExtensions = [];
+      $('moderationPublishedStatus').textContent = 'Could not load published extensions: ' + readError(error);
+      renderPublishedModerationExtensions();
+    }
+  }
+
   async function decideOnExtension(item, decision, note) {
     if (decision === 'reject' && !(await NT.confirmDialog(
       'Reject this extension?',
@@ -4684,6 +4782,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         body: { decision: decision, note: note || '' },
       });
       await loadModerationQueue();
+      await loadPublishedModerationExtensions();
       await loadPublicExtensions();
       await loadMyExtensions();
       NT.toast(decision === 'approve' ? 'Extension approved and listed publicly.' : 'Extension rejected; the creator can see your note.');

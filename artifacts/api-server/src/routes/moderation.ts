@@ -29,6 +29,12 @@ function parseBanBody(value: unknown): { banned: boolean; reason?: string } | nu
   };
 }
 
+function parseTakedownBody(value: unknown): { reason: string } | null {
+  if (!isRecord(value) || typeof value.reason !== "string" || value.reason.length > 500) return null;
+  const reason = value.reason.trim();
+  return reason ? { reason } : null;
+}
+
 function extensionSummary(row: {
   id: string;
   name: string;
@@ -100,6 +106,81 @@ router.get(
 );
 
 router.post(
+  "/moderation/extensions/:id/takedown",
+  requireModerator,
+  async (req, res): Promise<void> => {
+    const id = req.params.id;
+    const body = parseTakedownBody(req.body);
+    if (typeof id !== "string" || !UUID_RE.test(id) || !body) {
+      res.status(400).json({ error: "Enter a reason for removing this extension from the public store." });
+      return;
+    }
+    const [row] = await db
+      .update(communityExtensionsTable)
+      .set({
+        published: false,
+        approvalStatus: "removed",
+        moderationNote: body.reason,
+        reviewedAt: new Date(),
+        reviewedBy: req.studyDeskUser!.id,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(communityExtensionsTable.id, id),
+          eq(communityExtensionsTable.published, true),
+          eq(communityExtensionsTable.approvalStatus, "approved"),
+        ),
+      )
+      .returning();
+    if (!row) {
+      res.status(404).json({ error: "Published extension not found." });
+      return;
+    }
+    const [owner] = await db
+      .select({ username: studyUsersTable.username })
+      .from(studyUsersTable)
+      .where(eq(studyUsersTable.id, row.ownerId))
+      .limit(1);
+    if (!owner) {
+      res.status(404).json({ error: "Extension owner not found." });
+      return;
+    }
+    res.json(extensionSummary({ ...row, username: owner.username }));
+  },
+);
+
+router.get(
+  "/moderation/extensions/published",
+  requireModerator,
+  async (_req, res): Promise<void> => {
+    const rows = await db
+      .select({
+        id: communityExtensionsTable.id,
+        name: communityExtensionsTable.name,
+        description: communityExtensionsTable.description,
+        code: communityExtensionsTable.code,
+        version: communityExtensionsTable.version,
+        published: communityExtensionsTable.published,
+        approvalStatus: communityExtensionsTable.approvalStatus,
+        updatedAt: communityExtensionsTable.updatedAt,
+        username: studyUsersTable.username,
+      })
+      .from(communityExtensionsTable)
+      .innerJoin(studyUsersTable, eq(communityExtensionsTable.ownerId, studyUsersTable.id))
+      .where(
+        and(
+          eq(communityExtensionsTable.published, true),
+          eq(communityExtensionsTable.approvalStatus, "approved"),
+        ),
+      )
+      .orderBy(desc(communityExtensionsTable.updatedAt))
+      .limit(100);
+    res.json(rows.map(extensionSummary));
+  },
+);
+
+router.post(
   "/moderation/extensions/:id/review",
   requireModerator,
   async (req, res): Promise<void> => {
@@ -111,6 +192,25 @@ router.post(
     }
     const note = body.note?.trim() || null;
     const approved = body.decision === "approve";
+    const [pending] = await db
+      .select({ ownerId: communityExtensionsTable.ownerId })
+      .from(communityExtensionsTable)
+      .where(
+        and(
+          eq(communityExtensionsTable.id, id),
+          eq(communityExtensionsTable.published, true),
+          eq(communityExtensionsTable.approvalStatus, "pending"),
+        ),
+      )
+      .limit(1);
+    if (!pending) {
+      res.status(404).json({ error: "Pending extension not found." });
+      return;
+    }
+    if (pending.ownerId === req.studyDeskUser!.id) {
+      res.status(409).json({ error: "Moderators cannot approve or reject their own submissions." });
+      return;
+    }
     const [row] = await db
       .update(communityExtensionsTable)
       .set({
