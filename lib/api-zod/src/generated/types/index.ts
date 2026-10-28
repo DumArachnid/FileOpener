@@ -7,15 +7,22 @@
  */
 
 export * from './authResult';
+export * from './beginDeveloperLoginParams';
 export * from './communityExtension';
 export * from './currentUser';
+export * from './developerAuthState';
+export * from './developerAuthUser';
+export * from './developerRoleInput';
+export * from './developerRoleInputRole';
 export * from './extensionInput';
 export * from './extensionList';
 export * from './extensionSummary';
 export * from './extensionSummaryApprovalStatus';
+export * from './findDeveloperManagedAccountParams';
 export * from './findModerationUserParams';
 export * from './healthStatus';
 export * from './loginInput';
+export * from './logOutDeveloperParams';
 export * from './moderationBanInput';
 export * from './moderationExtensionList';
 export * from './moderationUser';

@@ -177,7 +177,50 @@ export interface ModerationBanInput {
   reason?: string;
 }
 
+export interface DeveloperAuthUser {
+  email: string;
+  /** @nullable */
+  firstName: string | null;
+  /** @nullable */
+  lastName: string | null;
+  /** @nullable */
+  profileImageUrl: string | null;
+}
+
+export interface DeveloperAuthState {
+  user: DeveloperAuthUser | null;
+  authorized: boolean;
+}
+
+export type DeveloperRoleInputRole = typeof DeveloperRoleInputRole[keyof typeof DeveloperRoleInputRole];
+
+
+export const DeveloperRoleInputRole = {
+  user: 'user',
+  moderator: 'moderator',
+} as const;
+
+export interface DeveloperRoleInput {
+  role: DeveloperRoleInputRole;
+}
+
 export type FindModerationUserParams = {
+/**
+ * @minLength 3
+ * @maxLength 24
+ */
+username: string;
+};
+
+export type BeginDeveloperLoginParams = {
+returnTo?: string;
+};
+
+export type LogOutDeveloperParams = {
+returnTo?: string;
+};
+
+export type FindDeveloperManagedAccountParams = {
 /**
  * @minLength 3
  * @maxLength 24

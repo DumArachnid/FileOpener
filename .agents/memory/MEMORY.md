@@ -1,1 +1,2 @@
 - [Live viewer tabs](live-viewer-tabs.md) — keep inactive iframe viewports laid out; hiding with display:none can reset scroll despite preserving the document.
+- [Developer admin access](developer-admin-access.md) — Replit sign-in authenticates identity, but developer-only role tools must also check the configured developer email list.

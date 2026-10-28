@@ -8,6 +8,14 @@ declare global {
         bannedAt: Date | null;
       };
       studyDeskSessionHash?: string;
+      replitDeveloper?: {
+        id: string;
+        email: string;
+        firstName: string | null;
+        lastName: string | null;
+        profileImageUrl: string | null;
+      };
+      replitDeveloperSessionId?: string;
     }
   }
 }

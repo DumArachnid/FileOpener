@@ -21,3 +21,4 @@ export * from "./study-users";
 export * from "./study-sessions";
 export * from "./workspace-sync";
 export * from "./community-extensions";
+export * from "./developer-auth";

@@ -4,6 +4,7 @@ import authRouter from "./auth";
 import workspaceSyncRouter from "./workspaceSync";
 import communityExtensionsRouter from "./communityExtensions";
 import moderationRouter from "./moderation";
+import developerControlsRouter from "./developerControls";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use(authRouter);
 router.use(workspaceSyncRouter);
 router.use(communityExtensionsRouter);
 router.use(moderationRouter);
+router.use(developerControlsRouter);
 
 export default router;

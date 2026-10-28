@@ -292,6 +292,8 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .moderator-tools { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--border); }
 .moderator-tools h4 { margin: 0; font-size: 13px; }
 .moderator-tools p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.developer-tools { border-top: 1px solid var(--border); }
+.developer-control-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .moderation-search { display: grid; gap: 8px; }
 .moderation-search-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .moderation-search-row input { flex: 1; min-width: 160px; }
@@ -881,6 +883,19 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <label for="moderationBanReason">Ban reason (optional)</label><input id="moderationBanReason" maxlength="500" placeholder="Briefly explain the reason">
 </form>
 <div class="community-list" id="moderationUserResult" role="status" aria-live="polite"></div>
+</section>
+<section class="moderator-tools developer-tools" id="developerTools" aria-labelledby="developerToolsTitle">
+<div><h4 id="developerToolsTitle">Developer controls</h4><p>Authorized developers can choose which Study Desk accounts can moderate.</p></div>
+<div class="online-store-status" id="developerAuthStatus" role="status">Checking developer access…</div>
+<div class="developer-control-actions">
+<button class="btn sm" id="developerLoginBtn" type="button">Developer sign in</button>
+<button class="btn sm hidden" id="developerLogoutBtn" type="button">Sign out developer</button>
+</div>
+<form class="moderation-search hidden" id="developerRoleSearchForm">
+<label for="developerUsernameSearch">Find a Study Desk account by exact username</label>
+<div class="moderation-search-row"><input id="developerUsernameSearch" minlength="3" maxlength="24" required><button class="btn sm primary" type="submit">Search</button></div>
+</form>
+<div class="community-list" id="developerAccountResult" role="status" aria-live="polite"></div>
 </section>
 </section>
 <h4 class="store-section-title">Available to install</h4>
@@ -4114,6 +4129,12 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   var accountError = $('accountError');
   var communityError = $('communityExtensionError');
   var accountUser = null;
+  var developerAuthState = { user: null, authorized: false };
+  var developerAuthNotice = new URLSearchParams(window.location.search).get('developerAuthError') === 'unauthorized'
+    ? 'That account is not on the developer access list.'
+    : new URLSearchParams(window.location.search).get('developerAuthError') === 'failed'
+      ? 'Developer sign-in failed. Please try again.'
+      : '';
   var pendingModerationExtensions = [];
   var moderatedUser = null;
   var pendingCreator = false;
@@ -4730,6 +4751,128 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
   });
 
+  function renderDeveloperAuthState() {
+    var authorized = !!developerAuthState.authorized;
+    var email = developerAuthState.user && developerAuthState.user.email;
+    $('developerLoginBtn').classList.toggle('hidden', authorized);
+    $('developerLogoutBtn').classList.toggle('hidden', !authorized);
+    $('developerRoleSearchForm').classList.toggle('hidden', !authorized);
+    if (authorized) {
+      $('developerAuthStatus').textContent = 'Developer access active for ' + email + '. Select a Study Desk account below.';
+    } else if (developerAuthState.user) {
+      $('developerAuthStatus').textContent = 'This account is not authorized to manage moderator roles.';
+    } else if (developerAuthNotice) {
+      $('developerAuthStatus').textContent = developerAuthNotice;
+    } else {
+      $('developerAuthStatus').textContent = 'Sign in with an authorized developer account to assign or remove moderators.';
+    }
+  }
+
+  async function refreshDeveloperAuthState() {
+    try {
+      developerAuthState = await api('/developer/auth/user');
+    } catch (error) {
+      developerAuthState = { user: null, authorized: false };
+    }
+    renderDeveloperAuthState();
+    return developerAuthState;
+  }
+
+  function beginDeveloperSignIn() {
+    var url = '/api/developer/login?returnTo=' + encodeURIComponent('/api/developer/auth/complete');
+    developerAuthNotice = '';
+    var popup = window.open(url, 'studyDeskDeveloperLogin', 'popup,width=560,height=720');
+    if (!popup) {
+      window.location.href = '/api/developer/login?returnTo=%2F';
+      return;
+    }
+    $('developerAuthStatus').textContent = 'Complete Replit sign-in in the new window…';
+    var attempts = 0;
+    var timer = setInterval(async function () {
+      attempts += 1;
+      var state = await refreshDeveloperAuthState();
+      if (state.authorized || popup.closed || attempts >= 90) {
+        clearInterval(timer);
+        if (state.authorized && !popup.closed) popup.close();
+      }
+    }, 1500);
+  }
+
+  window.addEventListener('message', function (event) {
+    if (event.origin !== window.location.origin || !event.data || event.data.type !== 'study-desk-developer-auth') return;
+    if (event.data.error === 'unauthorized') developerAuthNotice = 'That account is not on the developer access list.';
+    else if (event.data.error === 'failed') developerAuthNotice = 'Developer sign-in failed. Please try again.';
+    refreshDeveloperAuthState();
+  });
+  $('developerLoginBtn').addEventListener('click', beginDeveloperSignIn);
+  $('developerLogoutBtn').addEventListener('click', function () {
+    window.location.href = '/api/developer/logout?returnTo=%2F';
+  });
+
+  function renderDeveloperAccount(user) {
+    var container = $('developerAccountResult');
+    container.replaceChildren();
+    var row = document.createElement('div');
+    row.className = 'community-row';
+    var label = document.createElement('div');
+    var title = document.createElement('strong');
+    title.textContent = user.username + (user.role === 'moderator' ? ' · moderator' : ' · regular account');
+    var detail = document.createElement('div');
+    detail.className = 'small muted';
+    detail.textContent = user.banned
+      ? 'Banned' + (user.banReason ? ' · ' + user.banReason : '') + ' · restore before promoting'
+      : 'Account is active';
+    label.append(title, detail);
+    row.appendChild(label);
+    if (user.role === 'moderator' || !user.banned) {
+      var nextRole = user.role === 'moderator' ? 'user' : 'moderator';
+      row.appendChild(makeButton(
+        nextRole === 'moderator' ? 'Make moderator' : 'Remove moderator',
+        nextRole === 'moderator' ? 'btn sm primary' : 'btn sm danger-ghost',
+        async function () {
+          var prompt = nextRole === 'moderator'
+            ? 'This account will be able to approve extensions and ban regular users.'
+            : 'This account will lose moderator access immediately.';
+          if (!(await NT.confirmDialog(
+            nextRole === 'moderator' ? 'Promote this account?' : 'Remove moderator access?',
+            prompt,
+            nextRole === 'moderator' ? 'Make moderator' : 'Remove access',
+            nextRole !== 'moderator',
+          ))) return;
+          try {
+            var updated = await api('/developer/accounts/' + encodeURIComponent(user.username) + '/role', {
+              method: 'PATCH',
+              body: { role: nextRole },
+            });
+            renderDeveloperAccount(updated);
+            if (accountUser && accountUser.username === updated.username) {
+              accountUser.role = updated.role;
+              setAccountUser(accountUser);
+            }
+            NT.toast(nextRole === 'moderator' ? 'Moderator access granted.' : 'Moderator access removed.');
+          } catch (error) {
+            NT.toast(readError(error), 'error');
+          }
+        },
+      ));
+    }
+    container.appendChild(row);
+  }
+
+  $('developerRoleSearchForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    if (!developerAuthState.authorized) return;
+    var username = $('developerUsernameSearch').value.trim();
+    var container = $('developerAccountResult');
+    container.textContent = 'Searching…';
+    try {
+      var user = await api('/developer/accounts?username=' + encodeURIComponent(username));
+      renderDeveloperAccount(user);
+    } catch (error) {
+      container.textContent = readError(error);
+    }
+  });
+
   function openCommunityEditor(item) {
     if (!accountUser) {
       pendingCreator = true;
@@ -4808,6 +4951,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       }
     }
   }
+  refreshDeveloperAuthState();
   restoreSession();
   setInterval(saveLocalChanges, 2500);
   setInterval(async function () {

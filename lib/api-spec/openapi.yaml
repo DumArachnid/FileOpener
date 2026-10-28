@@ -16,6 +16,10 @@ tags:
     description: Signed-in workspace synchronization
   - name: extensions
     description: Online community extension store
+  - name: moderation
+    description: Moderator controls for extensions and accounts
+  - name: developer
+    description: Replit-authenticated developer controls
 paths:
   /healthz:
     get:
@@ -374,6 +378,118 @@ paths:
           description: Account not found
         "409":
           description: Cannot ban a moderator account
+  /developer/auth/user:
+    get:
+      operationId: getDeveloperAuthState
+      tags: [developer]
+      summary: Get the current developer authentication state
+      responses:
+        "200":
+          description: Developer session and authorization state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeveloperAuthState"
+  /developer/login:
+    get:
+      operationId: beginDeveloperLogin
+      tags: [developer]
+      summary: Start Replit sign-in for developer controls
+      parameters:
+        - name: returnTo
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect to Replit sign-in
+  /developer/callback:
+    get:
+      operationId: completeDeveloperLogin
+      tags: [developer]
+      summary: Complete the developer sign-in callback
+      responses:
+        "302":
+          description: Redirect to the validated return path
+  /developer/logout:
+    get:
+      operationId: logOutDeveloper
+      tags: [developer]
+      summary: Sign out of developer controls
+      parameters:
+        - name: returnTo
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect after clearing the developer session
+  /developer/auth/complete:
+    get:
+      operationId: completeDeveloperPopup
+      tags: [developer]
+      summary: Complete developer sign-in in a popup window
+      responses:
+        "200":
+          description: Popup completion page
+  /developer/accounts:
+    get:
+      operationId: findDeveloperManagedAccount
+      tags: [developer]
+      summary: Find a Study Desk account by exact username
+      parameters:
+        - name: username
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 24
+      responses:
+        "200":
+          description: Selected Study Desk account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModerationUser"
+        "403":
+          description: Authorized developer access required
+        "404":
+          description: Account not found
+  /developer/accounts/{username}/role:
+    patch:
+      operationId: setDeveloperManagedAccountRole
+      tags: [developer]
+      summary: Set a Study Desk account role
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 24
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeveloperRoleInput"
+      responses:
+        "200":
+          description: Updated Study Desk account role
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModerationUser"
+        "403":
+          description: Authorized developer access required
+        "404":
+          description: Account not found
+        "409":
+          description: Cannot promote a banned account
 components:
   schemas:
     HealthStatus:
@@ -557,4 +673,34 @@ components:
         reason:
           type: string
           maxLength: 500
+    DeveloperAuthUser:
+      type: object
+      required: [email, firstName, lastName, profileImageUrl]
+      properties:
+        email:
+          type: string
+          format: email
+        firstName:
+          type: ["string", "null"]
+        lastName:
+          type: ["string", "null"]
+        profileImageUrl:
+          type: ["string", "null"]
+    DeveloperAuthState:
+      type: object
+      required: [user, authorized]
+      properties:
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/DeveloperAuthUser"
+            - type: "null"
+        authorized:
+          type: boolean
+    DeveloperRoleInput:
+      type: object
+      required: [role]
+      properties:
+        role:
+          type: string
+          enum: [user, moderator]
 

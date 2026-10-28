@@ -401,3 +401,95 @@ export const UpdateModerationUserBanResponse = zod.object({
 })
 
 
+/**
+ * @summary Get the current developer authentication state
+ */
+export const GetDeveloperAuthStateResponse = zod.object({
+  "user": zod.union([zod.object({
+  "email": zod.string().email(),
+  "firstName": zod.string().nullable(),
+  "lastName": zod.string().nullable(),
+  "profileImageUrl": zod.string().nullable()
+}),zod.null()]),
+  "authorized": zod.boolean()
+})
+
+
+/**
+ * @summary Start Replit sign-in for developer controls
+ */
+export const BeginDeveloperLoginQueryParams = zod.object({
+  "returnTo": zod.coerce.string().optional()
+})
+
+export const BeginDeveloperLoginResponse = zod.void()
+
+
+/**
+ * @summary Complete the developer sign-in callback
+ */
+export const CompleteDeveloperLoginResponse = zod.void()
+
+
+/**
+ * @summary Sign out of developer controls
+ */
+export const LogOutDeveloperQueryParams = zod.object({
+  "returnTo": zod.coerce.string().optional()
+})
+
+export const LogOutDeveloperResponse = zod.void()
+
+
+/**
+ * @summary Complete developer sign-in in a popup window
+ */
+export const CompleteDeveloperPopupResponse = zod.unknown()
+
+
+/**
+ * @summary Find a Study Desk account by exact username
+ */
+export const findDeveloperManagedAccountQueryUsernameMin = 3;
+export const findDeveloperManagedAccountQueryUsernameMax = 24;
+
+
+
+export const FindDeveloperManagedAccountQueryParams = zod.object({
+  "username": zod.coerce.string().min(findDeveloperManagedAccountQueryUsernameMin).max(findDeveloperManagedAccountQueryUsernameMax)
+})
+
+export const FindDeveloperManagedAccountResponse = zod.object({
+  "username": zod.string(),
+  "role": zod.enum(['user', 'moderator']),
+  "banned": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "banReason": zod.string().nullable()
+})
+
+
+/**
+ * @summary Set a Study Desk account role
+ */
+export const setDeveloperManagedAccountRolePathUsernameMin = 3;
+export const setDeveloperManagedAccountRolePathUsernameMax = 24;
+
+
+
+export const SetDeveloperManagedAccountRoleParams = zod.object({
+  "username": zod.coerce.string().min(setDeveloperManagedAccountRolePathUsernameMin).max(setDeveloperManagedAccountRolePathUsernameMax)
+})
+
+export const SetDeveloperManagedAccountRoleBody = zod.object({
+  "role": zod.enum(['user', 'moderator'])
+})
+
+export const SetDeveloperManagedAccountRoleResponse = zod.object({
+  "username": zod.string(),
+  "role": zod.enum(['user', 'moderator']),
+  "banned": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "banReason": zod.string().nullable()
+})
+
+

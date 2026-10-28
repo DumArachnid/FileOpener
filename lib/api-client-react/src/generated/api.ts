@@ -21,12 +21,17 @@ import type {
 
 import type {
   AuthResult,
+  BeginDeveloperLoginParams,
   CommunityExtension,
   CurrentUser,
+  DeveloperAuthState,
+  DeveloperRoleInput,
   ExtensionInput,
   ExtensionList,
+  FindDeveloperManagedAccountParams,
   FindModerationUserParams,
   HealthStatus,
+  LogOutDeveloperParams,
   LoginInput,
   ModerationBanInput,
   ModerationExtensionList,
@@ -1616,5 +1621,577 @@ export const useUpdateModerationUserBan = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdateModerationUserBanMutationOptions(options));
+    }
+
+export const getGetDeveloperAuthStateUrl = () => {
+
+
+
+
+  return `/api/developer/auth/user`
+}
+
+/**
+ * @summary Get the current developer authentication state
+ */
+export const getDeveloperAuthState = async ( options?: Parameters<typeof customFetch>[1]): Promise<DeveloperAuthState> => {
+
+  return customFetch<DeveloperAuthState>(getGetDeveloperAuthStateUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDeveloperAuthStateQueryKey = () => {
+    return [
+    `/api/developer/auth/user`
+    ] as const;
+    }
+
+
+export const getGetDeveloperAuthStateQueryOptions = <TData = Awaited<ReturnType<typeof getDeveloperAuthState>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDeveloperAuthState>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDeveloperAuthStateQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDeveloperAuthState>>> = ({ signal }) => getDeveloperAuthState({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDeveloperAuthState>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDeveloperAuthStateQueryResult = NonNullable<Awaited<ReturnType<typeof getDeveloperAuthState>>>
+export type GetDeveloperAuthStateQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the current developer authentication state
+ */
+
+export function useGetDeveloperAuthState<TData = Awaited<ReturnType<typeof getDeveloperAuthState>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDeveloperAuthState>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDeveloperAuthStateQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getBeginDeveloperLoginUrl = (params?: BeginDeveloperLoginParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/developer/login?${stringifiedParams}` : `/api/developer/login`
+}
+
+/**
+ * @summary Start Replit sign-in for developer controls
+ */
+export const beginDeveloperLogin = async (params?: BeginDeveloperLoginParams, options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+  return customFetch<unknown>(getBeginDeveloperLoginUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getBeginDeveloperLoginQueryKey = (params?: BeginDeveloperLoginParams,) => {
+    return [
+    `/api/developer/login`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getBeginDeveloperLoginQueryOptions = <TData = Awaited<ReturnType<typeof beginDeveloperLogin>>, TError = ErrorType<void>>(params?: BeginDeveloperLoginParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof beginDeveloperLogin>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getBeginDeveloperLoginQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof beginDeveloperLogin>>> = ({ signal }) => beginDeveloperLogin(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof beginDeveloperLogin>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type BeginDeveloperLoginQueryResult = NonNullable<Awaited<ReturnType<typeof beginDeveloperLogin>>>
+export type BeginDeveloperLoginQueryError = ErrorType<void>
+
+
+/**
+ * @summary Start Replit sign-in for developer controls
+ */
+
+export function useBeginDeveloperLogin<TData = Awaited<ReturnType<typeof beginDeveloperLogin>>, TError = ErrorType<void>>(
+ params?: BeginDeveloperLoginParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof beginDeveloperLogin>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getBeginDeveloperLoginQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCompleteDeveloperLoginUrl = () => {
+
+
+
+
+  return `/api/developer/callback`
+}
+
+/**
+ * @summary Complete the developer sign-in callback
+ */
+export const completeDeveloperLogin = async ( options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+  return customFetch<unknown>(getCompleteDeveloperLoginUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getCompleteDeveloperLoginQueryKey = () => {
+    return [
+    `/api/developer/callback`
+    ] as const;
+    }
+
+
+export const getCompleteDeveloperLoginQueryOptions = <TData = Awaited<ReturnType<typeof completeDeveloperLogin>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof completeDeveloperLogin>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCompleteDeveloperLoginQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof completeDeveloperLogin>>> = ({ signal }) => completeDeveloperLogin({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof completeDeveloperLogin>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type CompleteDeveloperLoginQueryResult = NonNullable<Awaited<ReturnType<typeof completeDeveloperLogin>>>
+export type CompleteDeveloperLoginQueryError = ErrorType<void>
+
+
+/**
+ * @summary Complete the developer sign-in callback
+ */
+
+export function useCompleteDeveloperLogin<TData = Awaited<ReturnType<typeof completeDeveloperLogin>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof completeDeveloperLogin>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getCompleteDeveloperLoginQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getLogOutDeveloperUrl = (params?: LogOutDeveloperParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/developer/logout?${stringifiedParams}` : `/api/developer/logout`
+}
+
+/**
+ * @summary Sign out of developer controls
+ */
+export const logOutDeveloper = async (params?: LogOutDeveloperParams, options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+  return customFetch<unknown>(getLogOutDeveloperUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getLogOutDeveloperQueryKey = (params?: LogOutDeveloperParams,) => {
+    return [
+    `/api/developer/logout`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getLogOutDeveloperQueryOptions = <TData = Awaited<ReturnType<typeof logOutDeveloper>>, TError = ErrorType<void>>(params?: LogOutDeveloperParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof logOutDeveloper>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getLogOutDeveloperQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof logOutDeveloper>>> = ({ signal }) => logOutDeveloper(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof logOutDeveloper>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type LogOutDeveloperQueryResult = NonNullable<Awaited<ReturnType<typeof logOutDeveloper>>>
+export type LogOutDeveloperQueryError = ErrorType<void>
+
+
+/**
+ * @summary Sign out of developer controls
+ */
+
+export function useLogOutDeveloper<TData = Awaited<ReturnType<typeof logOutDeveloper>>, TError = ErrorType<void>>(
+ params?: LogOutDeveloperParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof logOutDeveloper>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getLogOutDeveloperQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCompleteDeveloperPopupUrl = () => {
+
+
+
+
+  return `/api/developer/auth/complete`
+}
+
+/**
+ * @summary Complete developer sign-in in a popup window
+ */
+export const completeDeveloperPopup = async ( options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getCompleteDeveloperPopupUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getCompleteDeveloperPopupQueryKey = () => {
+    return [
+    `/api/developer/auth/complete`
+    ] as const;
+    }
+
+
+export const getCompleteDeveloperPopupQueryOptions = <TData = Awaited<ReturnType<typeof completeDeveloperPopup>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof completeDeveloperPopup>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCompleteDeveloperPopupQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof completeDeveloperPopup>>> = ({ signal }) => completeDeveloperPopup({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof completeDeveloperPopup>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type CompleteDeveloperPopupQueryResult = NonNullable<Awaited<ReturnType<typeof completeDeveloperPopup>>>
+export type CompleteDeveloperPopupQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Complete developer sign-in in a popup window
+ */
+
+export function useCompleteDeveloperPopup<TData = Awaited<ReturnType<typeof completeDeveloperPopup>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof completeDeveloperPopup>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getCompleteDeveloperPopupQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getFindDeveloperManagedAccountUrl = (params: FindDeveloperManagedAccountParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/developer/accounts?${stringifiedParams}` : `/api/developer/accounts`
+}
+
+/**
+ * @summary Find a Study Desk account by exact username
+ */
+export const findDeveloperManagedAccount = async (params: FindDeveloperManagedAccountParams, options?: Parameters<typeof customFetch>[1]): Promise<ModerationUser> => {
+
+  return customFetch<ModerationUser>(getFindDeveloperManagedAccountUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getFindDeveloperManagedAccountQueryKey = (params?: FindDeveloperManagedAccountParams,) => {
+    return [
+    `/api/developer/accounts`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getFindDeveloperManagedAccountQueryOptions = <TData = Awaited<ReturnType<typeof findDeveloperManagedAccount>>, TError = ErrorType<void>>(params: FindDeveloperManagedAccountParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof findDeveloperManagedAccount>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getFindDeveloperManagedAccountQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof findDeveloperManagedAccount>>> = ({ signal }) => findDeveloperManagedAccount(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof findDeveloperManagedAccount>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type FindDeveloperManagedAccountQueryResult = NonNullable<Awaited<ReturnType<typeof findDeveloperManagedAccount>>>
+export type FindDeveloperManagedAccountQueryError = ErrorType<void>
+
+
+/**
+ * @summary Find a Study Desk account by exact username
+ */
+
+export function useFindDeveloperManagedAccount<TData = Awaited<ReturnType<typeof findDeveloperManagedAccount>>, TError = ErrorType<void>>(
+ params: FindDeveloperManagedAccountParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof findDeveloperManagedAccount>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getFindDeveloperManagedAccountQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSetDeveloperManagedAccountRoleUrl = (username: string,) => {
+
+
+
+
+  return `/api/developer/accounts/${username}/role`
+}
+
+/**
+ * @summary Set a Study Desk account role
+ */
+export const setDeveloperManagedAccountRole = async (username: string,
+    developerRoleInput: DeveloperRoleInput, options?: Parameters<typeof customFetch>[1]): Promise<ModerationUser> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ModerationUser>(getSetDeveloperManagedAccountRoleUrl(username),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(developerRoleInput)
+  }
+);}
+
+
+
+
+
+export const getSetDeveloperManagedAccountRoleMutationKey = () => ['setDeveloperManagedAccountRole'] as const;
+
+export const getSetDeveloperManagedAccountRoleMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setDeveloperManagedAccountRole>>, TError,SetDeveloperManagedAccountRoleMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setDeveloperManagedAccountRole>>, TError,SetDeveloperManagedAccountRoleMutationVariables, TContext> => {
+
+const mutationKey = getSetDeveloperManagedAccountRoleMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setDeveloperManagedAccountRole>>, SetDeveloperManagedAccountRoleMutationVariables> = (props) => {
+          const {username,data} = props ?? {};
+
+          return  setDeveloperManagedAccountRole(username,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetDeveloperManagedAccountRoleMutationResult = NonNullable<Awaited<ReturnType<typeof setDeveloperManagedAccountRole>>>
+    export type SetDeveloperManagedAccountRoleMutationBody = BodyType<DeveloperRoleInput>
+    export type SetDeveloperManagedAccountRoleMutationError = ErrorType<void>
+    export type SetDeveloperManagedAccountRoleMutationVariables = {username: string;data: BodyType<DeveloperRoleInput>}
+
+    /**
+ * @summary Set a Study Desk account role
+ */
+export const useSetDeveloperManagedAccountRole = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setDeveloperManagedAccountRole>>, TError,SetDeveloperManagedAccountRoleMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setDeveloperManagedAccountRole>>,
+        TError,
+        SetDeveloperManagedAccountRoleMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSetDeveloperManagedAccountRoleMutationOptions(options));
     }
 
