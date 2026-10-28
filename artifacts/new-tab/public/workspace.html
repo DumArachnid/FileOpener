@@ -237,11 +237,20 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .preview-area iframe, .preview-area img { width: 100%; height: 100%; border: 0; display: block; object-fit: contain; background: #fff; }
 .preview-area pre { width: 100%; height: 100%; margin: 0; padding: 20px; white-space: pre-wrap; word-break: break-word; overflow: auto; font-size: var(--font-size, 14px); font-family: var(--mono); line-height: 1.6; background: var(--panel); align-self: stretch; }
 .store-overlay { position: absolute; inset: 0; z-index: 30; display: grid; place-items: center; padding: 16px; overflow: auto; border: 1.5px solid var(--border-strong); border-radius: var(--radius); background: var(--input-bg); animation: fadeIn .18s ease both; }
-.store-empty { width: 100%; }
+.store-empty { width: min(820px, 100%); max-width: 820px; padding: 18px 20px; }
 .store-kicker { padding: 5px 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); font-size: 10px; font-weight: 700; letter-spacing: .12em; }
 .store-status { display: inline-flex; align-items: center; gap: 7px; padding: 7px 11px; border: 1px solid var(--border-strong); border-radius: 999px; background: var(--panel); font-size: 12px; font-weight: 700; }
 .store-status .ic { width: 14px; height: 14px; color: var(--accent-ink); }
 .store-note { font-size: 12px; }
+.store-demo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: 100%; text-align: left; }
+.store-demo-card { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0; padding: 16px; border: 1.5px solid var(--border-strong); border-radius: 12px; background: var(--panel); box-shadow: 2px 2px 0 var(--ink-shadow); }
+.store-demo-head { display: flex; align-items: center; gap: 10px; width: 100%; }
+.store-demo-icon { display: grid; place-items: center; width: 38px; height: 38px; flex: none; border-radius: 10px; color: var(--accent-ink); background: var(--accent-soft); }
+.store-demo-icon .ic { width: 19px; height: 19px; }
+.store-demo-title { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; }
+.store-demo-badge { padding: 4px 7px; border: 1px solid var(--border); border-radius: 999px; color: var(--accent-ink); background: var(--accent-soft); font: 700 9px var(--mono); letter-spacing: .08em; }
+.store-demo-card p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.store-demo-label { margin-top: auto; padding-top: 3px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
 #helpBtn, #paletteBtn, #storeBtn { min-width: 32px; padding-inline: 6px; }
 .large-html-card { width: min(620px, calc(100% - 32px)); padding: 22px; border: 1.5px solid var(--border-strong); border-radius: var(--radius); background: var(--panel); color: var(--text); text-align: center; box-shadow: 3px 3px 0 var(--ink-shadow); }
 .large-html-card h3 { margin-bottom: 8px; font-size: 18px; }
@@ -344,6 +353,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   .status-mid { display: none; }
   .file-actions { grid-template-columns: repeat(2, 1fr); }
   .overlay { padding-top: 6vh; }
+  .store-demo-grid { grid-template-columns: 1fr; }
+  .store-empty { padding: 14px 10px; }
 }
 @media (min-width: 921px) { .app.sidebar-collapsed .sidebar { display: none; } }
 
@@ -803,9 +814,21 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div class="empty-art" aria-hidden="true"><div class="sheet s1"><i data-ic="cart"></i></div><div class="sheet s2"><i data-ic="sparkle"></i></div><div class="sheet s3"><i data-ic="code"></i></div></div>
 <span class="store-kicker">STUDY DESK · EXTENSION STORE</span>
 <h3 id="storeHeading">More tools for your study desk are on the way.</h3>
-<p>Discover extensions and helpful additions designed to fit your Study Desk workflow.</p>
-<div class="store-status"><i data-ic="clock"></i><span>Coming soon</span></div>
-<p class="store-note">The Extension Store is in development. Thank you for your patience.</p>
+<p>Here are two concept demos showing the kinds of helpful extensions the store may offer.</p>
+<div class="store-status"><i data-ic="clock"></i><span>The shop is coming soon — these extensions are demos only.</span></div>
+<div class="store-demo-grid" aria-label="Extension concept demos">
+<article class="store-demo-card">
+<div class="store-demo-head"><span class="store-demo-icon"><i data-ic="timer"></i></span><strong class="store-demo-title">Study Sprint</strong><span class="store-demo-badge">DEMO</span></div>
+<p>A focused work-and-break routine to help organize study sessions alongside your course materials.</p>
+<span class="store-demo-label">Concept preview · Not installable</span>
+</article>
+<article class="store-demo-card">
+<div class="store-demo-head"><span class="store-demo-icon"><i data-ic="bookmark"></i></span><strong class="store-demo-title">Reading Highlights</strong><span class="store-demo-badge">DEMO</span></div>
+<p>A simple way to collect key points and review prompts while working through reading materials.</p>
+<span class="store-demo-label">Concept preview · Not installable</span>
+</article>
+</div>
+<p class="store-note">The Extension Store is still in development. These examples are previews, not working extensions.</p>
 <button class="btn primary" id="storeCloseBtn" type="button"><i data-ic="arrowLeft"></i>Back to your workspace</button>
 </div>
 </div>
