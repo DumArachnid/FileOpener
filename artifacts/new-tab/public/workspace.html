@@ -269,6 +269,28 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .extension-input-panel p { margin: 0; color: var(--muted); line-height: 1.5; }
 .extension-input-panel textarea { width: 100%; min-height: 180px; max-height: 55vh; resize: vertical; font-family: var(--main-font); line-height: 1.5; }
 .extension-input-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.account-dialog, .community-dialog { width: min(540px, calc(100% - 28px)); max-width: 540px; max-height: 88vh; padding: 0; overflow: auto; border: 1.5px solid var(--border-strong); border-radius: 14px; background: var(--panel); color: var(--text); box-shadow: 5px 5px 0 var(--ink-shadow); }
+.account-dialog::backdrop, .community-dialog::backdrop { background: color-mix(in srgb, var(--text) 45%, transparent); backdrop-filter: blur(3px); }
+.account-panel, .community-panel { display: flex; flex-direction: column; gap: 12px; padding: 22px; }
+.account-panel h2, .community-panel h2 { margin: 0; font-size: 20px; }
+.account-panel p, .community-panel p { margin: 0; color: var(--muted); line-height: 1.5; }
+.account-form, .community-form { display: grid; gap: 10px; }
+.account-actions, .community-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+.account-link { border: 0; padding: 0; background: none; color: var(--accent-ink); text-decoration: underline; cursor: pointer; font: inherit; }
+.account-error { min-height: 1.2em; color: var(--danger); font-size: 12px; }
+.recovery-code-box { padding: 12px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--input-bg); }
+.recovery-code-box code { display: block; margin: 8px 0; overflow-wrap: anywhere; font: 700 15px var(--mono); }
+.online-store-tools { display: grid; gap: 10px; margin: 16px 0; padding: 14px; border: 1.5px solid var(--border); border-radius: 12px; background: var(--panel); text-align: left; }
+.online-store-heading { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.online-store-heading h4 { margin: 0 0 5px; font-size: 13px; }
+.online-store-heading p { margin: 0; max-width: 560px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.online-store-status { font-size: 12px; color: var(--muted); }
+.community-list { display: grid; gap: 8px; }
+.community-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 9px; background: var(--input-bg); }
+.community-row strong { overflow-wrap: anywhere; }
+.community-row-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.community-grid { margin-top: 10px; }
+.community-grid:empty { display: none; }
 #helpBtn, #paletteBtn, #storeBtn { min-width: 32px; padding-inline: 6px; }
 .large-html-card { width: min(620px, calc(100% - 32px)); padding: 22px; border: 1.5px solid var(--border-strong); border-radius: var(--radius); background: var(--panel); color: var(--text); text-align: center; box-shadow: 3px 3px 0 var(--ink-shadow); }
 .large-html-card h3 { margin-bottom: 8px; font-size: 18px; }
@@ -790,6 +812,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <button class="timer-pill hidden" id="timerPill" title="Focus timer (Alt+P to pause)"><i data-ic="timer"></i><span id="timerPillText">25:00</span></button>
 <button class="btn sm hide-in-focus" id="helpBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"><i data-ic="keyboard"></i></button>
 <button class="btn sm hide-in-focus" id="storeBtn" title="Open the Extension Store" aria-label="Open the Extension Store" aria-expanded="false"><i data-ic="cart"></i></button>
+<button class="btn sm hide-in-focus" id="accountBtn" type="button" title="Sign in to sync your workspace"><i data-ic="user"></i><span id="accountBtnText">Account</span></button>
 <button class="btn sm hide-in-focus" id="paletteBtn" title="Command palette (Ctrl/Cmd+K)"><i data-ic="command"></i></button>
 <button class="btn sm" id="focusModeBtn" title="Expand view / toggle focus mode (Alt+Z)"><i data-ic="eye"></i><span>Focus</span></button>
 </div>
@@ -834,8 +857,17 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <h3 id="storeHeading">Extensions for your study desk</h3>
 <p>Review an extension’s source and permissions before installing. Installed extensions stay off until you enable them.</p>
 <div class="store-status"><i data-ic="shield"></i><span>Runs in an isolated sandbox with no page or network access.</span></div>
+<section class="online-store-tools" aria-label="Online extension store">
+<div class="online-store-heading">
+<div><h4>Online community store</h4><p>Browse public extensions, review their source, and install only what you trust. New extensions start as private drafts and appear here only after their creator publishes them.</p></div>
+<button class="btn sm primary" id="createCommunityExtensionBtn" type="button"><i data-ic="plus"></i>Create extension</button>
+</div>
+<div class="online-store-status" id="onlineStoreStatus" role="status">Connecting to the online store…</div>
+<div class="community-list" id="myCommunityExtensions" aria-label="Your extensions"></div>
+</section>
 <h4 class="store-section-title">Available to install</h4>
 <div class="store-catalog-grid" id="storeCatalogGrid" aria-label="Available extensions"></div>
+<div class="store-catalog-grid community-grid" id="communityStoreGrid" aria-label="Published community extensions"></div>
 <h4 class="store-section-title">Unavailable</h4>
 <article class="store-card" aria-label="Unavailable extension: Citation Helper">
 <div class="store-card-head"><strong class="store-demo-title">Citation Helper</strong><span class="store-badge unavailable">UNAVAILABLE</span></div>
@@ -870,6 +902,55 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <button class="btn" id="extensionInputCancel" type="button">Cancel</button>
 <button class="btn primary" id="extensionInputSubmit" type="button">Save</button>
 </div>
+</div>
+</dialog>
+
+<dialog id="accountDialog" class="account-dialog" aria-labelledby="accountDialogTitle">
+<div class="account-panel">
+<div class="row-between"><h2 id="accountDialogTitle">Study Desk account</h2><button class="icon-btn" id="accountCloseBtn" type="button" aria-label="Close account dialog">×</button></div>
+<p id="accountDialogIntro">Create an account to sync preferences, notes, and bookmarks across your devices.</p>
+<div class="recovery-code-box hidden" id="accountSignedInPanel"><strong>Signed in as <span id="accountUsername"></span></strong><p class="small">Your preferences, notes, and bookmarks sync to your account.</p><button class="btn sm" id="accountSignoutBtn" type="button">Sign out</button></div>
+<form class="account-form" id="accountLoginForm">
+<label for="loginUsername">Username</label><input id="loginUsername" name="username" autocomplete="username" minlength="3" maxlength="24" required>
+<label for="loginPassword">Password</label><input id="loginPassword" name="password" type="password" autocomplete="current-password" required>
+<div class="account-actions"><button class="btn primary" type="submit">Sign in</button></div>
+<div class="row-between small"><button class="account-link" id="showSignupBtn" type="button">Create an account</button><button class="account-link" id="showRecoveryBtn" type="button">Use a recovery code</button></div>
+</form>
+<form class="account-form hidden" id="accountSignupForm">
+<label for="signupUsername">Username</label><input id="signupUsername" name="username" autocomplete="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" required>
+<label for="signupPassword">Password</label><input id="signupPassword" name="new-password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+<p class="small">Use at least 12 characters. Username-only accounts do not use email.</p>
+<div class="account-actions"><button class="btn primary" type="submit">Create account</button></div>
+<button class="account-link small" id="showLoginFromSignupBtn" type="button">Already have an account? Sign in</button>
+</form>
+<form class="account-form hidden" id="accountRecoveryForm">
+<label for="recoveryUsername">Username</label><input id="recoveryUsername" name="username" autocomplete="username" minlength="3" maxlength="24" required>
+<label for="recoveryCode">Recovery code</label><input id="recoveryCode" name="recoveryCode" autocomplete="off" required>
+<label for="recoveryNewPassword">New password</label><input id="recoveryNewPassword" name="new-password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+<div class="account-actions"><button class="btn primary" type="submit">Reset password</button></div>
+<button class="account-link small" id="showLoginFromRecoveryBtn" type="button">Back to sign in</button>
+</form>
+<div class="recovery-code-box hidden" id="recoveryCodePanel">
+<strong>Save your recovery code</strong>
+<p class="small">This code is shown once. Keep it somewhere private. It can reset your password.</p>
+<code id="recoveryCodeValue"></code>
+<button class="btn sm" id="copyRecoveryCodeBtn" type="button">Copy recovery code</button>
+</div>
+<div class="account-error" id="accountError" role="status" aria-live="polite"></div>
+</div>
+</dialog>
+
+<dialog id="communityExtensionDialog" class="community-dialog" aria-labelledby="communityDialogTitle">
+<div class="community-panel">
+<div class="row-between"><h2 id="communityDialogTitle">Create a store extension</h2><button class="icon-btn" id="communityCloseBtn" type="button" aria-label="Close extension editor">×</button></div>
+<p>Your draft stays private until you choose Publish publicly. Published JavaScript is visible to other users. Review it carefully and never include personal information or secrets.</p>
+<form class="community-form" id="communityExtensionForm">
+<label for="communityExtensionName">Extension name</label><input id="communityExtensionName" maxlength="60" required>
+<label for="communityExtensionDescription">Description</label><textarea id="communityExtensionDescription" rows="3" maxlength="500" required></textarea>
+<label for="communityExtensionSource">JavaScript source</label><textarea id="communityExtensionSource" class="extension-editor" rows="10" maxlength="200000" spellcheck="false" required></textarea>
+<div class="community-actions"><button class="btn" id="saveCommunityDraftBtn" type="submit">Save private draft</button><button class="btn primary" id="publishCommunityBtn" type="button">Publish publicly</button></div>
+</form>
+<div class="account-error" id="communityExtensionError" role="status" aria-live="polite"></div>
 </div>
 </dialog>
 
@@ -1048,7 +1129,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
     panel: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/>',
     pencil: '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
-    sparkle: '<path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>'
+     sparkle: '<path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>',
+     user: '<path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="8" r="4"/>'
   };
   NT.ICONS = P;
 
@@ -1402,6 +1484,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   function addFontOption(fontName) {
     const fontVal = "'" + fontName + "', sans-serif";
     const opt = document.createElement('option');
+    opt.dataset.customFont = 'true';
     opt.value = fontVal; opt.textContent = fontName;
     fontSelect.appendChild(opt);
     return fontVal;
@@ -3144,6 +3227,98 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     if (e.key === '?' && !mod && !e.altKey && !NT.isTyping()) { e.preventDefault(); openHelp(); return; }
   }, true);
 
+  window.addEventListener('study-desk-cloud-sync', function (event) {
+    var keys = event.detail && Array.isArray(event.detail.keys) ? event.detail.keys : [];
+    var changed = function (key) { return keys.indexOf(key) !== -1; };
+    if (changed('disguise_colors')) {
+      colors = sanitizeColors(NT.getJSON('disguise_colors', null));
+      syncColorInputs();
+      applyColors();
+    }
+    if (changed('disguise_main_font')) {
+      var syncedFont = localStorage.getItem('disguise_main_font') || fontSelect.options[0].value;
+      applyFont(syncedFont);
+      fontSelect.value = syncedFont;
+    }
+    if (changed('disguise_custom_fonts')) {
+      customFonts = NT.getJSON('disguise_custom_fonts', []);
+      if (!Array.isArray(customFonts)) customFonts = [];
+      fontSelect.querySelectorAll('option[data-custom-font="true"]').forEach(function (option) { option.remove(); });
+      customFonts.forEach(function (font) { loadGoogleFont(font); addFontOption(font); });
+    }
+    if (changed('disguise_font')) {
+      fontSize = parseInt(localStorage.getItem('disguise_font') || '14', 10) || 14;
+      applyFontSize(true);
+    }
+    if (changed('disguise_opacity')) applyOpacity(localStorage.getItem('disguise_opacity') || '1');
+    if (changed('disguise_title')) {
+      var syncedTitle = localStorage.getItem('disguise_title') || '';
+      TOP.document.title = syncedTitle || DEFAULT_TAB_TITLE;
+      titleInput.value = syncedTitle;
+    }
+    if (changed('disguise_blank_title')) blankTitleInput.value = localStorage.getItem('disguise_blank_title') || '';
+    if (changed('disguise_favicon')) {
+      var syncedFavicon = localStorage.getItem('disguise_favicon') || '';
+      setFavicon(syncedFavicon || DEFAULT_FAVICON_HREF);
+      if (syncedFavicon) showImagePreview(syncedFavicon);
+      else showImagePreview(DEFAULT_FAVICON_HREF);
+      base64FaviconInput.value = syncedFavicon;
+    }
+    if (changed('disguise_paniclink')) panicLink.value = localStorage.getItem('disguise_paniclink') || '';
+    if (changed('disguise_hotkey')) panicHotkey.value = localStorage.getItem('disguise_hotkey') || '';
+    if (changed('disguise_idle')) idleTimer.value = localStorage.getItem('disguise_idle') || '';
+    if (changed('disguise_idle')) setupIdlePanic();
+    if (changed('disguise_options_hidden')) {
+      optionsHidden = localStorage.getItem('disguise_options_hidden') === 'true';
+      toggleButtonsBtn.textContent = optionsHidden ? 'Show toolbar' : 'Hide toolbar';
+      updateActions(hasContent());
+    }
+    if (changed('disguise_notes') && document.activeElement !== notes) {
+      notes.value = localStorage.getItem('disguise_notes') || '';
+      notesCount();
+    }
+    if (changed('disguise_bookmarks')) {
+      bookmarks = NT.getJSON('disguise_bookmarks', []).filter(function (item) {
+        return item && typeof item.url === 'string' && safeUrl(item.url);
+      });
+      renderBookmarks();
+      updateStar();
+    }
+    if (changed('disguise_shortcuts')) {
+      var syncedShortcuts = NT.getJSON('disguise_shortcuts', {});
+      SHORTCUTS.forEach(function (shortcut) {
+        var stored = syncedShortcuts && typeof syncedShortcuts[shortcut.id] === 'string'
+          ? syncedShortcuts[shortcut.id] : shortcut.fallback;
+        shortcutMap[shortcut.id] = /^(?:(?:Ctrl|Cmd|Alt|Shift)\+)+(?:Key[A-Z]|Digit[0-9]|Numpad[0-9]|BracketLeft|BracketRight|Slash|Backslash|Comma|Period|Semicolon|Quote|Backquote|Minus|Equal|Space|ArrowUp|ArrowDown|ArrowLeft|ArrowRight|Home|End|PageUp|PageDown|Insert|Delete|F[1-9]|F1[0-2])$/.test(stored) ? stored : '';
+      });
+      buildHelp();
+      renderShortcutSettings();
+      syncShortcutTitles();
+    }
+    if (changed('disguise_tab_memory_limit')) {
+      var nextMemoryLimit = readMemoryLimit();
+      if (tabs.filter(function (tab) { return !!tab.area; }).length > nextMemoryLimit && nextMemoryLimit < memoryLimit) {
+        NT.confirmDialog('Unload older tabs?',
+          'This account uses a lower tab memory limit. Older pages may reload when reopened; unsaved page state can be lost.',
+          'Apply limit', true).then(function (ok) {
+          if (!ok) {
+            memorySelect.value = String(memoryLimit);
+            NT.setItem('disguise_tab_memory_limit', String(memoryLimit));
+          } else NT.reloadTabMemory();
+        });
+      } else NT.reloadTabMemory();
+    }
+    if (changed('disguise_timer_minutes')) {
+      var syncedMinutes = parseInt(localStorage.getItem('disguise_timer_minutes') || '25', 10);
+      if (!isNaN(syncedMinutes) && syncedMinutes >= 1 && syncedMinutes <= 360) {
+        tMin = syncedMinutes;
+        tTotal = syncedMinutes * 60000;
+        tMinInput.value = String(syncedMinutes);
+        if (!tRun) { tLeft = tTotal; drawTimer(); }
+      }
+    }
+  });
+
   // ---------- boot ----------
   renderBookmarks(); renderRecents(); updateStar();
   newTab(true);
@@ -3509,6 +3684,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     storeDetail.classList.remove('hidden');
     $('storeDetailClose').focus();
   }
+  NT.openStoreDetails = openStoreDetails;
   function updateStoreDetailState() {
     if (!selectedStoreItem) return;
     var isInstalled = Boolean(installedStoreItem(selectedStoreItem));
@@ -3545,6 +3721,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       storeGrid.appendChild(card);
     });
     updateStoreDetailState();
+    if (NT.renderOnlineStore) NT.renderOnlineStore();
   }
   function render() {
     $('extensionCount').textContent = String(extensions.length);
@@ -3640,6 +3817,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     cancelButton.classList.add('hidden');
   }
   saveButton.addEventListener('click', function () {
+    if (NT.requireCloudAccount && !NT.requireCloudAccount()) return;
     var name = nameInput.value.trim();
     var code = codeInput.value;
     if (!name) { nameInput.focus(); NT.toast('Enter an extension name', 'error'); return; }
@@ -3698,6 +3876,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
   });
   fileInput.addEventListener('change', function () {
+    if (NT.requireCloudAccount && !NT.requireCloudAccount()) { fileInput.value = ''; return; }
     var file = fileInput.files && fileInput.files[0];
     if (!file) return;
     if (file.size > MAX_SOURCE_LENGTH) { NT.toast('JavaScript file must be under 200 KB', 'error'); fileInput.value = ''; return; }
@@ -3803,8 +3982,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 
   var groups = getGroups();
   var groupById = new Map(groups.map(function (group) { return [group.id, group]; }));
-  var savedOrder = window.NT.getJSON('disguise_sidebar_order', []);
-  if (Array.isArray(savedOrder)) {
+  function applySavedOrder() {
+    var savedOrder = window.NT.getJSON('disguise_sidebar_order', []);
+    if (Array.isArray(savedOrder)) {
     var ordered = [];
     var seen = new Set();
     savedOrder.forEach(function (id) {
@@ -3821,7 +4001,14 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         insertionPoint = group;
       });
     }
+    }
   }
+  applySavedOrder();
+  window.NT.reloadSidebarOrder = applySavedOrder;
+  window.addEventListener('study-desk-cloud-sync', function (event) {
+    var keys = event.detail && Array.isArray(event.detail.keys) ? event.detail.keys : [];
+    if (keys.indexOf('disguise_sidebar_order') !== -1) applySavedOrder();
+  });
 
   var dragged = null;
   var dropTarget = null;
@@ -3895,6 +4082,572 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     clearDragStyles();
     saveOrder();
     dragged = null;
+  });
+})();
+</script>
+<script>
+(function () {
+  'use strict';
+  var NT = window.NT;
+  if (!NT) return;
+  var $ = function (id) { return document.getElementById(id); };
+  var accountDialog = $('accountDialog');
+  var communityDialog = $('communityExtensionDialog');
+  var accountError = $('accountError');
+  var communityError = $('communityExtensionError');
+  var accountUser = null;
+  var pendingCreator = false;
+  var onlineExtensions = [];
+  var storeLoadFailed = false;
+  var ownedExtensions = [];
+  var editingCommunityId = null;
+  var revision = 0;
+  var lastLocalSnapshot = null;
+  var syncBusy = false;
+  var syncKeys = [
+    'disguise_colors', 'disguise_custom_fonts', 'disguise_font', 'disguise_main_font',
+    'disguise_hotkey', 'disguise_idle', 'disguise_opacity', 'disguise_options_hidden',
+    'disguise_paniclink', 'disguise_sidebar_order', 'disguise_shortcuts',
+    'disguise_tab_memory_limit', 'disguise_theme', 'disguise_timer_minutes',
+    'disguise_title', 'disguise_favicon', 'disguise_blank_title',
+    'disguise_notes', 'disguise_bookmarks'
+  ];
+  var ownerKey = 'disguise_cloud_owner';
+
+  function api(path, options) {
+    options = options || {};
+    var headers = Object.assign({ Accept: 'application/json' }, options.headers || {});
+    var body = options.body;
+    if (body !== undefined) {
+      headers['Content-Type'] = 'application/json';
+      body = JSON.stringify(body);
+    }
+    return fetch('/api' + path, {
+      method: options.method || 'GET',
+      credentials: 'same-origin',
+      headers: headers,
+      body: body
+    }).then(async function (response) {
+      if (response.status === 204) return null;
+      var data = {};
+      try { data = await response.json(); } catch (e) {}
+      if (!response.ok) throw new Error(data && data.error || 'The request could not be completed.');
+      return data;
+    });
+  }
+
+  function localSnapshot() {
+    var result = {};
+    syncKeys.forEach(function (key) { result[key] = localStorage.getItem(key); });
+    return result;
+  }
+  function mergeCloudValue(key, localValue, remoteValue) {
+    if (!localValue || !remoteValue || localValue === remoteValue) return remoteValue || localValue || '';
+    if (key === 'disguise_notes') {
+      if (remoteValue.indexOf(localValue) !== -1) return remoteValue;
+      if (localValue.indexOf(remoteValue) !== -1) return localValue;
+      var mergedText = remoteValue + '\n\n--- Notes from this device ---\n\n' + localValue;
+      return new Blob([mergedText]).size <= 120 * 1024 ? mergedText : null;
+    }
+    if (key === 'disguise_bookmarks') {
+      try {
+        var remoteList = JSON.parse(remoteValue);
+        var localList = JSON.parse(localValue);
+        if (!Array.isArray(remoteList) || !Array.isArray(localList)) return remoteValue;
+        var byUrl = new Map();
+        remoteList.concat(localList).forEach(function (bookmark) {
+          if (bookmark && typeof bookmark.url === 'string' && !byUrl.has(bookmark.url)) {
+            byUrl.set(bookmark.url, bookmark);
+          }
+        });
+        var mergedList = JSON.stringify(Array.from(byUrl.values()).slice(0, 300));
+        return new Blob([mergedList]).size <= 120 * 1024 ? mergedList : null;
+      } catch (error) { return remoteValue; }
+    }
+    return remoteValue;
+  }
+  function allowedCloudUpdates(updates) {
+    var safe = {};
+    Object.keys(updates).forEach(function (key) {
+      var value = updates[key];
+      if (value === null || typeof value !== 'string') return;
+      if ((key === 'disguise_notes' || key === 'disguise_bookmarks') && new Blob([value]).size > 120 * 1024) {
+        setCloudStatus('A large note or bookmark list stays on this device; smaller settings still sync.', true);
+        return;
+      }
+      safe[key] = value;
+    });
+    return safe;
+  }
+  function syncRequestBody(updates) { return api('/sync', { method: 'PATCH', body: { updates: updates } }); }
+  function dispatchCloudChange(keys) {
+    if (keys.length) window.dispatchEvent(new CustomEvent('study-desk-cloud-sync', { detail: { keys: keys } }));
+  }
+  function setCloudStatus(message, isError) {
+    var status = $('onlineStoreStatus');
+    status.textContent = message;
+    status.style.color = isError ? 'var(--danger)' : '';
+  }
+  function setAccountUser(user) {
+    accountUser = user || null;
+    $('accountBtnText').textContent = accountUser ? accountUser.username : 'Account';
+    $('accountBtn').title = accountUser ? 'Signed in as ' + accountUser.username : 'Sign in to sync your workspace';
+    $('accountSignedInPanel').classList.toggle('hidden', !accountUser);
+    $('accountLoginForm').classList.toggle('hidden', !!accountUser);
+    $('accountSignupForm').classList.add('hidden');
+    $('accountRecoveryForm').classList.add('hidden');
+    $('accountUsername').textContent = accountUser ? accountUser.username : '';
+    $('accountDialogIntro').textContent = accountUser
+      ? 'Your preferences, notes, and bookmarks are connected to this account.'
+      : 'Create an account to sync preferences, notes, and bookmarks across your devices.';
+    if (!accountUser) $('recoveryCodePanel').classList.add('hidden');
+    setCloudStatus(accountUser
+      ? 'Signed in as ' + accountUser.username + ' · workspace sync is on.'
+      : 'Sign in to create extensions and sync your workspace.', false);
+  }
+  function accountMode(mode) {
+    $('accountError').textContent = '';
+    $('accountSignedInPanel').classList.add('hidden');
+    $('accountLoginForm').classList.toggle('hidden', mode !== 'login');
+    $('accountSignupForm').classList.toggle('hidden', mode !== 'signup');
+    $('accountRecoveryForm').classList.toggle('hidden', mode !== 'recovery');
+    $('recoveryCodePanel').classList.add('hidden');
+    $('accountDialogIntro').textContent = mode === 'signup'
+      ? 'Choose a username and password. Save the recovery code shown after signup.'
+      : mode === 'recovery'
+        ? 'Use the one-time recovery code from account creation to set a new password.'
+        : 'Sign in to sync preferences, notes, and bookmarks across your devices.';
+    if (accountUser) {
+      $('accountSignedInPanel').classList.remove('hidden');
+      $('accountLoginForm').classList.add('hidden');
+      $('accountSignupForm').classList.add('hidden');
+      $('accountRecoveryForm').classList.add('hidden');
+      $('accountDialogIntro').textContent = 'Your preferences, notes, and bookmarks are connected to this account.';
+    }
+  }
+  function openAccount(mode) {
+    accountMode(accountUser ? 'login' : (mode || 'login'));
+    if (!accountDialog.open) accountDialog.showModal();
+    var first = accountUser ? $('accountSignoutBtn') : mode === 'signup' ? $('signupUsername') : $('loginUsername');
+    if (first) first.focus();
+  }
+  function displayRecoveryCode(code) {
+    if (!code) return;
+    $('recoveryCodeValue').textContent = code;
+    $('recoveryCodePanel').classList.remove('hidden');
+    $('accountError').textContent = 'Copy and save this recovery code now. It will not be shown again.';
+  }
+  function readError(error) { return error && error.message || 'Something went wrong. Try again.'; }
+
+  async function saveLocalChanges() {
+    if (!accountUser || !lastLocalSnapshot || syncBusy) return;
+    var current = localSnapshot();
+    var updates = {};
+    syncKeys.forEach(function (key) {
+      if (current[key] !== lastLocalSnapshot[key]) updates[key] = current[key] === null ? '' : current[key];
+    });
+    updates = allowedCloudUpdates(updates);
+    if (!Object.keys(updates).length) return;
+    syncBusy = true;
+    try {
+      var result = await syncRequestBody(updates);
+      revision = result.revision;
+      lastLocalSnapshot = localSnapshot();
+    } catch (error) {
+      setCloudStatus('Sync paused: ' + readError(error), true);
+    } finally {
+      syncBusy = false;
+    }
+  }
+
+  async function syncAccountData(isFirstLoad) {
+    if (!accountUser || syncBusy) return;
+    syncBusy = true;
+    try {
+      var local = localSnapshot();
+      var result = await api('/sync');
+      var remote = result.data || {};
+      revision = result.revision || 0;
+      var changed = [];
+      var updates = {};
+      if (isFirstLoad && !Object.keys(remote).length) {
+        syncKeys.forEach(function (key) {
+          if (local[key] !== null) updates[key] = local[key];
+        });
+      } else {
+        syncKeys.forEach(function (key) {
+          if (Object.prototype.hasOwnProperty.call(remote, key)) {
+            var value = remote[key];
+            if (isFirstLoad && local[key] !== null && (key === 'disguise_notes' || key === 'disguise_bookmarks')) {
+              var mergedValue = mergeCloudValue(key, local[key], value);
+              if (mergedValue !== null && mergedValue !== value) {
+                value = mergedValue;
+                updates[key] = value;
+              } else if (mergedValue === null) {
+                setCloudStatus('Some notes or bookmarks are large; the local copy was kept on this device.', true);
+                return;
+              }
+            }
+            if (localStorage.getItem(key) !== value) {
+              localStorage.setItem(key, value);
+              changed.push(key);
+            }
+          } else if (local[key] !== null) {
+            updates[key] = local[key];
+          }
+        });
+      }
+      updates = allowedCloudUpdates(updates);
+      if (Object.keys(updates).length) {
+        var saved = await syncRequestBody(updates);
+        revision = saved.revision;
+      }
+      lastLocalSnapshot = localSnapshot();
+      dispatchCloudChange(changed);
+      if (!Object.keys(updates).length || !changed.length) {
+        setCloudStatus('Signed in as ' + accountUser.username + ' · synced just now.', false);
+      }
+    } catch (error) {
+      setCloudStatus('Could not sync this workspace: ' + readError(error), true);
+    } finally {
+      syncBusy = false;
+    }
+  }
+
+  async function finishSignIn(user, keepAccountOpen) {
+    setAccountUser(user);
+    var previousOwner = localStorage.getItem(ownerKey);
+    if (previousOwner && previousOwner !== user.username) {
+      syncKeys.forEach(function (key) { localStorage.removeItem(key); });
+      dispatchCloudChange(syncKeys.slice());
+    }
+    localStorage.setItem(ownerKey, user.username);
+    lastLocalSnapshot = localSnapshot();
+    await syncAccountData(true);
+    await loadMyExtensions();
+    await loadPublicExtensions();
+    if (!keepAccountOpen && accountDialog.open) accountDialog.close();
+    if (pendingCreator && !keepAccountOpen) {
+      pendingCreator = false;
+      openCommunityEditor();
+    }
+  }
+
+  function setBusy(form, busy) {
+    form.querySelectorAll('button[type="submit"]').forEach(function (button) { button.disabled = busy; });
+  }
+  $('accountLoginForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    var form = event.currentTarget;
+    var submit = form.querySelector('button[type="submit"]');
+    submit.disabled = true;
+    accountError.textContent = '';
+    try {
+      var result = await api('/auth/login', {
+        method: 'POST',
+        body: { username: $('loginUsername').value.trim(), password: $('loginPassword').value }
+      });
+      $('loginPassword').value = '';
+      await finishSignIn(result.user, false);
+      NT.toast('Signed in. Your workspace is syncing.');
+    } catch (error) { accountError.textContent = readError(error); }
+    finally { submit.disabled = false; }
+  });
+  $('accountSignupForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    var form = event.currentTarget;
+    setBusy(form, true);
+    accountError.textContent = '';
+    try {
+      var result = await api('/auth/signup', {
+        method: 'POST',
+        body: { username: $('signupUsername').value.trim(), password: $('signupPassword').value }
+      });
+      $('signupPassword').value = '';
+      await finishSignIn(result.user, true);
+      displayRecoveryCode(result.recoveryCode);
+    } catch (error) { accountError.textContent = readError(error); }
+    finally { setBusy(form, false); }
+  });
+  $('accountRecoveryForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    var form = event.currentTarget;
+    setBusy(form, true);
+    accountError.textContent = '';
+    try {
+      var result = await api('/auth/recover', {
+        method: 'POST',
+        body: {
+          username: $('recoveryUsername').value.trim(),
+          recoveryCode: $('recoveryCode').value.trim(),
+          newPassword: $('recoveryNewPassword').value
+        }
+      });
+      $('recoveryCode').value = '';
+      $('recoveryNewPassword').value = '';
+      await finishSignIn(result.user, true);
+      displayRecoveryCode(result.recoveryCode);
+    } catch (error) { accountError.textContent = readError(error); }
+    finally { setBusy(form, false); }
+  });
+  $('showSignupBtn').addEventListener('click', function () { accountMode('signup'); $('signupUsername').focus(); });
+  $('showRecoveryBtn').addEventListener('click', function () { accountMode('recovery'); $('recoveryUsername').focus(); });
+  $('showLoginFromSignupBtn').addEventListener('click', function () { accountMode('login'); $('loginUsername').focus(); });
+  $('showLoginFromRecoveryBtn').addEventListener('click', function () { accountMode('login'); $('loginUsername').focus(); });
+  $('accountCloseBtn').addEventListener('click', function () { accountDialog.close(); });
+  $('accountBtn').addEventListener('click', function () { openAccount('login'); });
+  accountDialog.addEventListener('click', function (event) { if (event.target === accountDialog) accountDialog.close(); });
+  accountDialog.addEventListener('close', function () {
+    if (pendingCreator && accountUser) {
+      pendingCreator = false;
+      openCommunityEditor();
+    }
+  });
+  $('accountSignoutBtn').addEventListener('click', async function () {
+    try { await api('/auth/logout', { method: 'POST' }); } catch (error) {}
+    setAccountUser(null);
+    lastLocalSnapshot = null;
+    await loadMyExtensions();
+    accountDialog.close();
+    NT.toast('Signed out. This browser’s local data remains here.');
+  });
+  $('copyRecoveryCodeBtn').addEventListener('click', async function () {
+    try {
+      await navigator.clipboard.writeText($('recoveryCodeValue').textContent);
+      NT.toast('Recovery code copied');
+    } catch (error) { NT.toast('Select and copy the recovery code manually', 'error'); }
+  });
+
+  function makeButton(text, className, handler) {
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.className = className || 'btn sm';
+    button.textContent = text;
+    button.addEventListener('click', handler);
+    return button;
+  }
+  function renderOnlineStore() {
+    var grid = $('communityStoreGrid');
+    if (!grid) return;
+    grid.replaceChildren();
+    onlineExtensions.forEach(function (item) {
+      var card = document.createElement('article');
+      card.className = 'store-card';
+      var head = document.createElement('div');
+      head.className = 'store-card-head';
+      var icon = document.createElement('span');
+      icon.className = 'store-demo-icon';
+      icon.innerHTML = NT.ic('code');
+      var title = document.createElement('strong');
+      title.className = 'store-demo-title';
+      title.textContent = item.name;
+      var badge = document.createElement('span');
+      badge.className = 'store-badge';
+      badge.textContent = 'PUBLIC';
+      head.append(icon, title, badge);
+      var description = document.createElement('p');
+      description.textContent = item.description;
+      var publisher = document.createElement('p');
+      publisher.textContent = 'By ' + item.publisherUsername + ' · ' + item.version;
+      var review = makeButton('Review source', 'btn sm', async function () {
+        review.disabled = true;
+        try {
+          var detail = await api('/store/extensions/' + encodeURIComponent(item.id));
+          NT.openStoreDetails(Object.assign({}, item, {
+            icon: 'code',
+            permissions: 'Published by ' + detail.publisherUsername + '. Runs only after you install and enable it. Review this source before enabling.',
+            source: detail.code
+          }), review);
+        } catch (error) { NT.toast(readError(error), 'error'); }
+        finally { review.disabled = false; }
+      });
+      card.append(head, description, publisher, review);
+      grid.appendChild(card);
+    });
+    if (!onlineExtensions.length && !storeLoadFailed) {
+      var empty = document.createElement('p');
+      empty.className = 'small muted';
+      empty.textContent = 'No public community extensions yet.';
+      grid.appendChild(empty);
+    }
+  }
+  NT.renderOnlineStore = renderOnlineStore;
+
+  async function loadPublicExtensions() {
+    try {
+      onlineExtensions = await api('/store/extensions');
+      storeLoadFailed = false;
+      renderOnlineStore();
+      if (accountUser) setCloudStatus('Signed in as ' + accountUser.username + ' · online store is up to date.', false);
+      else if (onlineExtensions.length) setCloudStatus('Online store is available. Sign in to create extensions.', false);
+      else setCloudStatus('Online store is ready. No public extensions have been published yet.', false);
+    } catch (error) {
+      onlineExtensions = [];
+      storeLoadFailed = true;
+      renderOnlineStore();
+      setCloudStatus('Online store is unavailable: ' + readError(error), true);
+    }
+  }
+
+  function renderOwnedExtensions() {
+    var container = $('myCommunityExtensions');
+    container.replaceChildren();
+    if (!accountUser || !ownedExtensions.length) return;
+    var title = document.createElement('strong');
+    title.textContent = 'Your extensions';
+    container.appendChild(title);
+    ownedExtensions.forEach(function (item) {
+      var row = document.createElement('div');
+      row.className = 'community-row';
+      var label = document.createElement('div');
+      var name = document.createElement('strong');
+      name.textContent = item.name;
+      var state = document.createElement('div');
+      state.className = 'small muted';
+      state.textContent = item.published ? 'Published publicly' : 'Private draft';
+      label.append(name, state);
+      var actions = document.createElement('div');
+      actions.className = 'community-row-actions';
+      actions.appendChild(makeButton('Edit', 'btn sm', async function () {
+        try {
+          var detail = await api('/store/extensions/' + encodeURIComponent(item.id));
+          openCommunityEditor(detail);
+        } catch (error) { NT.toast(readError(error), 'error'); }
+      }));
+      if (!item.published) actions.appendChild(makeButton('Publish', 'btn sm primary', async function () {
+        try {
+          await api('/store/extensions/' + encodeURIComponent(item.id) + '/publish', { method: 'POST' });
+          await loadMyExtensions(); await loadPublicExtensions();
+          NT.toast(item.name + ' is now public.');
+        } catch (error) { NT.toast(readError(error), 'error'); }
+      }));
+      actions.appendChild(makeButton('Delete', 'btn sm danger-ghost', async function () {
+        if (!(await NT.confirmDialog('Delete extension?', 'This permanently removes your online draft or published extension.', 'Delete', true))) return;
+        try {
+          await api('/store/extensions/' + encodeURIComponent(item.id), { method: 'DELETE' });
+          await loadMyExtensions(); await loadPublicExtensions();
+          NT.toast('Extension deleted.');
+        } catch (error) { NT.toast(readError(error), 'error'); }
+      }));
+      row.append(label, actions);
+      container.appendChild(row);
+    });
+  }
+  async function loadMyExtensions() {
+    if (!accountUser) {
+      ownedExtensions = [];
+      renderOwnedExtensions();
+      return;
+    }
+    try { ownedExtensions = await api('/store/mine'); }
+    catch (error) { ownedExtensions = []; }
+    renderOwnedExtensions();
+  }
+
+  function openCommunityEditor(item) {
+    if (!accountUser) {
+      pendingCreator = true;
+      openAccount('signup');
+      return;
+    }
+    editingCommunityId = item ? item.id : null;
+    $('communityDialogTitle').textContent = item ? 'Edit store extension' : 'Create a store extension';
+    $('communityExtensionName').value = item ? item.name : '';
+    $('communityExtensionDescription').value = item ? item.description : '';
+    $('communityExtensionSource').value = item ? item.code : '';
+    $('saveCommunityDraftBtn').textContent = item && item.published ? 'Save as private draft' : 'Save private draft';
+    $('communityExtensionError').textContent = '';
+    communityDialog.showModal();
+    $('communityExtensionName').focus();
+  }
+  NT.requireCloudAccount = function () {
+    if (accountUser) return true;
+    openAccount('login');
+    accountError.textContent = 'Sign in or create an account before adding an extension.';
+    return false;
+  };
+  $('createCommunityExtensionBtn').addEventListener('click', function () {
+    if (!accountUser) {
+      pendingCreator = true;
+      openAccount('signup');
+      return;
+    }
+    openCommunityEditor();
+  });
+  $('communityCloseBtn').addEventListener('click', function () { communityDialog.close(); });
+  communityDialog.addEventListener('click', function (event) { if (event.target === communityDialog) communityDialog.close(); });
+
+  async function saveCommunityExtension(publish) {
+    if (!accountUser) { NT.requireCloudAccount(); return; }
+    var name = $('communityExtensionName').value.trim();
+    var description = $('communityExtensionDescription').value.trim();
+    var code = $('communityExtensionSource').value;
+    if (!name || !description || !code.trim() || code.length > 200000) {
+      communityError.textContent = 'Enter a name, description, and source under 200 KB.';
+      return;
+    }
+    var saveButton = $('saveCommunityDraftBtn');
+    saveButton.disabled = true;
+    $('publishCommunityBtn').disabled = true;
+    communityError.textContent = '';
+    try {
+      var input = { name: name, description: description, code: code };
+      var item = editingCommunityId
+        ? await api('/store/extensions/' + encodeURIComponent(editingCommunityId), { method: 'PATCH', body: input })
+        : await api('/store/extensions', { method: 'POST', body: input });
+      if (publish) {
+        item = await api('/store/extensions/' + encodeURIComponent(item.id) + '/publish', { method: 'POST' });
+        NT.toast('Extension published publicly.');
+      } else NT.toast('Private draft saved.');
+      communityDialog.close();
+      await loadMyExtensions();
+      await loadPublicExtensions();
+    } catch (error) { communityError.textContent = readError(error); }
+    finally { saveButton.disabled = false; $('publishCommunityBtn').disabled = false; }
+  }
+  $('communityExtensionForm').addEventListener('submit', function (event) {
+    event.preventDefault();
+    saveCommunityExtension(false);
+  });
+  $('publishCommunityBtn').addEventListener('click', function () { saveCommunityExtension(true); });
+
+  async function restoreSession() {
+    try {
+      var result = await api('/auth/me');
+      await finishSignIn(result.user, true);
+    } catch (error) {
+      if (!accountUser) {
+        setAccountUser(null);
+        loadPublicExtensions();
+      }
+    }
+  }
+  restoreSession();
+  setInterval(saveLocalChanges, 2500);
+  setInterval(async function () {
+    if (!accountUser || syncBusy) return;
+    try {
+      await saveLocalChanges();
+      var result = await api('/sync');
+      if (result.revision !== revision) {
+        revision = result.revision;
+        var current = localSnapshot();
+        var changed = [];
+        Object.keys(result.data || {}).forEach(function (key) {
+          if (syncKeys.indexOf(key) === -1) return;
+          if (localStorage.getItem(key) !== result.data[key]) {
+            localStorage.setItem(key, result.data[key]);
+            changed.push(key);
+          }
+        });
+        lastLocalSnapshot = localSnapshot();
+        dispatchCloudChange(changed);
+        setCloudStatus('Signed in as ' + accountUser.username + ' · synced just now.', false);
+      }
+    } catch (error) { setCloudStatus('Sync paused: ' + readError(error), true); }
+  }, 15000);
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && accountUser) loadPublicExtensions();
   });
 })();
 </script>

@@ -10,6 +10,12 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Username and password account operations
+  - name: sync
+    description: Signed-in workspace synchronization
+  - name: extensions
+    description: Online community extension store
 paths:
   /healthz:
     get:
@@ -24,6 +30,252 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /auth/signup:
+    post:
+      operationId: signUp
+      tags: [auth]
+      summary: Create an account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignUpInput"
+      responses:
+        "201":
+          description: Account created; recovery code is shown once
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResult"
+        "409":
+          description: Username is already in use
+  /auth/login:
+    post:
+      operationId: logIn
+      tags: [auth]
+      summary: Sign in to an account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResult"
+        "401":
+          description: Username or password is incorrect
+  /auth/logout:
+    post:
+      operationId: logOut
+      tags: [auth]
+      summary: Sign out
+      responses:
+        "204":
+          description: Signed out
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get the current account
+      responses:
+        "200":
+          description: Current account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUser"
+        "401":
+          description: Not signed in
+  /auth/recover:
+    post:
+      operationId: recoverAccount
+      tags: [auth]
+      summary: Reset a password using its recovery code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecoveryInput"
+      responses:
+        "200":
+          description: Password reset; a replacement recovery code is shown once
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResult"
+        "400":
+          description: Recovery details are invalid
+  /sync:
+    get:
+      operationId: getWorkspaceSync
+      tags: [sync]
+      summary: Get synchronized workspace data
+      responses:
+        "200":
+          description: Workspace data and revision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspaceSync"
+        "401":
+          description: Sign in required
+    patch:
+      operationId: updateWorkspaceSync
+      tags: [sync]
+      summary: Save changed workspace fields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkspaceSyncUpdate"
+      responses:
+        "200":
+          description: Updated workspace data and revision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspaceSync"
+        "401":
+          description: Sign in required
+  /store/extensions:
+    get:
+      operationId: listPublicExtensions
+      tags: [extensions]
+      summary: List published extensions
+      responses:
+        "200":
+          description: Published extensions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtensionList"
+    post:
+      operationId: createCommunityExtension
+      tags: [extensions]
+      summary: Create a private extension draft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExtensionInput"
+      responses:
+        "201":
+          description: Draft created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunityExtension"
+        "401":
+          description: Sign in required
+  /store/extensions/{id}:
+    get:
+      operationId: getPublicExtension
+      tags: [extensions]
+      summary: Get a published extension and its source
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Extension details and source
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunityExtension"
+        "404":
+          description: Extension not found
+    patch:
+      operationId: updateCommunityExtension
+      tags: [extensions]
+      summary: Update an owned extension
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExtensionInput"
+      responses:
+        "200":
+          description: Updated extension
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunityExtension"
+        "401":
+          description: Sign in required
+        "404":
+          description: Extension not found
+    delete:
+      operationId: deleteCommunityExtension
+      tags: [extensions]
+      summary: Delete an owned extension
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          description: Sign in required
+        "404":
+          description: Extension not found
+  /store/extensions/{id}/publish:
+    post:
+      operationId: publishCommunityExtension
+      tags: [extensions]
+      summary: Publish an owned extension
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Published extension
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunityExtension"
+        "401":
+          description: Sign in required
+        "404":
+          description: Extension not found
+  /store/mine:
+    get:
+      operationId: listMyExtensions
+      tags: [extensions]
+      summary: List extensions owned by the current user
+      responses:
+        "200":
+          description: Owned extensions, including private drafts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtensionList"
+        "401":
+          description: Sign in required
 components:
   schemas:
     HealthStatus:
@@ -33,4 +285,131 @@ components:
           type: string
       required:
         - status
+    SignUpInput:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 24
+          pattern: "^[A-Za-z0-9_]+$"
+        password:
+          type: string
+          minLength: 12
+          maxLength: 128
+    LoginInput:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 24
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+    RecoveryInput:
+      type: object
+      required: [username, recoveryCode, newPassword]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 24
+        recoveryCode:
+          type: string
+          minLength: 12
+          maxLength: 100
+        newPassword:
+          type: string
+          minLength: 12
+          maxLength: 128
+    UserSummary:
+      type: object
+      required: [username]
+      properties:
+        username:
+          type: string
+    AuthResult:
+      type: object
+      required: [user, recoveryCode]
+      properties:
+        user:
+          $ref: "#/components/schemas/UserSummary"
+        recoveryCode:
+          type: ["string", "null"]
+    CurrentUser:
+      type: object
+      required: [user]
+      properties:
+        user:
+          $ref: "#/components/schemas/UserSummary"
+    WorkspaceSync:
+      type: object
+      required: [data, revision]
+      properties:
+        data:
+          type: object
+          additionalProperties:
+            type: string
+        revision:
+          type: integer
+          minimum: 0
+    WorkspaceSyncUpdate:
+      type: object
+      required: [updates]
+      properties:
+        updates:
+          type: object
+          additionalProperties:
+            type: ["string", "null"]
+    ExtensionInput:
+      type: object
+      required: [name, description, code]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 60
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+        code:
+          type: string
+          minLength: 1
+          maxLength: 200000
+    ExtensionSummary:
+      type: object
+      required: [id, name, description, version, publisherUsername, published, updatedAt]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: string
+        publisherUsername:
+          type: string
+        published:
+          type: boolean
+        updatedAt:
+          type: string
+          format: date-time
+    CommunityExtension:
+      allOf:
+        - $ref: "#/components/schemas/ExtensionSummary"
+        - type: object
+          required: [code]
+          properties:
+            code:
+              type: string
+    ExtensionList:
+      type: array
+      items:
+        $ref: "#/components/schemas/ExtensionSummary"
 
