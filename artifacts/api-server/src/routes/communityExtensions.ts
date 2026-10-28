@@ -28,6 +28,8 @@ function summary(row: {
   description: string;
   version: string;
   published: boolean;
+  approvalStatus: string;
+  moderationNote?: string | null;
   updatedAt: Date;
   username: string;
 }) {
@@ -38,6 +40,8 @@ function summary(row: {
     version: row.version,
     publisherUsername: row.username,
     published: row.published,
+    approvalStatus: row.approvalStatus,
+    ...(row.moderationNote !== undefined ? { moderationNote: row.moderationNote } : {}),
     updatedAt: row.updatedAt,
   };
 }
@@ -58,12 +62,18 @@ router.get("/store/extensions", async (_req, res): Promise<void> => {
       description: communityExtensionsTable.description,
       version: communityExtensionsTable.version,
       published: communityExtensionsTable.published,
+      approvalStatus: communityExtensionsTable.approvalStatus,
       updatedAt: communityExtensionsTable.updatedAt,
       username: studyUsersTable.username,
     })
     .from(communityExtensionsTable)
     .innerJoin(studyUsersTable, eq(communityExtensionsTable.ownerId, studyUsersTable.id))
-    .where(eq(communityExtensionsTable.published, true))
+    .where(
+      and(
+        eq(communityExtensionsTable.published, true),
+        eq(communityExtensionsTable.approvalStatus, "approved"),
+      ),
+    )
     .orderBy(desc(communityExtensionsTable.updatedAt))
     .limit(100);
   res.json(ListPublicExtensionsResponse.parse(rows.map(summary)));
@@ -84,6 +94,8 @@ router.get("/store/extensions/:id", async (req, res): Promise<void> => {
       code: communityExtensionsTable.code,
       version: communityExtensionsTable.version,
       published: communityExtensionsTable.published,
+      approvalStatus: communityExtensionsTable.approvalStatus,
+      moderationNote: communityExtensionsTable.moderationNote,
       updatedAt: communityExtensionsTable.updatedAt,
       username: studyUsersTable.username,
     })
@@ -91,11 +103,23 @@ router.get("/store/extensions/:id", async (req, res): Promise<void> => {
     .innerJoin(studyUsersTable, eq(communityExtensionsTable.ownerId, studyUsersTable.id))
     .where(eq(communityExtensionsTable.id, params.data.id))
     .limit(1);
-  if (!row || (!row.published && row.ownerId !== req.studyDeskUser?.id)) {
+  if (
+    !row ||
+    ((!row.published || row.approvalStatus !== "approved") &&
+      row.ownerId !== req.studyDeskUser?.id)
+  ) {
     res.status(404).json({ error: "Extension not found." });
     return;
   }
-  res.json(GetPublicExtensionResponse.parse({ ...summary(row), code: row.code }));
+  res.json(
+    GetPublicExtensionResponse.parse({
+      ...summary({
+        ...row,
+        moderationNote: row.ownerId === req.studyDeskUser?.id ? row.moderationNote : undefined,
+      }),
+      code: row.code,
+    }),
+  );
 });
 
 router.get("/store/mine", requireAccount, async (req, res): Promise<void> => {
@@ -106,6 +130,8 @@ router.get("/store/mine", requireAccount, async (req, res): Promise<void> => {
       description: communityExtensionsTable.description,
       version: communityExtensionsTable.version,
       published: communityExtensionsTable.published,
+      approvalStatus: communityExtensionsTable.approvalStatus,
+      moderationNote: communityExtensionsTable.moderationNote,
       updatedAt: communityExtensionsTable.updatedAt,
       username: studyUsersTable.username,
     })
@@ -144,6 +170,7 @@ router.post("/store/extensions", authRateLimit, requireAccount, async (req, res)
       ownerId: req.studyDeskUser!.id,
       ...input,
       published: false,
+      approvalStatus: "draft",
     })
     .returning();
   res.status(201).json(
@@ -168,7 +195,15 @@ router.patch("/store/extensions/:id", authRateLimit, requireAccount, async (req,
   }
   const [row] = await db
     .update(communityExtensionsTable)
-    .set({ ...input, published: false, updatedAt: new Date() })
+    .set({
+      ...input,
+      published: false,
+      approvalStatus: "draft",
+      moderationNote: null,
+      reviewedAt: null,
+      reviewedBy: null,
+      updatedAt: new Date(),
+    })
     .where(
       and(
         eq(communityExtensionsTable.id, params.data.id),
@@ -196,7 +231,14 @@ router.post("/store/extensions/:id/publish", authRateLimit, requireAccount, asyn
   }
   const [row] = await db
     .update(communityExtensionsTable)
-    .set({ published: true, updatedAt: new Date() })
+    .set({
+      published: true,
+      approvalStatus: "pending",
+      moderationNote: null,
+      reviewedAt: null,
+      reviewedBy: null,
+      updatedAt: new Date(),
+    })
     .where(
       and(
         eq(communityExtensionsTable.id, params.data.id),

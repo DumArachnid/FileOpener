@@ -5,7 +5,9 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { UserSummaryRole } from './userSummaryRole';
 
 export interface UserSummary {
   username: string;
+  role: UserSummaryRole;
 }

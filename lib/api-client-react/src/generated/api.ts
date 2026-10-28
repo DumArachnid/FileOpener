@@ -25,9 +25,14 @@ import type {
   CurrentUser,
   ExtensionInput,
   ExtensionList,
+  FindModerationUserParams,
   HealthStatus,
   LoginInput,
+  ModerationBanInput,
+  ModerationExtensionList,
+  ModerationUser,
   RecoveryInput,
+  ReviewExtensionInput,
   SignUpInput,
   WorkspaceSync,
   WorkspaceSyncUpdate
@@ -1273,4 +1278,343 @@ export function useListMyExtensions<TData = Awaited<ReturnType<typeof listMyExte
 
 
 
+
+export const getListModerationExtensionsUrl = () => {
+
+
+
+
+  return `/api/moderation/extensions`
+}
+
+/**
+ * @summary List extensions awaiting moderator review
+ */
+export const listModerationExtensions = async ( options?: Parameters<typeof customFetch>[1]): Promise<ModerationExtensionList> => {
+
+  return customFetch<ModerationExtensionList>(getListModerationExtensionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListModerationExtensionsQueryKey = () => {
+    return [
+    `/api/moderation/extensions`
+    ] as const;
+    }
+
+
+export const getListModerationExtensionsQueryOptions = <TData = Awaited<ReturnType<typeof listModerationExtensions>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listModerationExtensions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListModerationExtensionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listModerationExtensions>>> = ({ signal }) => listModerationExtensions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listModerationExtensions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListModerationExtensionsQueryResult = NonNullable<Awaited<ReturnType<typeof listModerationExtensions>>>
+export type ListModerationExtensionsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List extensions awaiting moderator review
+ */
+
+export function useListModerationExtensions<TData = Awaited<ReturnType<typeof listModerationExtensions>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listModerationExtensions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListModerationExtensionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getReviewCommunityExtensionUrl = (id: string,) => {
+
+
+
+
+  return `/api/moderation/extensions/${id}/review`
+}
+
+/**
+ * @summary Approve or reject an extension submission
+ */
+export const reviewCommunityExtension = async (id: string,
+    reviewExtensionInput: ReviewExtensionInput, options?: Parameters<typeof customFetch>[1]): Promise<CommunityExtension> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CommunityExtension>(getReviewCommunityExtensionUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(reviewExtensionInput)
+  }
+);}
+
+
+
+
+
+export const getReviewCommunityExtensionMutationKey = () => ['reviewCommunityExtension'] as const;
+
+export const getReviewCommunityExtensionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewCommunityExtension>>, TError,ReviewCommunityExtensionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewCommunityExtension>>, TError,ReviewCommunityExtensionMutationVariables, TContext> => {
+
+const mutationKey = getReviewCommunityExtensionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewCommunityExtension>>, ReviewCommunityExtensionMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  reviewCommunityExtension(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviewCommunityExtensionMutationResult = NonNullable<Awaited<ReturnType<typeof reviewCommunityExtension>>>
+    export type ReviewCommunityExtensionMutationBody = BodyType<ReviewExtensionInput>
+    export type ReviewCommunityExtensionMutationError = ErrorType<void>
+    export type ReviewCommunityExtensionMutationVariables = {id: string;data: BodyType<ReviewExtensionInput>}
+
+    /**
+ * @summary Approve or reject an extension submission
+ */
+export const useReviewCommunityExtension = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewCommunityExtension>>, TError,ReviewCommunityExtensionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reviewCommunityExtension>>,
+        TError,
+        ReviewCommunityExtensionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReviewCommunityExtensionMutationOptions(options));
+    }
+
+export const getFindModerationUserUrl = (params: FindModerationUserParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/moderation/users?${stringifiedParams}` : `/api/moderation/users`
+}
+
+/**
+ * @summary Find an account by exact username
+ */
+export const findModerationUser = async (params: FindModerationUserParams, options?: Parameters<typeof customFetch>[1]): Promise<ModerationUser> => {
+
+  return customFetch<ModerationUser>(getFindModerationUserUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getFindModerationUserQueryKey = (params?: FindModerationUserParams,) => {
+    return [
+    `/api/moderation/users`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getFindModerationUserQueryOptions = <TData = Awaited<ReturnType<typeof findModerationUser>>, TError = ErrorType<void>>(params: FindModerationUserParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof findModerationUser>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getFindModerationUserQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof findModerationUser>>> = ({ signal }) => findModerationUser(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof findModerationUser>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type FindModerationUserQueryResult = NonNullable<Awaited<ReturnType<typeof findModerationUser>>>
+export type FindModerationUserQueryError = ErrorType<void>
+
+
+/**
+ * @summary Find an account by exact username
+ */
+
+export function useFindModerationUser<TData = Awaited<ReturnType<typeof findModerationUser>>, TError = ErrorType<void>>(
+ params: FindModerationUserParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof findModerationUser>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getFindModerationUserQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateModerationUserBanUrl = (username: string,) => {
+
+
+
+
+  return `/api/moderation/users/${username}/ban`
+}
+
+/**
+ * @summary Ban or restore an account
+ */
+export const updateModerationUserBan = async (username: string,
+    moderationBanInput: ModerationBanInput, options?: Parameters<typeof customFetch>[1]): Promise<ModerationUser> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ModerationUser>(getUpdateModerationUserBanUrl(username),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(moderationBanInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateModerationUserBanMutationKey = () => ['updateModerationUserBan'] as const;
+
+export const getUpdateModerationUserBanMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateModerationUserBan>>, TError,UpdateModerationUserBanMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateModerationUserBan>>, TError,UpdateModerationUserBanMutationVariables, TContext> => {
+
+const mutationKey = getUpdateModerationUserBanMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateModerationUserBan>>, UpdateModerationUserBanMutationVariables> = (props) => {
+          const {username,data} = props ?? {};
+
+          return  updateModerationUserBan(username,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateModerationUserBanMutationResult = NonNullable<Awaited<ReturnType<typeof updateModerationUserBan>>>
+    export type UpdateModerationUserBanMutationBody = BodyType<ModerationBanInput>
+    export type UpdateModerationUserBanMutationError = ErrorType<void>
+    export type UpdateModerationUserBanMutationVariables = {username: string;data: BodyType<ModerationBanInput>}
+
+    /**
+ * @summary Ban or restore an account
+ */
+export const useUpdateModerationUserBan = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateModerationUserBan>>, TError,UpdateModerationUserBanMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateModerationUserBan>>,
+        TError,
+        UpdateModerationUserBanMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateModerationUserBanMutationOptions(options));
+    }
 

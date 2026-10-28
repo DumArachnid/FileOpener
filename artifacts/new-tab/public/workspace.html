@@ -289,6 +289,13 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .community-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 9px; background: var(--input-bg); }
 .community-row strong { overflow-wrap: anywhere; }
 .community-row-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.moderator-tools { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+.moderator-tools h4 { margin: 0; font-size: 13px; }
+.moderator-tools p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.moderation-search { display: grid; gap: 8px; }
+.moderation-search-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.moderation-search-row input { flex: 1; min-width: 160px; }
+.moderation-source { max-height: 240px; overflow: auto; margin: 8px 0; padding: 10px; border-radius: 8px; background: var(--input-bg); font: 11px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
 .community-grid { margin-top: 10px; }
 .community-grid:empty { display: none; }
 #helpBtn, #paletteBtn, #storeBtn { min-width: 32px; padding-inline: 6px; }
@@ -859,11 +866,22 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div class="store-status"><i data-ic="shield"></i><span>Runs in an isolated sandbox with no page or network access.</span></div>
 <section class="online-store-tools" aria-label="Online extension store">
 <div class="online-store-heading">
-<div><h4>Online community store</h4><p>Browse public extensions, review their source, and install only what you trust. New extensions start as private drafts and appear here only after their creator publishes them.</p></div>
+<div><h4>Online community store</h4><p>Browse approved extensions, review their source, and install only what you trust. Creator submissions appear publicly after moderator approval.</p></div>
 <button class="btn sm primary" id="createCommunityExtensionBtn" type="button"><i data-ic="plus"></i>Create extension</button>
 </div>
 <div class="online-store-status" id="onlineStoreStatus" role="status">Connecting to the online store…</div>
 <div class="community-list" id="myCommunityExtensions" aria-label="Your extensions"></div>
+<section class="moderator-tools hidden" id="moderatorTools" aria-labelledby="moderatorToolsTitle">
+<div><h4 id="moderatorToolsTitle">Moderator tools</h4><p>Review extension submissions and manage user accounts.</p></div>
+<div class="online-store-status" id="moderationQueueStatus" role="status"></div>
+<div class="community-list" id="moderationQueue" aria-label="Extensions awaiting approval"></div>
+<form class="moderation-search" id="moderationUserSearchForm">
+<label for="moderationUsernameSearch">Find an account by exact username</label>
+<div class="moderation-search-row"><input id="moderationUsernameSearch" minlength="3" maxlength="24" required><button class="btn sm" type="submit">Search</button></div>
+<label for="moderationBanReason">Ban reason (optional)</label><input id="moderationBanReason" maxlength="500" placeholder="Briefly explain the reason">
+</form>
+<div class="community-list" id="moderationUserResult" role="status" aria-live="polite"></div>
+</section>
 </section>
 <h4 class="store-section-title">Available to install</h4>
 <div class="store-catalog-grid" id="storeCatalogGrid" aria-label="Available extensions"></div>
@@ -943,12 +961,12 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <dialog id="communityExtensionDialog" class="community-dialog" aria-labelledby="communityDialogTitle">
 <div class="community-panel">
 <div class="row-between"><h2 id="communityDialogTitle">Create a store extension</h2><button class="icon-btn" id="communityCloseBtn" type="button" aria-label="Close extension editor">×</button></div>
-<p>Your draft stays private until you choose Publish publicly. Published JavaScript is visible to other users. Review it carefully and never include personal information or secrets.</p>
+<p>Your draft stays private while you work. Submissions become public only after moderator approval. Review your JavaScript carefully and never include personal information or secrets.</p>
 <form class="community-form" id="communityExtensionForm">
 <label for="communityExtensionName">Extension name</label><input id="communityExtensionName" maxlength="60" required>
 <label for="communityExtensionDescription">Description</label><textarea id="communityExtensionDescription" rows="3" maxlength="500" required></textarea>
 <label for="communityExtensionSource">JavaScript source</label><textarea id="communityExtensionSource" class="extension-editor" rows="10" maxlength="200000" spellcheck="false" required></textarea>
-<div class="community-actions"><button class="btn" id="saveCommunityDraftBtn" type="submit">Save private draft</button><button class="btn primary" id="publishCommunityBtn" type="button">Publish publicly</button></div>
+<div class="community-actions"><button class="btn" id="saveCommunityDraftBtn" type="submit">Save private draft</button><button class="btn primary" id="publishCommunityBtn" type="button">Submit for approval</button></div>
 </form>
 <div class="account-error" id="communityExtensionError" role="status" aria-live="polite"></div>
 </div>
@@ -4096,6 +4114,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   var accountError = $('accountError');
   var communityError = $('communityExtensionError');
   var accountUser = null;
+  var pendingModerationExtensions = [];
+  var moderatedUser = null;
   var pendingCreator = false;
   var onlineExtensions = [];
   var storeLoadFailed = false;
@@ -4190,6 +4210,16 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
   function setAccountUser(user) {
     accountUser = user || null;
+    var isModerator = !!accountUser && accountUser.role === 'moderator';
+    $('moderatorTools').classList.toggle('hidden', !isModerator);
+    if (isModerator) loadModerationQueue();
+    else {
+      pendingModerationExtensions = [];
+      moderatedUser = null;
+      $('moderationQueue').replaceChildren();
+      $('moderationUserResult').replaceChildren();
+      $('moderationQueueStatus').textContent = '';
+    }
     $('accountBtnText').textContent = accountUser ? accountUser.username : 'Account';
     $('accountBtn').title = accountUser ? 'Signed in as ' + accountUser.username : 'Sign in to sync your workspace';
     $('accountSignedInPanel').classList.toggle('hidden', !accountUser);
@@ -4198,7 +4228,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     $('accountRecoveryForm').classList.add('hidden');
     $('accountUsername').textContent = accountUser ? accountUser.username : '';
     $('accountDialogIntro').textContent = accountUser
-      ? 'Your preferences, notes, and bookmarks are connected to this account.'
+      ? (accountUser.role === 'moderator'
+        ? 'Moderator account. Open the extension store to review submissions and manage accounts.'
+        : 'Your preferences, notes, and bookmarks are connected to this account.')
       : 'Create an account to sync preferences, notes, and bookmarks across your devices.';
     if (!accountUser) $('recoveryCodePanel').classList.add('hidden');
     setCloudStatus(accountUser
@@ -4504,8 +4536,20 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       name.textContent = item.name;
       var state = document.createElement('div');
       state.className = 'small muted';
-      state.textContent = item.published ? 'Published publicly' : 'Private draft';
+      state.textContent = item.approvalStatus === 'pending'
+        ? 'Waiting for moderator approval'
+        : item.approvalStatus === 'rejected'
+          ? 'Not approved — edit and resubmit'
+          : item.approvalStatus === 'approved' && item.published
+            ? 'Approved and public'
+            : 'Private draft';
       label.append(name, state);
+      if (item.approvalStatus === 'rejected' && item.moderationNote) {
+        var moderationNote = document.createElement('div');
+        moderationNote.className = 'small muted';
+        moderationNote.textContent = 'Moderator note: ' + item.moderationNote;
+        label.appendChild(moderationNote);
+      }
       var actions = document.createElement('div');
       actions.className = 'community-row-actions';
       actions.appendChild(makeButton('Edit', 'btn sm', async function () {
@@ -4514,11 +4558,11 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
           openCommunityEditor(detail);
         } catch (error) { NT.toast(readError(error), 'error'); }
       }));
-      if (!item.published) actions.appendChild(makeButton('Publish', 'btn sm primary', async function () {
+      if (!item.published) actions.appendChild(makeButton('Submit for approval', 'btn sm primary', async function () {
         try {
           await api('/store/extensions/' + encodeURIComponent(item.id) + '/publish', { method: 'POST' });
           await loadMyExtensions(); await loadPublicExtensions();
-          NT.toast(item.name + ' is now public.');
+          NT.toast(item.name + ' was submitted for moderator approval.');
         } catch (error) { NT.toast(readError(error), 'error'); }
       }));
       actions.appendChild(makeButton('Delete', 'btn sm danger-ghost', async function () {
@@ -4543,6 +4587,148 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     catch (error) { ownedExtensions = []; }
     renderOwnedExtensions();
   }
+
+  function renderModerationQueue() {
+    var container = $('moderationQueue');
+    container.replaceChildren();
+    if (!pendingModerationExtensions.length) {
+      var empty = document.createElement('p');
+      empty.className = 'small muted';
+      empty.textContent = 'No extensions are waiting for review.';
+      container.appendChild(empty);
+      return;
+    }
+    pendingModerationExtensions.forEach(function (item) {
+      var row = document.createElement('article');
+      row.className = 'community-row';
+      var content = document.createElement('div');
+      content.style.flex = '1 1 300px';
+      var name = document.createElement('strong');
+      name.textContent = item.name + ' · by ' + item.publisherUsername;
+      var description = document.createElement('p');
+      description.textContent = item.description;
+      description.style.margin = '4px 0';
+      var details = document.createElement('details');
+      var summary = document.createElement('summary');
+      summary.textContent = 'Review submitted JavaScript';
+      var source = document.createElement('pre');
+      source.className = 'moderation-source';
+      source.textContent = item.code;
+      details.append(summary, source);
+      var noteLabel = document.createElement('label');
+      noteLabel.textContent = 'Optional note for the creator';
+      var reviewNote = document.createElement('input');
+      reviewNote.maxLength = 500;
+      reviewNote.setAttribute('aria-label', 'Optional note for the creator of ' + item.name);
+      content.append(name, description, details, noteLabel, reviewNote);
+      var actions = document.createElement('div');
+      actions.className = 'community-row-actions';
+      actions.appendChild(makeButton('Approve', 'btn sm primary', function () {
+        decideOnExtension(item, 'approve', reviewNote.value);
+      }));
+      actions.appendChild(makeButton('Reject', 'btn sm danger-ghost', function () {
+        decideOnExtension(item, 'reject', reviewNote.value);
+      }));
+      row.append(content, actions);
+      container.appendChild(row);
+    });
+  }
+
+  async function loadModerationQueue() {
+    if (!accountUser || accountUser.role !== 'moderator') return;
+    $('moderationQueueStatus').textContent = 'Loading submissions…';
+    try {
+      pendingModerationExtensions = await api('/moderation/extensions');
+      $('moderationQueueStatus').textContent = pendingModerationExtensions.length
+        ? pendingModerationExtensions.length + ' extension' + (pendingModerationExtensions.length === 1 ? '' : 's') + ' awaiting review.'
+        : 'The review queue is clear.';
+      renderModerationQueue();
+    } catch (error) {
+      $('moderationQueueStatus').textContent = 'Could not load the review queue: ' + readError(error);
+      pendingModerationExtensions = [];
+      renderModerationQueue();
+    }
+  }
+
+  async function decideOnExtension(item, decision, note) {
+    if (decision === 'reject' && !(await NT.confirmDialog(
+      'Reject this extension?',
+      'It will stay private. The creator can edit it and submit it again.',
+      'Reject extension',
+      true,
+    ))) return;
+    try {
+      await api('/moderation/extensions/' + encodeURIComponent(item.id) + '/review', {
+        method: 'POST',
+        body: { decision: decision, note: note || '' },
+      });
+      await loadModerationQueue();
+      await loadPublicExtensions();
+      await loadMyExtensions();
+      NT.toast(decision === 'approve' ? 'Extension approved and listed publicly.' : 'Extension rejected; the creator can see your note.');
+    } catch (error) {
+      NT.toast(readError(error), 'error');
+    }
+  }
+
+  function renderModeratedUser(user) {
+    moderatedUser = user;
+    var container = $('moderationUserResult');
+    container.replaceChildren();
+    var row = document.createElement('div');
+    row.className = 'community-row';
+    var label = document.createElement('div');
+    var title = document.createElement('strong');
+    title.textContent = user.username + (user.role === 'moderator' ? ' · moderator' : '');
+    var detail = document.createElement('div');
+    detail.className = 'small muted';
+    detail.textContent = user.banned
+      ? 'Banned' + (user.banReason ? ' · ' + user.banReason : '')
+      : 'Account is active';
+    label.append(title, detail);
+    row.appendChild(label);
+    if (user.role !== 'moderator' && user.username !== accountUser.username) {
+      row.appendChild(makeButton(user.banned ? 'Restore account' : 'Ban account',
+        user.banned ? 'btn sm' : 'btn sm danger-ghost',
+        async function () {
+          var banned = !user.banned;
+          if (banned && !(await NT.confirmDialog(
+            'Ban this account?',
+            'This signs the user out and blocks them from signing in until restored.',
+            'Ban account',
+            true,
+          ))) return;
+          try {
+            var updated = await api('/moderation/users/' + encodeURIComponent(user.username) + '/ban', {
+              method: 'PATCH',
+              body: {
+                banned: banned,
+                reason: $('moderationBanReason').value.trim(),
+              },
+            });
+            renderModeratedUser(updated);
+            NT.toast(banned ? 'Account banned and signed out.' : 'Account restored.');
+          } catch (error) {
+            NT.toast(readError(error), 'error');
+          }
+        }));
+    }
+    container.appendChild(row);
+  }
+
+  $('moderationUserSearchForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    if (!accountUser || accountUser.role !== 'moderator') return;
+    var username = $('moderationUsernameSearch').value.trim();
+    var container = $('moderationUserResult');
+    container.textContent = 'Searching…';
+    try {
+      var user = await api('/moderation/users?username=' + encodeURIComponent(username));
+      renderModeratedUser(user);
+    } catch (error) {
+      container.textContent = readError(error);
+    }
+  });
 
   function openCommunityEditor(item) {
     if (!accountUser) {
@@ -4597,7 +4783,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         : await api('/store/extensions', { method: 'POST', body: input });
       if (publish) {
         item = await api('/store/extensions/' + encodeURIComponent(item.id) + '/publish', { method: 'POST' });
-        NT.toast('Extension published publicly.');
+        NT.toast('Extension submitted for moderator approval.');
       } else NT.toast('Private draft saved.');
       communityDialog.close();
       await loadMyExtensions();

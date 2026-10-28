@@ -57,10 +57,10 @@ router.post("/auth/signup", authRateLimit, async (req, res): Promise<void> => {
         passwordHash: await hashPassword(parsed.data.password),
         recoveryCodeHash: hashOpaqueValue(recoveryCode),
       })
-      .returning({ id: studyUsersTable.id, username: studyUsersTable.username });
+      .returning({ id: studyUsersTable.id, username: studyUsersTable.username, role: studyUsersTable.role });
     await createSession(user.id, res);
     const response = SignUpResponse.parse({
-      user: { username: user.username },
+      user: { username: user.username, role: user.role },
       recoveryCode,
     });
     res.status(201).json(response);
@@ -99,11 +99,15 @@ router.post("/auth/login", authRateLimit, async (req, res): Promise<void> => {
     res.status(401).json({ error: "Username or password is incorrect." });
     return;
   }
+  if (user.bannedAt) {
+    res.status(403).json({ error: "This account is suspended." });
+    return;
+  }
 
   await createSession(user.id, res);
   res.json(
     LogInResponse.parse({
-      user: { username: user.username },
+      user: { username: user.username, role: user.role },
       recoveryCode: null,
     }),
   );
@@ -124,7 +128,11 @@ router.get("/auth/me", (req, res): void => {
     res.status(401).json({ error: "Sign in to continue." });
     return;
   }
-  res.json(GetCurrentUserResponse.parse({ user: { username: req.studyDeskUser.username } }));
+  res.json(
+    GetCurrentUserResponse.parse({
+      user: { username: req.studyDeskUser.username, role: req.studyDeskUser.role },
+    }),
+  );
 });
 
 router.post("/auth/recover", authRateLimit, async (req, res): Promise<void> => {
@@ -176,7 +184,7 @@ router.post("/auth/recover", authRateLimit, async (req, res): Promise<void> => {
   await createSession(user.id, res);
   res.json(
     RecoverAccountResponse.parse({
-      user: { username: user.username },
+      user: { username: user.username, role: user.role },
       recoveryCode: nextRecoveryCode,
     }),
   );

@@ -276,6 +276,104 @@ paths:
                 $ref: "#/components/schemas/ExtensionList"
         "401":
           description: Sign in required
+  /moderation/extensions:
+    get:
+      operationId: listModerationExtensions
+      tags: [moderation]
+      summary: List extensions awaiting moderator review
+      responses:
+        "200":
+          description: Pending extensions with source code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModerationExtensionList"
+        "403":
+          description: Moderator access required
+  /moderation/extensions/{id}/review:
+    post:
+      operationId: reviewCommunityExtension
+      tags: [moderation]
+      summary: Approve or reject an extension submission
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewExtensionInput"
+      responses:
+        "200":
+          description: Updated moderation decision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunityExtension"
+        "403":
+          description: Moderator access required
+        "404":
+          description: Pending extension not found
+  /moderation/users:
+    get:
+      operationId: findModerationUser
+      tags: [moderation]
+      summary: Find an account by exact username
+      parameters:
+        - name: username
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 24
+      responses:
+        "200":
+          description: Account moderation summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModerationUser"
+        "403":
+          description: Moderator access required
+        "404":
+          description: Account not found
+  /moderation/users/{username}/ban:
+    patch:
+      operationId: updateModerationUserBan
+      tags: [moderation]
+      summary: Ban or restore an account
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 24
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModerationBanInput"
+      responses:
+        "200":
+          description: Updated account moderation status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModerationUser"
+        "403":
+          description: Moderator access required
+        "404":
+          description: Account not found
+        "409":
+          description: Cannot ban a moderator account
 components:
   schemas:
     HealthStatus:
@@ -328,10 +426,13 @@ components:
           maxLength: 128
     UserSummary:
       type: object
-      required: [username]
+      required: [username, role]
       properties:
         username:
           type: string
+        role:
+          type: string
+          enum: [user, moderator]
     AuthResult:
       type: object
       required: [user, recoveryCode]
@@ -383,7 +484,7 @@ components:
           maxLength: 200000
     ExtensionSummary:
       type: object
-      required: [id, name, description, version, publisherUsername, published, updatedAt]
+      required: [id, name, description, version, publisherUsername, published, approvalStatus, updatedAt]
       properties:
         id:
           type: string
@@ -397,6 +498,11 @@ components:
           type: string
         published:
           type: boolean
+        approvalStatus:
+          type: string
+          enum: [draft, pending, approved, rejected]
+        moderationNote:
+          type: ["string", "null"]
         updatedAt:
           type: string
           format: date-time
@@ -412,4 +518,43 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/ExtensionSummary"
+    ModerationExtensionList:
+      type: array
+      items:
+        $ref: "#/components/schemas/CommunityExtension"
+    ReviewExtensionInput:
+      type: object
+      required: [decision]
+      properties:
+        decision:
+          type: string
+          enum: [approve, reject]
+        note:
+          type: string
+          maxLength: 500
+    ModerationUser:
+      type: object
+      required: [username, role, banned, createdAt, banReason]
+      properties:
+        username:
+          type: string
+        role:
+          type: string
+          enum: [user, moderator]
+        banned:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        banReason:
+          type: ["string", "null"]
+    ModerationBanInput:
+      type: object
+      required: [banned]
+      properties:
+        banned:
+          type: boolean
+        reason:
+          type: string
+          maxLength: 500
 

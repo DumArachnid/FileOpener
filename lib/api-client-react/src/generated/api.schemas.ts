@@ -54,8 +54,17 @@ export interface RecoveryInput {
   newPassword: string;
 }
 
+export type UserSummaryRole = typeof UserSummaryRole[keyof typeof UserSummaryRole];
+
+
+export const UserSummaryRole = {
+  user: 'user',
+  moderator: 'moderator',
+} as const;
+
 export interface UserSummary {
   username: string;
+  role: UserSummaryRole;
 }
 
 export interface AuthResult {
@@ -100,6 +109,16 @@ export interface ExtensionInput {
   code: string;
 }
 
+export type ExtensionSummaryApprovalStatus = typeof ExtensionSummaryApprovalStatus[keyof typeof ExtensionSummaryApprovalStatus];
+
+
+export const ExtensionSummaryApprovalStatus = {
+  draft: 'draft',
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
 export interface ExtensionSummary {
   id: string;
   name: string;
@@ -107,6 +126,9 @@ export interface ExtensionSummary {
   version: string;
   publisherUsername: string;
   published: boolean;
+  approvalStatus: ExtensionSummaryApprovalStatus;
+  /** @nullable */
+  moderationNote?: string | null;
   updatedAt: string;
 }
 
@@ -115,4 +137,51 @@ export type CommunityExtension = ExtensionSummary & {
 };
 
 export type ExtensionList = ExtensionSummary[];
+
+export type ModerationExtensionList = CommunityExtension[];
+
+export type ReviewExtensionInputDecision = typeof ReviewExtensionInputDecision[keyof typeof ReviewExtensionInputDecision];
+
+
+export const ReviewExtensionInputDecision = {
+  approve: 'approve',
+  reject: 'reject',
+} as const;
+
+export interface ReviewExtensionInput {
+  decision: ReviewExtensionInputDecision;
+  /** @maxLength 500 */
+  note?: string;
+}
+
+export type ModerationUserRole = typeof ModerationUserRole[keyof typeof ModerationUserRole];
+
+
+export const ModerationUserRole = {
+  user: 'user',
+  moderator: 'moderator',
+} as const;
+
+export interface ModerationUser {
+  username: string;
+  role: ModerationUserRole;
+  banned: boolean;
+  createdAt: string;
+  /** @nullable */
+  banReason: string | null;
+}
+
+export interface ModerationBanInput {
+  banned: boolean;
+  /** @maxLength 500 */
+  reason?: string;
+}
+
+export type FindModerationUserParams = {
+/**
+ * @minLength 3
+ * @maxLength 24
+ */
+username: string;
+};
 

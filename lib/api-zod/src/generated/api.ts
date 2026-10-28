@@ -37,7 +37,8 @@ export const SignUpBody = zod.object({
 
 export const SignUpResponse = zod.object({
   "user": zod.object({
-  "username": zod.string()
+  "username": zod.string(),
+  "role": zod.enum(['user', 'moderator'])
 }),
   "recoveryCode": zod.string().nullable()
 })
@@ -60,7 +61,8 @@ export const LogInBody = zod.object({
 
 export const LogInResponse = zod.object({
   "user": zod.object({
-  "username": zod.string()
+  "username": zod.string(),
+  "role": zod.enum(['user', 'moderator'])
 }),
   "recoveryCode": zod.string().nullable()
 })
@@ -77,7 +79,8 @@ export const LogOutResponse = zod.void()
  */
 export const GetCurrentUserResponse = zod.object({
   "user": zod.object({
-  "username": zod.string()
+  "username": zod.string(),
+  "role": zod.enum(['user', 'moderator'])
 })
 })
 
@@ -104,7 +107,8 @@ export const RecoverAccountBody = zod.object({
 
 export const RecoverAccountResponse = zod.object({
   "user": zod.object({
-  "username": zod.string()
+  "username": zod.string(),
+  "role": zod.enum(['user', 'moderator'])
 }),
   "recoveryCode": zod.string().nullable()
 })
@@ -150,6 +154,8 @@ export const ListPublicExtensionsResponseItem = zod.object({
   "version": zod.string(),
   "publisherUsername": zod.string(),
   "published": zod.boolean(),
+  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected']),
+  "moderationNote": zod.string().nullish(),
   "updatedAt": zod.coerce.date()
 })
 export const ListPublicExtensionsResponse = zod.array(ListPublicExtensionsResponseItem)
@@ -179,6 +185,8 @@ export const CreateCommunityExtensionResponse = zod.object({
   "version": zod.string(),
   "publisherUsername": zod.string(),
   "published": zod.boolean(),
+  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected']),
+  "moderationNote": zod.string().nullish(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
   "code": zod.string()
@@ -199,6 +207,8 @@ export const GetPublicExtensionResponse = zod.object({
   "version": zod.string(),
   "publisherUsername": zod.string(),
   "published": zod.boolean(),
+  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected']),
+  "moderationNote": zod.string().nullish(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
   "code": zod.string()
@@ -233,6 +243,8 @@ export const UpdateCommunityExtensionResponse = zod.object({
   "version": zod.string(),
   "publisherUsername": zod.string(),
   "published": zod.boolean(),
+  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected']),
+  "moderationNote": zod.string().nullish(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
   "code": zod.string()
@@ -263,6 +275,8 @@ export const PublishCommunityExtensionResponse = zod.object({
   "version": zod.string(),
   "publisherUsername": zod.string(),
   "published": zod.boolean(),
+  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected']),
+  "moderationNote": zod.string().nullish(),
   "updatedAt": zod.coerce.date()
 }).and(zod.object({
   "code": zod.string()
@@ -279,8 +293,111 @@ export const ListMyExtensionsResponseItem = zod.object({
   "version": zod.string(),
   "publisherUsername": zod.string(),
   "published": zod.boolean(),
+  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected']),
+  "moderationNote": zod.string().nullish(),
   "updatedAt": zod.coerce.date()
 })
 export const ListMyExtensionsResponse = zod.array(ListMyExtensionsResponseItem)
+
+
+/**
+ * @summary List extensions awaiting moderator review
+ */
+export const ListModerationExtensionsResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "version": zod.string(),
+  "publisherUsername": zod.string(),
+  "published": zod.boolean(),
+  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected']),
+  "moderationNote": zod.string().nullish(),
+  "updatedAt": zod.coerce.date()
+}).and(zod.object({
+  "code": zod.string()
+}))
+export const ListModerationExtensionsResponse = zod.array(ListModerationExtensionsResponseItem)
+
+
+/**
+ * @summary Approve or reject an extension submission
+ */
+export const ReviewCommunityExtensionParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const reviewCommunityExtensionBodyNoteMax = 500;
+
+
+
+export const ReviewCommunityExtensionBody = zod.object({
+  "decision": zod.enum(['approve', 'reject']),
+  "note": zod.string().max(reviewCommunityExtensionBodyNoteMax).optional()
+})
+
+export const ReviewCommunityExtensionResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "version": zod.string(),
+  "publisherUsername": zod.string(),
+  "published": zod.boolean(),
+  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected']),
+  "moderationNote": zod.string().nullish(),
+  "updatedAt": zod.coerce.date()
+}).and(zod.object({
+  "code": zod.string()
+}))
+
+
+/**
+ * @summary Find an account by exact username
+ */
+export const findModerationUserQueryUsernameMin = 3;
+export const findModerationUserQueryUsernameMax = 24;
+
+
+
+export const FindModerationUserQueryParams = zod.object({
+  "username": zod.coerce.string().min(findModerationUserQueryUsernameMin).max(findModerationUserQueryUsernameMax)
+})
+
+export const FindModerationUserResponse = zod.object({
+  "username": zod.string(),
+  "role": zod.enum(['user', 'moderator']),
+  "banned": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "banReason": zod.string().nullable()
+})
+
+
+/**
+ * @summary Ban or restore an account
+ */
+export const updateModerationUserBanPathUsernameMin = 3;
+export const updateModerationUserBanPathUsernameMax = 24;
+
+
+
+export const UpdateModerationUserBanParams = zod.object({
+  "username": zod.coerce.string().min(updateModerationUserBanPathUsernameMin).max(updateModerationUserBanPathUsernameMax)
+})
+
+export const updateModerationUserBanBodyReasonMax = 500;
+
+
+
+export const UpdateModerationUserBanBody = zod.object({
+  "banned": zod.boolean(),
+  "reason": zod.string().max(updateModerationUserBanBodyReasonMax).optional()
+})
+
+export const UpdateModerationUserBanResponse = zod.object({
+  "username": zod.string(),
+  "role": zod.enum(['user', 'moderator']),
+  "banned": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "banReason": zod.string().nullable()
+})
 
 

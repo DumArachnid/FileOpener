@@ -16,6 +16,8 @@ export const resolveAccountSession: RequestHandler = async (req, _res, next) => 
       .select({
         id: studyUsersTable.id,
         username: studyUsersTable.username,
+        role: studyUsersTable.role,
+        bannedAt: studyUsersTable.bannedAt,
       })
       .from(studySessionsTable)
       .innerJoin(studyUsersTable, eq(studySessionsTable.userId, studyUsersTable.id))
@@ -28,7 +30,10 @@ export const resolveAccountSession: RequestHandler = async (req, _res, next) => 
       .limit(1);
 
     if (session) {
-      req.studyDeskUser = session;
+      req.studyDeskUser = {
+        ...session,
+        role: session.role === "moderator" ? "moderator" : "user",
+      };
       req.studyDeskSessionHash = tokenHash;
     }
     next();
@@ -40,6 +45,22 @@ export const resolveAccountSession: RequestHandler = async (req, _res, next) => 
 export const requireAccount: RequestHandler = (req, res, next) => {
   if (!req.studyDeskUser) {
     res.status(401).json({ error: "Sign in to continue." });
+    return;
+  }
+  if (req.studyDeskUser.bannedAt) {
+    res.status(403).json({ error: "This account is suspended." });
+    return;
+  }
+  next();
+};
+
+export const requireModerator: RequestHandler = (req, res, next) => {
+  if (!req.studyDeskUser) {
+    res.status(401).json({ error: "Sign in to continue." });
+    return;
+  }
+  if (req.studyDeskUser.bannedAt || req.studyDeskUser.role !== "moderator") {
+    res.status(403).json({ error: "Moderator access required." });
     return;
   }
   next();

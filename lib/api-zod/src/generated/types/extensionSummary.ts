@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ExtensionSummaryApprovalStatus } from './extensionSummaryApprovalStatus';
 
 export interface ExtensionSummary {
   id: string;
@@ -13,5 +14,8 @@ export interface ExtensionSummary {
   version: string;
   publisherUsername: string;
   published: boolean;
+  approvalStatus: ExtensionSummaryApprovalStatus;
+  /** @nullable */
+  moderationNote?: string | null;
   updatedAt: Date;
 }
