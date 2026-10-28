@@ -2,8 +2,7 @@ modules = ["nodejs-24", "python-base-3.13"]
 
 [deployment]
 router = "application"
-deploymentTarget = "static"
-publicDir = "artifacts/new-tab/dist/public"
+deploymentTarget = "cloudrun"
 
 [deployment.postBuild]
 args = ["pnpm", "store", "prune"]
