@@ -665,7 +665,11 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <details class="sidebar-group" id="grp-extensions">
 <summary><i data-ic="code"></i>Extensions <span class="count-pill" id="extensionCount">0</span></summary>
 <div class="sidebar-group-content">
-<p class="small muted tight">Add JavaScript extensions that provide their own actions in this menu. Extensions run in an isolated sandbox and cannot read this page or viewer tabs. Only enable code you trust; extensions can still use browser capabilities available inside their sandbox.</p>
+<div class="control-help">
+<p class="small muted tight">Add JavaScript extensions and actions here.</p>
+<button type="button" class="help-trigger" data-help="extensionsHelp" aria-label="About extensions" aria-describedby="extensionsHelp" aria-expanded="false">?</button>
+</div>
+<p id="extensionsHelp" class="sr-only">Add JavaScript extensions that provide their own actions in this menu. Extensions run in an isolated sandbox and cannot read this page or viewer tabs. Only enable code you trust; extensions can still use browser capabilities available inside their sandbox.</p>
 <div>
 <label for="extensionName">Extension name</label>
 <input id="extensionName" type="text" maxlength="60" placeholder="e.g. Word counter" />
