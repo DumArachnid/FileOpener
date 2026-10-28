@@ -242,7 +242,14 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .store-status { display: inline-flex; align-items: center; gap: 7px; padding: 7px 11px; border: 1px solid var(--border-strong); border-radius: 999px; background: var(--panel); font-size: 12px; font-weight: 700; }
 .store-status .ic { width: 14px; height: 14px; color: var(--accent-ink); }
 .store-note { font-size: 12px; }
-.store-demo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: 100%; text-align: left; }
+.store-section-title { margin: 22px 0 9px; text-align: left; font-size: 13px; }
+.store-catalog-grid, .store-demo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: 100%; text-align: left; }
+.store-card { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0; padding: 16px; border: 1.5px solid var(--border-strong); border-radius: 12px; background: var(--panel); box-shadow: 2px 2px 0 var(--ink-shadow); }
+.store-card p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.store-card .btn { margin-top: auto; }
+.store-card-head { display: flex; align-items: center; gap: 10px; width: 100%; }
+.store-badge { padding: 4px 7px; border: 1px solid var(--border); border-radius: 999px; color: var(--accent-ink); background: var(--accent-soft); font: 700 9px var(--mono); letter-spacing: .08em; }
+.store-badge.unavailable { color: var(--muted); background: var(--input-bg); }
 .store-demo-card { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0; padding: 16px; border: 1.5px solid var(--border-strong); border-radius: 12px; background: var(--panel); box-shadow: 2px 2px 0 var(--ink-shadow); }
 .store-demo-head { display: flex; align-items: center; gap: 10px; width: 100%; }
 .store-demo-icon { display: grid; place-items: center; width: 38px; height: 38px; flex: none; border-radius: 10px; color: var(--accent-ink); background: var(--accent-soft); }
@@ -251,6 +258,10 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .store-demo-badge { padding: 4px 7px; border: 1px solid var(--border); border-radius: 999px; color: var(--accent-ink); background: var(--accent-soft); font: 700 9px var(--mono); letter-spacing: .08em; }
 .store-demo-card p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .store-demo-label { margin-top: auto; padding-top: 3px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.store-detail { position: absolute; inset: 12px; z-index: 2; overflow: auto; padding: 20px; border: 1.5px solid var(--border-strong); border-radius: 12px; background: var(--panel); box-shadow: 3px 3px 0 var(--ink-shadow); text-align: left; }
+.store-detail h3 { margin: 12px 0 8px; }
+.store-detail pre { max-height: 220px; overflow: auto; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); white-space: pre-wrap; overflow-wrap: anywhere; font: 11px/1.5 var(--mono); }
+.store-detail-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 #helpBtn, #paletteBtn, #storeBtn { min-width: 32px; padding-inline: 6px; }
 .large-html-card { width: min(620px, calc(100% - 32px)); padding: 22px; border: 1.5px solid var(--border-strong); border-radius: var(--radius); background: var(--panel); color: var(--text); text-align: center; box-shadow: 3px 3px 0 var(--ink-shadow); }
 .large-html-card h3 { margin-bottom: 8px; font-size: 18px; }
@@ -353,7 +364,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   .status-mid { display: none; }
   .file-actions { grid-template-columns: repeat(2, 1fr); }
   .overlay { padding-top: 6vh; }
-  .store-demo-grid { grid-template-columns: 1fr; }
+  .store-demo-grid, .store-catalog-grid { grid-template-columns: 1fr; }
   .store-empty { padding: 14px 10px; }
 }
 @media (min-width: 921px) { .app.sidebar-collapsed .sidebar { display: none; } }
@@ -813,25 +824,42 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div class="empty store-empty">
 <div class="empty-art" aria-hidden="true"><div class="sheet s1"><i data-ic="cart"></i></div><div class="sheet s2"><i data-ic="sparkle"></i></div><div class="sheet s3"><i data-ic="code"></i></div></div>
 <span class="store-kicker">STUDY DESK · EXTENSION STORE</span>
-<h3 id="storeHeading">More tools for your study desk are on the way.</h3>
-<p>Study Sprint is a working demo you can install. Reading Highlights is a concept preview.</p>
-<div class="store-status"><i data-ic="clock"></i><span>The full shop is coming soon; one demo is available to install.</span></div>
+<h3 id="storeHeading">Extensions for your study desk</h3>
+<p>Review an extension’s source and permissions before installing. Installed extensions stay off until you enable them.</p>
+<div class="store-status"><i data-ic="shield"></i><span>Runs in an isolated sandbox with no page or network access.</span></div>
+<h4 class="store-section-title">Available to install</h4>
+<div class="store-catalog-grid" id="storeCatalogGrid" aria-label="Available extensions"></div>
+<h4 class="store-section-title">Concept demos</h4>
 <div class="store-demo-grid" aria-label="Extension concept demos">
-<article class="store-demo-card">
-<div class="store-demo-head"><span class="store-demo-icon"><i data-ic="timer"></i></span><strong class="store-demo-title">Study Sprint</strong><span class="store-demo-badge">WORKING DEMO</span></div>
-<p>A focused work-and-break routine to help organize study sessions alongside your course materials.</p>
-<button class="btn primary sm" id="installStudySprintBtn" type="button">Install demo extension</button>
-<span class="store-demo-label" id="studySprintInstallNote" aria-live="polite">Adds a 25-minute focus timer and 5-minute break timer to Extensions.</span>
-</article>
 <article class="store-demo-card">
 <div class="store-demo-head"><span class="store-demo-icon"><i data-ic="bookmark"></i></span><strong class="store-demo-title">Reading Highlights</strong><span class="store-demo-badge">DEMO</span></div>
 <p>A simple way to collect key points and review prompts while working through reading materials.</p>
 <span class="store-demo-label">Concept preview · Not installable</span>
 </article>
 </div>
-<p class="store-note">Study Sprint runs locally in the Extensions sandbox. Reading Highlights is a preview only; the full Extension Store is still in development.</p>
+<h4 class="store-section-title">Unavailable</h4>
+<article class="store-card" aria-label="Unavailable extension: Citation Helper">
+<div class="store-card-head"><strong class="store-demo-title">Citation Helper</strong><span class="store-badge unavailable">UNAVAILABLE</span></div>
+<p>Format citation drafts while studying. This item is not installable yet.</p>
+<button class="btn sm" type="button" disabled>Coming soon</button>
+</article>
+<p class="store-note">Study Sprint is available to install after reviewing its source. Reading Highlights remains a concept preview, and Citation Helper is unavailable.</p>
 <button class="btn primary" id="storeCloseBtn" type="button"><i data-ic="arrowLeft"></i>Back to your workspace</button>
 </div>
+<section class="store-detail hidden" id="storeDetail" role="dialog" aria-modal="true" aria-labelledby="storeDetailTitle">
+<button class="btn sm" id="storeDetailClose" type="button"><i data-ic="arrowLeft"></i>Back to store</button>
+<div class="store-card-head" style="margin-top:14px"><span class="store-demo-icon"><i data-ic="timer"></i></span><span class="store-badge">AVAILABLE</span></div>
+<h3 id="storeDetailTitle"></h3>
+<p id="storeDetailDescription"></p>
+<p class="small muted" id="storeDetailPermissions"></p>
+<h4 class="store-section-title">Source code</h4>
+<pre id="storeDetailSource" aria-label="Extension source code"></pre>
+<p class="small muted">Installing saves this source in your browser but does not run it. Review it above, then enable it from Extensions when you’re ready.</p>
+<div class="store-detail-actions">
+<button class="btn primary" id="storeInstallBtn" type="button">Install disabled</button>
+<button class="btn hidden" id="storeInstalledBtn" type="button" disabled>Already installed</button>
+</div>
+</section>
 </div>
 
 <div id="editorPanel" class="editor-panel hidden">
@@ -1169,9 +1197,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   var NT = window.NT;
   var ic = NT.ic, toast = NT.toast, confirmDialog = NT.confirmDialog, safeUrl = NT.safeUrl, escapeHTML = NT.escapeHTML;
 
-  // ======6
+  // ------------------------------------------
   // CONFIGURATION SETTINGS
-  // =======7
+  // ------------------------------------------
   const CONFIG = {
     DAILY_REWARD_AMOUNT: 100,
     BONUS_REWARD_AMOUNT: 50,
@@ -2189,9 +2217,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   var hostOf = function (u) { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return u; } };
   var isMac = /Mac|iPhone|iPad/.test(navigator.platform || '');
 
-  // =====================================================
+  // -----------------------------------------------------
   // (1) Bookmarks
-  // =====================================================
+  // -----------------------------------------------------
   var BM_KEY = 'disguise_bookmarks';
   var bookmarks = NT.getJSON(BM_KEY, []).filter(function (b) { return b && typeof b.url === 'string' && safeUrl(b.url); }).map(function (b) {
     return { id: typeof b.id === 'string' && b.id ? b.id : uid(), url: safeUrl(b.url), title: typeof b.title === 'string' && b.title.trim() ? b.title.slice(0, 60) : hostOf(b.url) };
@@ -2267,9 +2295,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   el('bmCurrentBtn').addEventListener('click', toggleCurrentBookmark);
   urlInput.addEventListener('input', updateStar);
 
-  // =====================================================
+  // -----------------------------------------------------
   // (2) Recent URLs
-  // =====================================================
+  // -----------------------------------------------------
   var RC_KEY = 'disguise_recents';
   var recents = (NT.getJSON(RC_KEY, []) || []).filter(function (r) { return r && typeof r.url === 'string' && safeUrl(r.url); }).slice(0, 15);
   function addRecent(u) {
@@ -2358,9 +2386,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     } else if (e.key === 'Enter' || e.key === 'Escape') suggest.classList.add('hidden');
   });
 
-  // =====================================================
+  // -----------------------------------------------------
   // (3) Viewer tabs (content retained per tab)
-  // =====================================================
+  // -----------------------------------------------------
   var tabs = [], activeId = null, MAX_TABS = 12, visitClock = 0;
   var previewHost = previewArea.parentElement;
   var memorySelect = el('tabMemoryLimit');
@@ -2537,9 +2565,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   NT.onUrlLoaded = function (u) { addRecent(u); NT.onContentChanged(hostOf(u)); updateStar(); };
   el('newTabBtn').addEventListener('click', function () { newTab(); });
 
-  // =====================================================
+  // -----------------------------------------------------
   // (7) Find + highlight   (8) live counts
-  // =====================================================
+  // -----------------------------------------------------
   var findBar = el('findBar'), findInput = el('findInput'), findCountEl = el('findCount');
   var marks = [], taHits = [], findIdx = -1;
   function findOpen() { return !findBar.classList.contains('hidden'); }
@@ -2629,9 +2657,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     el('editorCounts').textContent = countsFor(editorTextarea.value).words.toLocaleString() + ' words \u00b7 ' + editorTextarea.value.length.toLocaleString() + ' characters \u00b7 ' + countsFor(editorTextarea.value).lines + ' lines';
   };
 
-  // =====================================================
+  // -----------------------------------------------------
   // (9) Editor undo / redo
-  // =====================================================
+  // -----------------------------------------------------
   var hist = [], hIdx = 0, hTimer = null, applying = false;
   var undoBtn = el('undoBtn'), redoBtn = el('redoBtn');
   function hState() { return { v: editorTextarea.value, s: editorTextarea.selectionStart }; }
@@ -2670,9 +2698,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   undoBtn.addEventListener('click', undo);
   redoBtn.addEventListener('click', redo);
 
-  // =====================================================
+  // -----------------------------------------------------
   // (5) Autosaved notes
-  // =====================================================
+  // -----------------------------------------------------
   var notes = el('notesArea'), notesState = el('notesState'), notesT = null;
   notes.value = localStorage.getItem('disguise_notes') || '';
   function notesCount() { var c = countsFor(notes.value); el('notesCounts').textContent = c.words + (c.words === 1 ? ' word' : ' words') + ' \u00b7 ' + c.chars + ' chars'; }
@@ -2702,9 +2730,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   });
   function focusNotes() { NT.openGroup('grp-notes'); setTimeout(function () { notes.focus(); }, 80); }
 
-  // =====================================================
+  // -----------------------------------------------------
   // (6) Focus timer
-  // =====================================================
+  // -----------------------------------------------------
   var CIRC = 276.46;
   var tMin = Math.min(360, Math.max(1, parseInt(localStorage.getItem('disguise_timer_minutes') || '25', 10) || 25));
   var tTotal = tMin * 60000, tLeft = tTotal, tEnd = 0, tRun = false, tInt = null;
@@ -2766,9 +2794,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   tPill.addEventListener('click', function () { if (tLeft <= 0) timerReset(); else timerToggle(); });
   drawTimer();
 
-  // =====================================================
+  // -----------------------------------------------------
   // (10) Shortcuts + (4) Command palette
-  // =====================================================
+  // -----------------------------------------------------
   var MOD = isMac ? 'Cmd' : 'Ctrl';
   var SHORTCUTS = [
     { id: 'palette', desc: 'Open command palette', fallback: MOD + '+KeyK' },
@@ -3135,16 +3163,26 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     return item && typeof item.id === 'string' && typeof item.name === 'string' &&
       typeof item.code === 'string' && item.code.length <= MAX_SOURCE_LENGTH;
   }).slice(0, MAX_EXTENSIONS).map(function (item) {
-    return { id: item.id, name: item.name.slice(0, 60), code: item.code, enabled: item.enabled === true };
+    return { id: item.id, name: item.name.slice(0, 60), code: item.code, enabled: item.enabled === true, catalogId: typeof item.catalogId === 'string' ? item.catalogId : null };
   });
   var editingId = null;
   var runnerById = new Map();
   var cardById = new Map();
+  var storeGrid = $('storeCatalogGrid');
+  var storeDetail = $('storeDetail');
+  var selectedStoreItem = null;
+  var storeReturnFocus = null;
+  var STORE_CATALOG = [{
+    id: 'studydesk-demo-study-sprint-v1',
+    name: 'Study Sprint',
+    description: 'A focused work-and-break timer with pause, resume, and reset actions for study sessions.',
+    permissions: 'Permissions: registers timer actions, runs while enabled, and displays status messages here. No access to page contents, files, tabs, or network.',
+    source: ''
+  }];
 
   function makeId() {
     return 'ext-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9);
   }
-  var STUDY_SPRINT_ID = 'studydesk-demo-study-sprint-v1';
   function studySprintExtension() {
     var interval = null;
     var mode = '';
@@ -3206,46 +3244,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       NewTabExtension.log('Timer reset. Start a focus sprint or break when ready.');
     });
   }
-  function syncStudySprintInstallButton() {
-    var button = $('installStudySprintBtn');
-    var note = $('studySprintInstallNote');
-    if (!button) return;
-    var installed = extensions.some(function (item) { return item.id === STUDY_SPRINT_ID; });
-    button.disabled = installed;
-    button.textContent = installed ? 'Installed' : 'Install demo extension';
-    if (note) note.textContent = installed
-      ? 'Installed · Open Extensions in the sidebar to start or manage it.'
-      : 'Adds a 25-minute focus timer and 5-minute break timer to Extensions.';
-  }
-  function installStudySprint() {
-    if (extensions.some(function (item) { return item.id === STUDY_SPRINT_ID; })) {
-      syncStudySprintInstallButton();
-      NT.toast('Study Sprint is already installed.');
-      return;
-    }
-    if (extensions.length >= MAX_EXTENSIONS) {
-      NT.toast('You can add up to 20 extensions. Remove one before installing this demo.', 'error');
-      return;
-    }
-    extensions.push({
-      id: STUDY_SPRINT_ID,
-      name: 'Study Sprint',
-      code: '(' + studySprintExtension.toString() + ')();',
-      enabled: true
-    });
-    if (!persist()) {
-      extensions.pop();
-      NT.toast('Could not install Study Sprint. Browser storage may be full.', 'error');
-      return;
-    }
-    render();
-    var extensionGroup = $('grp-extensions');
-    if (extensionGroup) extensionGroup.open = true;
-    NT.closeStore();
-    NT.toast('Study Sprint installed. Open Extensions in the sidebar to start a timer.');
-  }
-  var installStudySprintButton = $('installStudySprintBtn');
-  if (installStudySprintButton) installStudySprintButton.addEventListener('click', installStudySprint);
+  STORE_CATALOG[0].source = '(' + studySprintExtension.toString() + ')();';
   function persist() {
     return NT.setJSON('disguise_extensions', extensions);
   }
@@ -3324,10 +3323,62 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       actions.appendChild(button);
     });
   }
+  function installedStoreItem(item) {
+    return extensions.find(function (extension) {
+      return extension.catalogId === item.id || extension.id === item.id;
+    });
+  }
+  function openStoreDetails(item, trigger) {
+    selectedStoreItem = item;
+    storeReturnFocus = trigger || null;
+    $('storeDetailTitle').textContent = item.name;
+    $('storeDetailDescription').textContent = item.description;
+    $('storeDetailPermissions').textContent = item.permissions;
+    $('storeDetailSource').textContent = item.source;
+    updateStoreDetailState();
+    storeDetail.classList.remove('hidden');
+    $('storeDetailClose').focus();
+  }
+  function updateStoreDetailState() {
+    if (!selectedStoreItem) return;
+    var isInstalled = Boolean(installedStoreItem(selectedStoreItem));
+    $('storeInstallBtn').classList.toggle('hidden', isInstalled);
+    $('storeInstalledBtn').classList.toggle('hidden', !isInstalled);
+  }
+  function renderStoreCatalog() {
+    if (!storeGrid) return;
+    storeGrid.replaceChildren();
+    STORE_CATALOG.forEach(function (item) {
+      var installed = installedStoreItem(item);
+      var card = document.createElement('article');
+      card.className = 'store-card';
+      var head = document.createElement('div');
+      head.className = 'store-card-head';
+      var icon = document.createElement('span');
+      icon.className = 'store-demo-icon';
+      icon.innerHTML = '<i data-ic="timer"></i>';
+      var title = document.createElement('strong');
+      title.className = 'store-demo-title';
+      title.textContent = item.name;
+      var badge = document.createElement('span');
+      badge.className = 'store-badge';
+      badge.textContent = installed ? (installed.enabled ? 'ENABLED' : 'INSTALLED') : 'AVAILABLE';
+      head.append(icon, title, badge);
+      var description = document.createElement('p');
+      description.textContent = item.description;
+      var details = document.createElement('button');
+      details.type = 'button';
+      details.className = 'btn sm';
+      details.textContent = installed ? 'View details' : 'Review details';
+      details.addEventListener('click', function () { openStoreDetails(item, details); });
+      card.append(head, description, details);
+      storeGrid.appendChild(card);
+    });
+    updateStoreDetailState();
+  }
   function render() {
     $('extensionCount').textContent = String(extensions.length);
     $('extensionEmptyState').classList.toggle('hidden', extensions.length > 0);
-    syncStudySprintInstallButton();
     list.replaceChildren();
     cardById.clear();
     extensions.forEach(function (extension) {
@@ -3382,10 +3433,16 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       var remove = document.createElement('button');
       remove.type = 'button'; remove.className = 'btn sm danger-ghost'; remove.textContent = 'Remove';
       remove.addEventListener('click', function () {
-        stopRunner(extension.id);
+        var previousExtensions = extensions;
         extensions = extensions.filter(function (item) { return item.id !== extension.id; });
+        if (!persist()) {
+          extensions = previousExtensions;
+          render();
+          return;
+        }
+        stopRunner(extension.id);
         if (editingId === extension.id) resetEditor();
-        persist(); render();
+        render();
       });
       controls.append(edit, exportButton, remove);
       card.appendChild(controls);
@@ -3403,6 +3460,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       var card = cardById.get(extension.id);
       if (card) renderActions(extension, card);
     });
+    renderStoreCatalog();
   }
   function resetEditor() {
     editingId = null;
@@ -3438,6 +3496,37 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     NT.toast('Extension saved. Enable it when you are ready.');
   });
   cancelButton.addEventListener('click', resetEditor);
+  $('storeInstallBtn').addEventListener('click', function () {
+    var item = selectedStoreItem;
+    if (!item || installedStoreItem(item)) { updateStoreDetailState(); return; }
+    if (extensions.length >= MAX_EXTENSIONS) { NT.toast('You can add up to 20 extensions', 'error'); return; }
+    var extension = { id: item.id, name: item.name, code: item.source, enabled: false, catalogId: item.id };
+    extensions.push(extension);
+    if (!persist()) {
+      extensions = extensions.filter(function (entry) { return entry.id !== extension.id; });
+      return;
+    }
+    render();
+    NT.toast(item.name + ' installed. Review it before enabling.');
+    storeDetail.classList.add('hidden');
+    if (storeReturnFocus) storeReturnFocus.focus();
+  });
+  $('storeDetailClose').addEventListener('click', function () {
+    storeDetail.classList.add('hidden');
+    if (storeReturnFocus) storeReturnFocus.focus();
+  });
+  $('storeOverlay').addEventListener('click', function (event) {
+    if (event.target === $('storeOverlay') && !storeDetail.classList.contains('hidden')) {
+      storeDetail.classList.add('hidden');
+      if (storeReturnFocus) storeReturnFocus.focus();
+    }
+  });
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && !storeDetail.classList.contains('hidden')) {
+      storeDetail.classList.add('hidden');
+      if (storeReturnFocus) storeReturnFocus.focus();
+    }
+  });
   fileInput.addEventListener('change', function () {
     var file = fileInput.files && fileInput.files[0];
     if (!file) return;
