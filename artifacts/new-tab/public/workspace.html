@@ -236,6 +236,13 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .preview-area.tab-parked { position: absolute; top: 0; left: 0; visibility: hidden; pointer-events: none; }
 .preview-area iframe, .preview-area img { width: 100%; height: 100%; border: 0; display: block; object-fit: contain; background: #fff; }
 .preview-area pre { width: 100%; height: 100%; margin: 0; padding: 20px; white-space: pre-wrap; word-break: break-word; overflow: auto; font-size: var(--font-size, 14px); font-family: var(--mono); line-height: 1.6; background: var(--panel); align-self: stretch; }
+.store-overlay { position: absolute; inset: 0; z-index: 30; display: grid; place-items: center; padding: 16px; overflow: auto; border: 1.5px solid var(--border-strong); border-radius: var(--radius); background: var(--input-bg); animation: fadeIn .18s ease both; }
+.store-empty { width: 100%; }
+.store-kicker { padding: 5px 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); font-size: 10px; font-weight: 700; letter-spacing: .12em; }
+.store-status { display: inline-flex; align-items: center; gap: 7px; padding: 7px 11px; border: 1px solid var(--border-strong); border-radius: 999px; background: var(--panel); font-size: 12px; font-weight: 700; }
+.store-status .ic { width: 14px; height: 14px; color: var(--accent-ink); }
+.store-note { font-size: 12px; }
+#paletteBtn, #storeBtn { min-width: 32px; padding-inline: 6px; }
 .large-html-card { width: min(620px, calc(100% - 32px)); padding: 22px; border: 1.5px solid var(--border-strong); border-radius: var(--radius); background: var(--panel); color: var(--text); text-align: center; box-shadow: 3px 3px 0 var(--ink-shadow); }
 .large-html-card h3 { margin-bottom: 8px; font-size: 18px; }
 .large-html-card p { margin: 8px 0; color: var(--muted); font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
@@ -753,6 +760,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <span class="topbar-gap"></span>
 <button class="timer-pill hidden" id="timerPill" title="Focus timer (Alt+P to pause)"><i data-ic="timer"></i><span id="timerPillText">25:00</span></button>
 <button class="icon-btn hide-in-focus" id="helpBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"><i data-ic="keyboard"></i></button>
+<button class="btn sm hide-in-focus" id="storeBtn" title="Open the Extension Store" aria-label="Open the Extension Store" aria-expanded="false"><i data-ic="cart"></i></button>
 <button class="btn sm hide-in-focus" id="paletteBtn" title="Command palette (Ctrl/Cmd+K)"><i data-ic="command"></i></button>
 <button class="btn sm" id="focusModeBtn" title="Expand view / toggle focus mode (Alt+Z)"><i data-ic="eye"></i><span>Focus</span></button>
 </div>
@@ -790,6 +798,17 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div class="preview-wrap">
 <div id="previewArea" class="preview-area" aria-live="polite"></div>
 <div id="iframeWarning" class="iframe-warning">If a site refuses to load, it may block embedding or be restricted by browser or school policy. This workspace cannot override those restrictions.</div>
+<div class="store-overlay hidden" id="storeOverlay" role="region" aria-labelledby="storeHeading" aria-label="Extension Store">
+<div class="empty store-empty">
+<div class="empty-art" aria-hidden="true"><div class="sheet s1"><i data-ic="cart"></i></div><div class="sheet s2"><i data-ic="sparkle"></i></div><div class="sheet s3"><i data-ic="code"></i></div></div>
+<span class="store-kicker">STUDY DESK · EXTENSION STORE</span>
+<h3 id="storeHeading">More tools for your study desk are on the way.</h3>
+<p>Discover extensions and helpful additions designed to fit your Study Desk workflow.</p>
+<div class="store-status"><i data-ic="clock"></i><span>Coming soon</span></div>
+<p class="store-note">The Extension Store is in development. Thank you for your patience.</p>
+<button class="btn primary" id="storeCloseBtn" type="button"><i data-ic="arrowLeft"></i>Back to your workspace</button>
+</div>
+</div>
 
 <div id="editorPanel" class="editor-panel hidden">
 <div class="editor-head">
@@ -941,6 +960,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
     upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>',
     window: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/>',
+    cart: '<path d="M3 3h2l2.4 11.5a2 2 0 0 0 2 1.5h8.7a2 2 0 0 0 2-1.5L22 7H6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/>',
     code: '<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>',
     gem: '<path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/>',
     bolt: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
@@ -961,6 +981,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     chevronDown: '<path d="m6 9 6 6 6-6"/>',
     arrowUp: '<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>',
     arrowDown: '<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>',
+    arrowLeft: '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
     globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
     panel: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/>',
     pencil: '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
@@ -1273,6 +1294,19 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     q('[data-act=palette]').onclick = () => NT.openPalette && NT.openPalette();
     if (NT.afterEmpty) NT.afterEmpty();
   }
+  const storeOverlay = el('storeOverlay'), storeButton = el('storeBtn'), storeCloseButton = el('storeCloseBtn');
+  function setStoreOpen(open) {
+    storeOverlay.classList.toggle('hidden', !open);
+    storeButton.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) storeCloseButton.focus();
+    else storeButton.focus();
+  }
+  storeButton.addEventListener('click', function () {
+    setStoreOpen(storeOverlay.classList.contains('hidden'));
+  });
+  storeCloseButton.addEventListener('click', function () { setStoreOpen(false); });
+  NT.openStore = function () { setStoreOpen(true); };
+  NT.closeStore = function () { setStoreOpen(false); };
   function updateActions(has) {
     if (optionsHidden) fileActions.classList.add('hidden');
     else fileActions.classList.toggle('hidden', !has);
