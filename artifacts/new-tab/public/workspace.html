@@ -814,13 +814,14 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div class="empty-art" aria-hidden="true"><div class="sheet s1"><i data-ic="cart"></i></div><div class="sheet s2"><i data-ic="sparkle"></i></div><div class="sheet s3"><i data-ic="code"></i></div></div>
 <span class="store-kicker">STUDY DESK · EXTENSION STORE</span>
 <h3 id="storeHeading">More tools for your study desk are on the way.</h3>
-<p>Here are two concept demos showing the kinds of helpful extensions the store may offer.</p>
-<div class="store-status"><i data-ic="clock"></i><span>The shop is coming soon — these extensions are demos only.</span></div>
+<p>Study Sprint is a working demo you can install. Reading Highlights is a concept preview.</p>
+<div class="store-status"><i data-ic="clock"></i><span>The full shop is coming soon; one demo is available to install.</span></div>
 <div class="store-demo-grid" aria-label="Extension concept demos">
 <article class="store-demo-card">
-<div class="store-demo-head"><span class="store-demo-icon"><i data-ic="timer"></i></span><strong class="store-demo-title">Study Sprint</strong><span class="store-demo-badge">DEMO</span></div>
+<div class="store-demo-head"><span class="store-demo-icon"><i data-ic="timer"></i></span><strong class="store-demo-title">Study Sprint</strong><span class="store-demo-badge">WORKING DEMO</span></div>
 <p>A focused work-and-break routine to help organize study sessions alongside your course materials.</p>
-<span class="store-demo-label">Concept preview · Not installable</span>
+<button class="btn primary sm" id="installStudySprintBtn" type="button">Install demo extension</button>
+<span class="store-demo-label" id="studySprintInstallNote" aria-live="polite">Adds a 25-minute focus timer and 5-minute break timer to Extensions.</span>
 </article>
 <article class="store-demo-card">
 <div class="store-demo-head"><span class="store-demo-icon"><i data-ic="bookmark"></i></span><strong class="store-demo-title">Reading Highlights</strong><span class="store-demo-badge">DEMO</span></div>
@@ -828,7 +829,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <span class="store-demo-label">Concept preview · Not installable</span>
 </article>
 </div>
-<p class="store-note">The Extension Store is still in development. These examples are previews, not working extensions.</p>
+<p class="store-note">Study Sprint runs locally in the Extensions sandbox. Reading Highlights is a preview only; the full Extension Store is still in development.</p>
 <button class="btn primary" id="storeCloseBtn" type="button"><i data-ic="arrowLeft"></i>Back to your workspace</button>
 </div>
 </div>
@@ -3143,6 +3144,108 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   function makeId() {
     return 'ext-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9);
   }
+  var STUDY_SPRINT_ID = 'studydesk-demo-study-sprint-v1';
+  function studySprintExtension() {
+    var interval = null;
+    var mode = '';
+    var remaining = 0;
+    var deadline = 0;
+
+    function format(seconds) {
+      var minutes = Math.floor(seconds / 60);
+      var rest = seconds % 60;
+      return String(minutes).padStart(2, '0') + ':' + String(rest).padStart(2, '0');
+    }
+    function stopInterval() {
+      if (interval !== null) clearInterval(interval);
+      interval = null;
+    }
+    function tick() {
+      remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      if (remaining === 0) {
+        var completedMode = mode;
+        stopInterval();
+        mode = '';
+        NewTabExtension.log(completedMode + ' complete. Take a moment to review your progress.');
+      } else if (remaining % 5 === 0) {
+        NewTabExtension.log(mode + ' running · ' + format(remaining) + ' remaining');
+      }
+    }
+    function startSession(nextMode, minutes) {
+      stopInterval();
+      mode = nextMode;
+      remaining = minutes * 60;
+      deadline = Date.now() + remaining * 1000;
+      NewTabExtension.log(mode + ' started · ' + format(remaining) + ' remaining');
+      interval = setInterval(tick, 1000);
+    }
+    NewTabExtension.registerAction('Start focus · 25 min', function () {
+      startSession('Focus sprint', 25);
+    });
+    NewTabExtension.registerAction('Start break · 5 min', function () {
+      startSession('Break', 5);
+    });
+    NewTabExtension.registerAction('Pause / resume timer', function () {
+      if (!mode) {
+        NewTabExtension.log('Start a focus sprint or break before pausing.');
+      } else if (interval !== null) {
+        remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+        stopInterval();
+        NewTabExtension.log(mode + ' paused · ' + format(remaining) + ' remaining');
+      } else {
+        deadline = Date.now() + remaining * 1000;
+        interval = setInterval(tick, 1000);
+        NewTabExtension.log(mode + ' resumed · ' + format(remaining) + ' remaining');
+      }
+    });
+    NewTabExtension.registerAction('Reset timer', function () {
+      stopInterval();
+      mode = '';
+      remaining = 0;
+      deadline = 0;
+      NewTabExtension.log('Timer reset. Start a focus sprint or break when ready.');
+    });
+  }
+  function syncStudySprintInstallButton() {
+    var button = $('installStudySprintBtn');
+    var note = $('studySprintInstallNote');
+    if (!button) return;
+    var installed = extensions.some(function (item) { return item.id === STUDY_SPRINT_ID; });
+    button.disabled = installed;
+    button.textContent = installed ? 'Installed' : 'Install demo extension';
+    if (note) note.textContent = installed
+      ? 'Installed · Open Extensions in the sidebar to start or manage it.'
+      : 'Adds a 25-minute focus timer and 5-minute break timer to Extensions.';
+  }
+  function installStudySprint() {
+    if (extensions.some(function (item) { return item.id === STUDY_SPRINT_ID; })) {
+      syncStudySprintInstallButton();
+      NT.toast('Study Sprint is already installed.');
+      return;
+    }
+    if (extensions.length >= MAX_EXTENSIONS) {
+      NT.toast('You can add up to 20 extensions. Remove one before installing this demo.', 'error');
+      return;
+    }
+    extensions.push({
+      id: STUDY_SPRINT_ID,
+      name: 'Study Sprint',
+      code: '(' + studySprintExtension.toString() + ')();',
+      enabled: true
+    });
+    if (!persist()) {
+      extensions.pop();
+      NT.toast('Could not install Study Sprint. Browser storage may be full.', 'error');
+      return;
+    }
+    render();
+    var extensionGroup = $('grp-extensions');
+    if (extensionGroup) extensionGroup.open = true;
+    NT.closeStore();
+    NT.toast('Study Sprint installed. Open Extensions in the sidebar to start a timer.');
+  }
+  var installStudySprintButton = $('installStudySprintBtn');
+  if (installStudySprintButton) installStudySprintButton.addEventListener('click', installStudySprint);
   function persist() {
     return NT.setJSON('disguise_extensions', extensions);
   }
@@ -3224,6 +3327,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   function render() {
     $('extensionCount').textContent = String(extensions.length);
     $('extensionEmptyState').classList.toggle('hidden', extensions.length > 0);
+    syncStudySprintInstallButton();
     list.replaceChildren();
     cardById.clear();
     extensions.forEach(function (extension) {
