@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 import { Router, type IRouter } from "express";
-import { communityExtensionsTable, db, studySessionsTable, studyUsersTable } from "@workspace/db";
+import { adminAuditTable, communityExtensionsTable, db, studySessionsTable, studyUsersTable } from "@workspace/db";
 import { requireModerator } from "../middlewares/accountSession";
 
 const router: IRouter = Router();
@@ -146,6 +146,13 @@ router.post(
       res.status(404).json({ error: "Extension owner not found." });
       return;
     }
+    await db.insert(adminAuditTable).values({
+      actorUsername: req.studyDeskUser!.username,
+      targetUsername: owner.username,
+      action: "extension.removed",
+      reason: body.reason,
+      details: { extensionId: row.id, extensionName: row.name },
+    });
     res.json(extensionSummary({ ...row, username: owner.username }));
   },
 );
@@ -242,6 +249,13 @@ router.post(
       res.status(404).json({ error: "Extension owner not found." });
       return;
     }
+    await db.insert(adminAuditTable).values({
+      actorUsername: req.studyDeskUser!.username,
+      targetUsername: owner.username,
+      action: approved ? "extension.approved" : "extension.rejected",
+      reason: note,
+      details: { extensionId: row.id, extensionName: row.name },
+    });
     res.json(extensionSummary({ ...row, username: owner.username }));
   },
 );
@@ -321,6 +335,13 @@ router.patch(
       if (body.banned) {
         await tx.delete(studySessionsTable).where(eq(studySessionsTable.userId, target.id));
       }
+      await tx.insert(adminAuditTable).values({
+        actorUsername: req.studyDeskUser!.username,
+        targetUsername: normalizedUsername,
+        action: body.banned ? "user.banned" : "user.restored",
+        reason: body.banned ? body.reason?.trim() || null : null,
+        details: {},
+      });
       return updated;
     });
     if (!updatedUser) {

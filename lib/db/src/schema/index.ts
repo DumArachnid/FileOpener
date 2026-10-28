@@ -22,3 +22,4 @@ export * from "./study-sessions";
 export * from "./workspace-sync";
 export * from "./community-extensions";
 export * from "./developer-auth";
+export * from "./admin-panel";

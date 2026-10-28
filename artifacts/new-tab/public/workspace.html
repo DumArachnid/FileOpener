@@ -270,10 +270,17 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .extension-input-panel textarea { width: 100%; min-height: 180px; max-height: 55vh; resize: vertical; font-family: var(--main-font); line-height: 1.5; }
 .extension-input-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 .account-dialog, .community-dialog { width: min(540px, calc(100% - 28px)); max-width: 540px; max-height: 88vh; padding: 0; overflow: auto; border: 1.5px solid var(--border-strong); border-radius: 14px; background: var(--panel); color: var(--text); box-shadow: 5px 5px 0 var(--ink-shadow); }
-.account-dialog::backdrop, .community-dialog::backdrop { background: color-mix(in srgb, var(--text) 45%, transparent); backdrop-filter: blur(3px); }
+.admin-dialog { width: min(900px, calc(100% - 28px)); max-width: 900px; max-height: 90vh; padding: 0; overflow: auto; border: 1.5px solid var(--border-strong); border-radius: 14px; background: var(--panel); color: var(--text); box-shadow: 5px 5px 0 var(--ink-shadow); }
+.account-dialog::backdrop, .community-dialog::backdrop, .admin-dialog::backdrop { background: color-mix(in srgb, var(--text) 45%, transparent); backdrop-filter: blur(3px); }
 .account-panel, .community-panel { display: flex; flex-direction: column; gap: 12px; padding: 22px; }
 .account-panel h2, .community-panel h2 { margin: 0; font-size: 20px; }
 .account-panel p, .community-panel p { margin: 0; color: var(--muted); line-height: 1.5; }
+.admin-panel { display: flex; flex-direction: column; gap: 12px; padding: 22px; }
+.admin-panel h2 { margin: 0; font-size: 20px; }
+.admin-panel > p { margin: 0; color: var(--muted); line-height: 1.5; }
+.admin-panel .moderator-tools { border-top: 0; padding-top: 0; }
+.share-tabs-setting { display: flex; align-items: flex-start; gap: 8px; margin-top: 10px; color: var(--text); font-size: 12px; line-height: 1.45; }
+.share-tabs-setting input { margin-top: 2px; }
 .account-form, .community-form { display: grid; gap: 10px; }
 .account-actions, .community-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
 .account-link { border: 0; padding: 0; background: none; color: var(--accent-ink); text-decoration: underline; cursor: pointer; font: inherit; }
@@ -300,7 +307,7 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .moderation-source { max-height: 240px; overflow: auto; margin: 8px 0; padding: 10px; border-radius: 8px; background: var(--input-bg); font: 11px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
 .community-grid { margin-top: 10px; }
 .community-grid:empty { display: none; }
-#helpBtn, #paletteBtn, #storeBtn { min-width: 32px; padding-inline: 6px; }
+#helpBtn, #paletteBtn, #storeBtn, #adminPanelBtn { min-width: 32px; padding-inline: 6px; }
 .large-html-card { width: min(620px, calc(100% - 32px)); padding: 22px; border: 1.5px solid var(--border-strong); border-radius: var(--radius); background: var(--panel); color: var(--text); text-align: center; box-shadow: 3px 3px 0 var(--ink-shadow); }
 .large-html-card h3 { margin-bottom: 8px; font-size: 18px; }
 .large-html-card p { margin: 8px 0; color: var(--muted); font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
@@ -821,6 +828,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <button class="timer-pill hidden" id="timerPill" title="Focus timer (Alt+P to pause)"><i data-ic="timer"></i><span id="timerPillText">25:00</span></button>
 <button class="btn sm hide-in-focus" id="helpBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"><i data-ic="keyboard"></i></button>
 <button class="btn sm hide-in-focus" id="storeBtn" title="Open the Extension Store" aria-label="Open the Extension Store" aria-expanded="false"><i data-ic="cart"></i></button>
+<button class="btn sm hide-in-focus hidden" id="adminPanelBtn" type="button" title="Open admin panel" aria-label="Open admin panel"><i data-ic="shield"></i></button>
 <button class="btn sm hide-in-focus" id="accountBtn" type="button" title="Sign in to sync your workspace"><i data-ic="user"></i><span id="accountBtnText">Account</span></button>
 <button class="btn sm hide-in-focus" id="paletteBtn" title="Command palette (Ctrl/Cmd+K)"><i data-ic="command"></i></button>
 <button class="btn sm" id="focusModeBtn" title="Expand view / toggle focus mode (Alt+Z)"><i data-ic="eye"></i><span>Focus</span></button>
@@ -873,22 +881,6 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </div>
 <div class="online-store-status" id="onlineStoreStatus" role="status">Connecting to the online store…</div>
 <div class="community-list" id="myCommunityExtensions" aria-label="Your extensions"></div>
-<section class="moderator-tools hidden" id="moderatorTools" aria-labelledby="moderatorToolsTitle">
-<div><h4 id="moderatorToolsTitle">Admin tools</h4><p>Approve or reject submissions, remove unsafe public extensions, and ban or restore regular accounts. Moderator accounts cannot ban themselves or other moderators.</p></div>
-<div><h5>Submissions awaiting approval</h5></div>
-<div class="online-store-status" id="moderationQueueStatus" role="status"></div>
-<div class="community-list" id="moderationQueue" aria-label="Extensions awaiting approval"></div>
-<div><h5>Published extensions</h5><p>Take an extension out of the public store without deleting the creator’s saved code.</p></div>
-<div class="online-store-status" id="moderationPublishedStatus" role="status"></div>
-<div class="community-list" id="moderationPublishedExtensions" aria-label="Published extensions available for moderation"></div>
-<div><h5>Manage an account</h5></div>
-<form class="moderation-search" id="moderationUserSearchForm">
-<label for="moderationUsernameSearch">Find an account by exact username</label>
-<div class="moderation-search-row"><input id="moderationUsernameSearch" minlength="3" maxlength="24" required><button class="btn sm" type="submit">Search</button></div>
-<label for="moderationBanReason">Ban reason (optional)</label><input id="moderationBanReason" maxlength="500" placeholder="Briefly explain the reason">
-</form>
-<div class="community-list" id="moderationUserResult" role="status" aria-live="polite"></div>
-</section>
 <section class="moderator-tools developer-tools" id="developerTools" aria-labelledby="developerToolsTitle">
 <div><h4 id="developerToolsTitle">Developer controls</h4><p>Authorized developers can choose which Study Desk accounts can moderate.</p></div>
 <div class="online-store-status" id="developerAuthStatus" role="status">Checking developer access…</div>
@@ -915,6 +907,46 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <p class="store-note">Study Sprint and Reading Highlights are installable demos. Citation Helper is not available yet.</p>
 <button class="btn primary" id="storeCloseBtn" type="button"><i data-ic="arrowLeft"></i>Back to your workspace</button>
 </div>
+<dialog id="adminDialog" class="admin-dialog" aria-labelledby="adminDialogTitle">
+<div class="admin-panel">
+<div class="row-between"><h2 id="adminDialogTitle">Study Desk admin panel</h2><button class="icon-btn" id="adminCloseBtn" type="button" aria-label="Close admin panel">×</button></div>
+<p>Admin actions are recorded. Tab details appear only when an account has opted in; only page titles and site names are shared.</p>
+<section class="moderator-tools hidden" id="moderatorTools" aria-labelledby="moderatorToolsTitle">
+<div><h4 id="moderatorToolsTitle">Administration</h4><p>Review extensions, manage accounts, grant rewards, and inspect recent account actions.</p></div>
+<div><h5>Submissions awaiting approval</h5></div>
+<div class="online-store-status" id="moderationQueueStatus" role="status"></div>
+<div class="community-list" id="moderationQueue" aria-label="Extensions awaiting approval"></div>
+<div><h5>Published extensions</h5><p>Take an extension out of the public store without deleting the creator’s saved code.</p></div>
+<div class="online-store-status" id="moderationPublishedStatus" role="status"></div>
+<div class="community-list" id="moderationPublishedExtensions" aria-label="Published extensions available for moderation"></div>
+<div><h5>Manage an account</h5></div>
+<form class="moderation-search" id="moderationUserSearchForm">
+<label for="moderationUsernameSearch">Find an account by exact username</label>
+<div class="moderation-search-row"><input id="moderationUsernameSearch" minlength="3" maxlength="24" required><button class="btn sm" type="submit">Search</button></div>
+<label for="moderationBanReason">Ban reason (optional)</label><input id="moderationBanReason" maxlength="500" placeholder="Briefly explain the reason">
+</form>
+<div class="community-list" id="moderationUserResult" role="status" aria-live="polite"></div>
+<form class="moderation-search hidden" id="adminRewardForm">
+<h5>Give a reward to <span id="adminRewardUsername"></span></h5>
+<label for="adminRewardCurrency">Reward</label><select id="adminRewardCurrency"><option value="points">Points</option><option value="shards">Shards</option></select>
+<label for="adminRewardAmount">Amount</label><input id="adminRewardAmount" type="number" min="1" max="10000" step="1" required>
+<label for="adminRewardReason">Reason</label><input id="adminRewardReason" maxlength="500" required placeholder="Explain why this reward is being given">
+<button class="btn sm primary" type="submit">Grant reward</button>
+<div class="online-store-status" id="adminRewardStatus" role="status"></div>
+</form>
+<section class="moderator-tools" id="adminHistorySection" aria-labelledby="adminHistoryTitle">
+<h5 id="adminHistoryTitle">Account history</h5>
+<div class="online-store-status" id="moderationHistoryStatus" role="status">Search for an account to view its ban and admin-action history.</div>
+<div class="community-list" id="moderationHistoryResult" aria-live="polite"></div>
+</section>
+<section class="moderator-tools" id="adminTabsSection" aria-labelledby="adminTabsTitle">
+<h5 id="adminTabsTitle">Shared tabs</h5>
+<div class="online-store-status" id="moderationTabsStatus" role="status">Tab details are only available when that user opts in.</div>
+<div class="community-list" id="moderationTabsResult" aria-live="polite"></div>
+</section>
+</section>
+</div>
+</dialog>
 <section class="store-detail hidden" id="storeDetail" role="dialog" aria-modal="true" aria-labelledby="storeDetailTitle">
 <button class="btn sm" id="storeDetailClose" type="button"><i data-ic="arrowLeft"></i>Back to store</button>
 <div class="store-card-head" style="margin-top:14px"><span class="store-demo-icon" id="storeDetailIcon"><i data-ic="timer"></i></span><span class="store-badge">AVAILABLE</span></div>
@@ -947,7 +979,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div class="account-panel">
 <div class="row-between"><h2 id="accountDialogTitle">Study Desk account</h2><button class="icon-btn" id="accountCloseBtn" type="button" aria-label="Close account dialog">×</button></div>
 <p id="accountDialogIntro">Create an account to sync preferences, notes, and bookmarks across your devices.</p>
-<div class="recovery-code-box hidden" id="accountSignedInPanel"><strong>Signed in as <span id="accountUsername"></span></strong><p class="small">Your preferences, notes, and bookmarks sync to your account.</p><button class="btn sm" id="accountSignoutBtn" type="button">Sign out</button></div>
+<div class="recovery-code-box hidden" id="accountSignedInPanel"><strong>Signed in as <span id="accountUsername"></span></strong><p class="small">Your preferences, notes, and bookmarks sync to your account.</p><label class="share-tabs-setting"><input id="shareTabsToggle" type="checkbox"><span>Share open web-tab titles and site names with admins. This shares no page contents, local file names, or full URLs. You can turn it off at any time.</span></label><button class="btn sm" id="accountSignoutBtn" type="button">Sign out</button></div>
 <form class="account-form" id="accountLoginForm">
 <label for="loginUsername">Username</label><input id="loginUsername" name="username" autocomplete="username" minlength="3" maxlength="24" required>
 <label for="loginPassword">Password</label><input id="loginPassword" name="password" type="password" autocomplete="current-password" required>
@@ -1853,6 +1885,13 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     else { claimRewardBtn.disabled = false; claimRewardBtn.textContent = 'Claim daily (+' + CONFIG.DAILY_REWARD_AMOUNT + ')'; }
     updateTimedBonusUI(); renderShop();
   }
+  NT.applyAdminRewardGrant = function (pointsDelta, shardsDelta) {
+    points += Math.max(0, Number(pointsDelta) || 0);
+    shards += Math.max(0, Number(shardsDelta) || 0);
+    localStorage.setItem('disguise_points', points);
+    localStorage.setItem('disguise_shards', shards);
+    updateRewardsUI();
+  };
   NT.claimDaily = () => claimRewardBtn.click();
   function renderShop() {
     shopContainer.innerHTML = '';
@@ -2645,7 +2684,21 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       tabStrip.appendChild(d);
     });
     var a = tabStrip.querySelector('.tab.active'); if (a && a.scrollIntoView) a.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    if (typeof NT.onTabSnapshotChange === 'function') NT.onTabSnapshotChange();
   }
+  NT.getAdminTabSnapshot = function () {
+    return tabs.map(function (tab) {
+      var rawUrl = tab.id === activeId ? urlInput.value : (tab.snap && tab.snap.url) || '';
+      try {
+        var parsed = new URL(rawUrl);
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+        return {
+          title: String(tab.title || parsed.hostname).slice(0, 80),
+          site: parsed.hostname.slice(0, 253),
+        };
+      } catch (error) { return null; }
+    }).filter(Boolean).slice(0, 12);
+  };
   function activateTab(id) {
     if (id === activeId || !tabs.some(t => t.id === id)) return;
     snapshot(activeTab()); park(activeTab());
@@ -4130,6 +4183,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   if (!NT) return;
   var $ = function (id) { return document.getElementById(id); };
   var accountDialog = $('accountDialog');
+  var adminDialog = $('adminDialog');
   var communityDialog = $('communityExtensionDialog');
   var accountError = $('accountError');
   var communityError = $('communityExtensionError');
@@ -4157,7 +4211,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     'disguise_paniclink', 'disguise_sidebar_order', 'disguise_shortcuts',
     'disguise_tab_memory_limit', 'disguise_theme', 'disguise_timer_minutes',
     'disguise_title', 'disguise_favicon', 'disguise_blank_title',
-    'disguise_notes', 'disguise_bookmarks'
+    'disguise_notes', 'disguise_bookmarks',
+    'disguise_admin_tab_sharing', 'disguise_shared_tabs'
   ];
   var ownerKey = 'disguise_cloud_owner';
 
@@ -4235,10 +4290,29 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     status.textContent = message;
     status.style.color = isError ? 'var(--danger)' : '';
   }
+  function updateTabShareControl() {
+    var toggle = $('shareTabsToggle');
+    toggle.checked = !!accountUser && localStorage.getItem('disguise_admin_tab_sharing') === 'true';
+    toggle.disabled = !accountUser;
+  }
+  function refreshSharedTabSnapshot() {
+    if (!accountUser) return;
+    if (localStorage.getItem('disguise_admin_tab_sharing') !== 'true') {
+      localStorage.removeItem('disguise_shared_tabs');
+      return;
+    }
+    var tabs = typeof NT.getAdminTabSnapshot === 'function' ? NT.getAdminTabSnapshot() : [];
+    localStorage.setItem('disguise_shared_tabs', JSON.stringify(tabs));
+  }
+  NT.onTabSnapshotChange = refreshSharedTabSnapshot;
+  setInterval(refreshSharedTabSnapshot, 5000);
   function setAccountUser(user) {
     accountUser = user || null;
     var isModerator = !!accountUser && accountUser.role === 'moderator';
     $('moderatorTools').classList.toggle('hidden', !isModerator);
+    $('adminPanelBtn').classList.toggle('hidden', !isModerator);
+    if (!isModerator && adminDialog.open) adminDialog.close();
+    updateTabShareControl();
     if (isModerator) {
       loadModerationQueue();
       loadPublishedModerationExtensions();
@@ -4252,6 +4326,11 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       $('moderationUserResult').replaceChildren();
       $('moderationQueueStatus').textContent = '';
       $('moderationPublishedStatus').textContent = '';
+      $('moderationHistoryResult').replaceChildren();
+      $('moderationTabsResult').replaceChildren();
+      $('moderationHistoryStatus').textContent = 'Search for an account to view its ban and admin-action history.';
+      $('moderationTabsStatus').textContent = 'Tab details are only available when that user opts in.';
+      $('adminRewardForm').classList.add('hidden');
     }
     $('accountBtnText').textContent = accountUser ? accountUser.username : 'Account';
     $('accountBtn').title = accountUser ? 'Signed in as ' + accountUser.username : 'Sign in to sync your workspace';
@@ -4262,7 +4341,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     $('accountUsername').textContent = accountUser ? accountUser.username : '';
     $('accountDialogIntro').textContent = accountUser
       ? (accountUser.role === 'moderator'
-        ? 'Admin tools are available in the extension store: review submissions, remove unsafe public extensions, and ban or restore regular accounts.'
+        ? 'Use the Admin button beside the Extension Store to review submissions, manage accounts, and grant rewards.'
         : 'Your preferences, notes, and bookmarks are connected to this account.')
       : 'Create an account to sync preferences, notes, and bookmarks across your devices.';
     if (!accountUser) $('recoveryCodePanel').classList.add('hidden');
@@ -4287,7 +4366,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       $('accountLoginForm').classList.add('hidden');
       $('accountSignupForm').classList.add('hidden');
       $('accountRecoveryForm').classList.add('hidden');
-      $('accountDialogIntro').textContent = 'Your preferences, notes, and bookmarks are connected to this account.';
+      $('accountDialogIntro').textContent = accountUser.role === 'moderator'
+        ? 'Use the Admin button beside the Extension Store to review submissions, manage accounts, and grant rewards.'
+        : 'Your preferences, notes, and bookmarks are connected to this account.';
     }
   }
   function openAccount(mode) {
@@ -4379,6 +4460,27 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
   }
 
+  async function applyAdminRewardGrants() {
+    if (!accountUser || typeof NT.applyAdminRewardGrant !== 'function') return;
+    try {
+      var totals = await api('/rewards/admin-grants');
+      var prefix = 'disguise_admin_grants_seen_' + accountUser.username + '_';
+      var seenPoints = Math.max(0, Number(localStorage.getItem(prefix + 'points')) || 0);
+      var seenShards = Math.max(0, Number(localStorage.getItem(prefix + 'shards')) || 0);
+      var pointDelta = Math.max(0, totals.points - seenPoints);
+      var shardDelta = Math.max(0, totals.shards - seenShards);
+      if (pointDelta || shardDelta) {
+        NT.applyAdminRewardGrant(pointDelta, shardDelta);
+        NT.toast('Administrator rewards added to this browser.');
+      }
+      localStorage.setItem(prefix + 'points', String(totals.points));
+      localStorage.setItem(prefix + 'shards', String(totals.shards));
+    } catch (error) {
+      // A reward lookup should not prevent sign-in or workspace sync.
+      console.warn('Could not check administrator rewards:', error);
+    }
+  }
+
   async function finishSignIn(user, keepAccountOpen) {
     setAccountUser(user);
     var previousOwner = localStorage.getItem(ownerKey);
@@ -4389,6 +4491,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     localStorage.setItem(ownerKey, user.username);
     lastLocalSnapshot = localSnapshot();
     await syncAccountData(true);
+    updateTabShareControl();
+    refreshSharedTabSnapshot();
+    await saveLocalChanges();
+    await applyAdminRewardGrants();
     await loadMyExtensions();
     await loadPublicExtensions();
     if (!keepAccountOpen && accountDialog.open) accountDialog.close();
@@ -4461,6 +4567,35 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   $('showLoginFromRecoveryBtn').addEventListener('click', function () { accountMode('login'); $('loginUsername').focus(); });
   $('accountCloseBtn').addEventListener('click', function () { accountDialog.close(); });
   $('accountBtn').addEventListener('click', function () { openAccount('login'); });
+  $('adminPanelBtn').addEventListener('click', function () {
+    if (!accountUser || accountUser.role !== 'moderator') return;
+    if (!adminDialog.open) adminDialog.showModal();
+    loadModerationQueue();
+    loadPublishedModerationExtensions();
+  });
+  $('adminCloseBtn').addEventListener('click', function () { adminDialog.close(); });
+  adminDialog.addEventListener('click', function (event) {
+    if (event.target === adminDialog) adminDialog.close();
+  });
+  $('shareTabsToggle').addEventListener('change', async function () {
+    if (!accountUser) {
+      this.checked = false;
+      return;
+    }
+    localStorage.setItem('disguise_admin_tab_sharing', this.checked ? 'true' : 'false');
+    refreshSharedTabSnapshot();
+    await saveLocalChanges();
+    NT.toast(this.checked
+      ? 'Opt-in tab sharing is on. Only web-page titles and site names are shared.'
+      : 'Tab sharing is off and the shared snapshot was removed.');
+  });
+  window.addEventListener('study-desk-cloud-sync', function (event) {
+    var keys = event.detail && event.detail.keys || [];
+    if (keys.indexOf('disguise_admin_tab_sharing') !== -1) {
+      updateTabShareControl();
+      refreshSharedTabSnapshot();
+    }
+  });
   accountDialog.addEventListener('click', function (event) { if (event.target === accountDialog) accountDialog.close(); });
   accountDialog.addEventListener('close', function () {
     if (pendingCreator && accountUser) {
@@ -4799,7 +4934,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     row.className = 'community-row';
     var label = document.createElement('div');
     var title = document.createElement('strong');
-    title.textContent = user.username + (user.role === 'moderator' ? ' · moderator' : '');
+    title.textContent = user.username + (user.role === 'moderator' ? ' · admin' : '');
     var detail = document.createElement('div');
     detail.className = 'small muted';
     detail.textContent = user.banned
@@ -4807,8 +4942,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       : 'Account is active';
     label.append(title, detail);
     row.appendChild(label);
+    var actions = document.createElement('div');
+    actions.className = 'community-row-actions';
     if (user.role !== 'moderator' && user.username !== accountUser.username) {
-      row.appendChild(makeButton(user.banned ? 'Restore account' : 'Ban account',
+      actions.appendChild(makeButton(user.banned ? 'Restore account' : 'Ban account',
         user.banned ? 'btn sm' : 'btn sm danger-ghost',
         async function () {
           var banned = !user.banned;
@@ -4827,20 +4964,163 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
               },
             });
             renderModeratedUser(updated);
+            await loadAdminHistory(updated.username);
             NT.toast(banned ? 'Account banned and signed out.' : 'Account restored.');
           } catch (error) {
             NT.toast(readError(error), 'error');
           }
         }));
     }
+    if (user.role === 'user' && !user.banned && user.username !== accountUser.username) {
+      actions.appendChild(makeButton('Promote to admin', 'btn sm primary', async function () {
+        if (!(await NT.confirmDialog(
+          'Promote this account?',
+          'The account will be able to review extensions, manage regular accounts, and grant rewards.',
+          'Promote to admin',
+          true,
+        ))) return;
+        try {
+          var updated = await api('/moderation/users/' + encodeURIComponent(user.username) + '/promote', {
+            method: 'POST',
+          });
+          renderModeratedUser(updated);
+          await loadAdminHistory(updated.username);
+          NT.toast('Admin access granted.');
+        } catch (error) { NT.toast(readError(error), 'error'); }
+      }));
+    }
+    if (user.username !== accountUser.username) {
+      actions.appendChild(makeButton('Give reward', 'btn sm', function () {
+        $('adminRewardUsername').textContent = user.username;
+        $('adminRewardStatus').textContent = '';
+        $('adminRewardForm').classList.remove('hidden');
+        $('adminRewardAmount').focus();
+      }));
+    }
+    actions.appendChild(makeButton('Ban / admin history', 'btn sm', function () {
+      loadAdminHistory(user.username);
+    }));
+    actions.appendChild(makeButton('View shared tabs', 'btn sm', function () {
+      loadAdminSharedTabs(user.username);
+    }));
+    row.appendChild(actions);
     container.appendChild(row);
   }
+
+  async function loadAdminHistory(username) {
+    $('moderationHistoryStatus').textContent = 'Loading account history…';
+    var container = $('moderationHistoryResult');
+    container.replaceChildren();
+    try {
+      var history = await api('/moderation/users/' + encodeURIComponent(username) + '/history');
+      $('moderationHistoryStatus').textContent = history.length
+        ? 'Recent account actions for ' + username + ' (up to 100).'
+        : 'No administrative actions recorded for ' + username + '.';
+      history.forEach(function (entry) {
+        var row = document.createElement('div');
+        row.className = 'community-row';
+        var label = document.createElement('div');
+        var title = document.createElement('strong');
+        var details = entry.details || {};
+        var actionLabels = {
+          'user.banned': 'Account banned',
+          'user.restored': 'Account restored',
+          'user.promoted': 'Promoted to admin',
+          'reward.granted': 'Reward granted',
+          'extension.approved': 'Extension approved',
+          'extension.rejected': 'Extension rejected',
+          'extension.removed': 'Extension removed from public store',
+        };
+        title.textContent = actionLabels[entry.action] || entry.action;
+        var detail = document.createElement('div');
+        detail.className = 'small muted';
+        var text = 'By ' + entry.actorUsername;
+        if (entry.action === 'reward.granted' && details) {
+          text += ' · ' + String(details.amount || '') + ' ' + String(details.currency || 'reward');
+        }
+        if (details && details.extensionName) text += ' · ' + String(details.extensionName);
+        if (entry.reason) text += ' · ' + entry.reason;
+        var date = new Date(entry.createdAt);
+        if (!Number.isNaN(date.getTime())) text += ' · ' + date.toLocaleString();
+        detail.textContent = text;
+        label.append(title, detail);
+        row.appendChild(label);
+        container.appendChild(row);
+      });
+    } catch (error) {
+      $('moderationHistoryStatus').textContent = 'Could not load history: ' + readError(error);
+    }
+  }
+
+  async function loadAdminSharedTabs(username) {
+    $('moderationTabsStatus').textContent = 'Checking the user’s tab-sharing choice…';
+    var container = $('moderationTabsResult');
+    container.replaceChildren();
+    try {
+      var result = await api('/moderation/users/' + encodeURIComponent(username) + '/tabs');
+      if (!result.shared) {
+        $('moderationTabsStatus').textContent = username + ' has not opted in to share tab details.';
+        return;
+      }
+      if (!result.tabs.length) {
+        $('moderationTabsStatus').textContent = username + ' opted in, but there are no open web tabs to show.';
+        return;
+      }
+      $('moderationTabsStatus').textContent = 'Opted in: showing titles and site names only. Page contents, files, and full URLs are not available.';
+      result.tabs.forEach(function (tab) {
+        var row = document.createElement('div');
+        row.className = 'community-row';
+        var label = document.createElement('div');
+        var title = document.createElement('strong');
+        title.textContent = tab.title;
+        var site = document.createElement('div');
+        site.className = 'small muted';
+        site.textContent = tab.site;
+        label.append(title, site);
+        row.appendChild(label);
+        container.appendChild(row);
+      });
+    } catch (error) {
+      $('moderationTabsStatus').textContent = 'Could not load shared tabs: ' + readError(error);
+    }
+  }
+
+  $('adminRewardForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    if (!accountUser || accountUser.role !== 'moderator' || !moderatedUser) return;
+    var form = event.currentTarget;
+    setBusy(form, true);
+    $('adminRewardStatus').textContent = 'Saving reward…';
+    try {
+      var result = await api('/moderation/users/' + encodeURIComponent(moderatedUser.username) + '/rewards', {
+        method: 'POST',
+        body: {
+          currency: $('adminRewardCurrency').value,
+          amount: Number($('adminRewardAmount').value),
+          reason: $('adminRewardReason').value.trim(),
+        },
+      });
+      $('adminRewardStatus').textContent = 'Granted. Totals: ' + result.points + ' points and ' + result.shards + ' shards.';
+      $('adminRewardAmount').value = '';
+      $('adminRewardReason').value = '';
+      await loadAdminHistory(moderatedUser.username);
+      NT.toast('Reward granted to ' + result.username + '.');
+    } catch (error) {
+      $('adminRewardStatus').textContent = readError(error);
+    } finally { setBusy(form, false); }
+  });
 
   $('moderationUserSearchForm').addEventListener('submit', async function (event) {
     event.preventDefault();
     if (!accountUser || accountUser.role !== 'moderator') return;
     var username = $('moderationUsernameSearch').value.trim();
     var container = $('moderationUserResult');
+    moderatedUser = null;
+    $('adminRewardForm').classList.add('hidden');
+    $('moderationHistoryResult').replaceChildren();
+    $('moderationTabsResult').replaceChildren();
+    $('moderationHistoryStatus').textContent = 'Search for an account to view its ban and admin-action history.';
+    $('moderationTabsStatus').textContent = 'Tab details are only available when that user opts in.';
     container.textContent = 'Searching…';
     try {
       var user = await api('/moderation/users?username=' + encodeURIComponent(username));
@@ -4859,11 +5139,11 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     if (authorized) {
       $('developerAuthStatus').textContent = 'Developer access active for ' + email + '. Select a Study Desk account below.';
     } else if (developerAuthState.user) {
-      $('developerAuthStatus').textContent = 'This account is not authorized to manage moderator roles.';
+      $('developerAuthStatus').textContent = 'This account is not authorized to manage admin access.';
     } else if (developerAuthNotice) {
       $('developerAuthStatus').textContent = developerAuthNotice;
     } else {
-      $('developerAuthStatus').textContent = 'Sign in with an authorized developer account to assign or remove moderators.';
+      $('developerAuthStatus').textContent = 'Sign in with an authorized developer account to assign or remove admin access.';
     }
   }
 
@@ -4915,7 +5195,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     row.className = 'community-row';
     var label = document.createElement('div');
     var title = document.createElement('strong');
-    title.textContent = user.username + (user.role === 'moderator' ? ' · moderator' : ' · regular account');
+    title.textContent = user.username + (user.role === 'moderator' ? ' · admin' : ' · regular account');
     var detail = document.createElement('div');
     detail.className = 'small muted';
     detail.textContent = user.banned
@@ -4926,16 +5206,16 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     if (user.role === 'moderator' || !user.banned) {
       var nextRole = user.role === 'moderator' ? 'user' : 'moderator';
       row.appendChild(makeButton(
-        nextRole === 'moderator' ? 'Make moderator' : 'Remove moderator',
+        nextRole === 'moderator' ? 'Make admin' : 'Remove admin',
         nextRole === 'moderator' ? 'btn sm primary' : 'btn sm danger-ghost',
         async function () {
           var prompt = nextRole === 'moderator'
-            ? 'This account will be able to approve extensions and ban regular users.'
-            : 'This account will lose moderator access immediately.';
+            ? 'This account will be able to review extensions, manage regular accounts, and grant rewards.'
+            : 'This account will lose admin access immediately.';
           if (!(await NT.confirmDialog(
-            nextRole === 'moderator' ? 'Promote this account?' : 'Remove moderator access?',
+            nextRole === 'moderator' ? 'Promote this account?' : 'Remove admin access?',
             prompt,
-            nextRole === 'moderator' ? 'Make moderator' : 'Remove access',
+            nextRole === 'moderator' ? 'Make admin' : 'Remove access',
             nextRole !== 'moderator',
           ))) return;
           try {
@@ -4948,7 +5228,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
               accountUser.role = updated.role;
               setAccountUser(accountUser);
             }
-            NT.toast(nextRole === 'moderator' ? 'Moderator access granted.' : 'Moderator access removed.');
+            NT.toast(nextRole === 'moderator' ? 'Admin access granted.' : 'Admin access removed.');
           } catch (error) {
             NT.toast(readError(error), 'error');
           }

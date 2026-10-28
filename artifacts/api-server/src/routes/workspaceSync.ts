@@ -29,6 +29,8 @@ const SYNCABLE_KEYS = new Set([
   "disguise_blank_title",
   "disguise_notes",
   "disguise_bookmarks",
+  "disguise_admin_tab_sharing",
+  "disguise_shared_tabs",
 ]);
 const MAX_SYNC_BYTES = 512 * 1024;
 const MAX_ITEM_BYTES = 120 * 1024;
@@ -72,12 +74,17 @@ router.patch("/sync", requireAccount, async (req, res): Promise<void> => {
     return;
   }
 
+  const sharingDisabled = updates.disguise_admin_tab_sharing === "false";
   const values = Object.fromEntries(
-    Object.entries(updates).filter((entry): entry is [string, string] => entry[1] !== null),
+    Object.entries(updates).filter(
+      (entry): entry is [string, string] =>
+        entry[1] !== null && !(sharingDisabled && entry[0] === "disguise_shared_tabs"),
+    ),
   );
   const removed = Object.entries(updates)
     .filter((entry) => entry[1] === null)
-    .map(([key]) => key);
+    .map(([key]) => key)
+    .concat(sharingDisabled ? ["disguise_shared_tabs"] : []);
   const baseData = removed.length
     ? sql`(${workspaceSyncTable.data} - ARRAY[${sql.join(removed.map((key) => sql`${key}`), sql`, `)}]::text[])`
     : workspaceSyncTable.data;

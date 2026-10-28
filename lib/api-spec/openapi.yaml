@@ -420,6 +420,126 @@ paths:
           description: Account not found
         "409":
           description: Cannot ban a moderator account
+  /moderation/users/{username}/promote:
+    post:
+      operationId: promoteModerationUser
+      tags: [moderation]
+      summary: Promote a regular account to moderator
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 24
+      responses:
+        "200":
+          description: Promoted account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModerationUser"
+        "403":
+          description: Moderator access required
+        "404":
+          description: Account not found
+        "409":
+          description: Account cannot be promoted
+  /moderation/users/{username}/rewards:
+    post:
+      operationId: grantModerationUserRewards
+      tags: [moderation]
+      summary: Grant points or shards to an account
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 24
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminRewardInput"
+      responses:
+        "200":
+          description: Updated account reward totals
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminRewardTotals"
+        "403":
+          description: Moderator access required
+        "404":
+          description: Account not found
+        "409":
+          description: Cannot grant rewards to this account
+  /moderation/users/{username}/history:
+    get:
+      operationId: getModerationUserHistory
+      tags: [moderation]
+      summary: Get recent administrative actions for an account
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 24
+      responses:
+        "200":
+          description: Account moderation and reward history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminHistoryList"
+        "403":
+          description: Moderator access required
+        "404":
+          description: Account not found
+  /moderation/users/{username}/tabs:
+    get:
+      operationId: getModerationUserSharedTabs
+      tags: [moderation]
+      summary: Get tabs explicitly shared by an account
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 24
+      responses:
+        "200":
+          description: Opt-in tab sharing status and site summaries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModerationSharedTabs"
+        "403":
+          description: Moderator access required
+        "404":
+          description: Account not found
+  /rewards/admin-grants:
+    get:
+      operationId: getCurrentAccountAdminRewardGrants
+      tags: [accounts]
+      summary: Get rewards granted by Study Desk administrators
+      responses:
+        "200":
+          description: Total administrator-granted points and shards
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminRewardGrantTotals"
+        "401":
+          description: Sign in required
   /developer/auth/user:
     get:
       operationId: getDeveloperAuthState
@@ -723,6 +843,88 @@ components:
         reason:
           type: string
           maxLength: 500
+    AdminRewardInput:
+      type: object
+      required: [currency, amount, reason]
+      properties:
+        currency:
+          type: string
+          enum: [points, shards]
+        amount:
+          type: integer
+          minimum: 1
+          maximum: 10000
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+    AdminRewardGrantTotals:
+      type: object
+      required: [points, shards]
+      properties:
+        points:
+          type: integer
+          minimum: 0
+        shards:
+          type: integer
+          minimum: 0
+    AdminRewardTotals:
+      type: object
+      required: [username, points, shards]
+      properties:
+        username:
+          type: string
+        points:
+          type: integer
+          minimum: 0
+        shards:
+          type: integer
+          minimum: 0
+    AdminHistoryEvent:
+      type: object
+      required: [id, actorUsername, targetUsername, action, reason, details, createdAt]
+      properties:
+        id:
+          type: integer
+        actorUsername:
+          type: string
+        targetUsername:
+          type: string
+        action:
+          type: string
+        reason:
+          type: ["string", "null"]
+        details:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+    AdminHistoryList:
+      type: array
+      items:
+        $ref: "#/components/schemas/AdminHistoryEvent"
+    ModerationSharedTab:
+      type: object
+      required: [title, site]
+      properties:
+        title:
+          type: string
+          maxLength: 80
+        site:
+          type: string
+          maxLength: 253
+    ModerationSharedTabs:
+      type: object
+      required: [shared, tabs]
+      properties:
+        shared:
+          type: boolean
+        tabs:
+          type: array
+          maxItems: 12
+          items:
+            $ref: "#/components/schemas/ModerationSharedTab"
     DeveloperAuthUser:
       type: object
       required: [email, firstName, lastName, profileImageUrl]

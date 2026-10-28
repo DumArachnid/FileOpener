@@ -20,6 +20,10 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdminHistoryList,
+  AdminRewardGrantTotals,
+  AdminRewardInput,
+  AdminRewardTotals,
   AuthResult,
   BeginDeveloperLoginParams,
   CommunityExtension,
@@ -36,6 +40,7 @@ import type {
   LoginInput,
   ModerationBanInput,
   ModerationExtensionList,
+  ModerationSharedTabs,
   ModerationUser,
   RecoveryInput,
   ReviewExtensionInput,
@@ -1789,6 +1794,400 @@ export const useUpdateModerationUserBan = <TError = ErrorType<void>,
       > => {
       return useMutation(getUpdateModerationUserBanMutationOptions(options));
     }
+
+export const getPromoteModerationUserUrl = (username: string,) => {
+
+
+
+
+  return `/api/moderation/users/${username}/promote`
+}
+
+/**
+ * @summary Promote a regular account to moderator
+ */
+export const promoteModerationUser = async (username: string, options?: Parameters<typeof customFetch>[1]): Promise<ModerationUser> => {
+
+  return customFetch<ModerationUser>(getPromoteModerationUserUrl(username),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getPromoteModerationUserMutationKey = () => ['promoteModerationUser'] as const;
+
+export const getPromoteModerationUserMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof promoteModerationUser>>, TError,PromoteModerationUserMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof promoteModerationUser>>, TError,PromoteModerationUserMutationVariables, TContext> => {
+
+const mutationKey = getPromoteModerationUserMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof promoteModerationUser>>, PromoteModerationUserMutationVariables> = (props) => {
+          const {username} = props ?? {};
+
+          return  promoteModerationUser(username,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PromoteModerationUserMutationResult = NonNullable<Awaited<ReturnType<typeof promoteModerationUser>>>
+
+    export type PromoteModerationUserMutationError = ErrorType<void>
+    export type PromoteModerationUserMutationVariables = {username: string}
+
+    /**
+ * @summary Promote a regular account to moderator
+ */
+export const usePromoteModerationUser = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof promoteModerationUser>>, TError,PromoteModerationUserMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof promoteModerationUser>>,
+        TError,
+        PromoteModerationUserMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPromoteModerationUserMutationOptions(options));
+    }
+
+export const getGrantModerationUserRewardsUrl = (username: string,) => {
+
+
+
+
+  return `/api/moderation/users/${username}/rewards`
+}
+
+/**
+ * @summary Grant points or shards to an account
+ */
+export const grantModerationUserRewards = async (username: string,
+    adminRewardInput: AdminRewardInput, options?: Parameters<typeof customFetch>[1]): Promise<AdminRewardTotals> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AdminRewardTotals>(getGrantModerationUserRewardsUrl(username),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(adminRewardInput)
+  }
+);}
+
+
+
+
+
+export const getGrantModerationUserRewardsMutationKey = () => ['grantModerationUserRewards'] as const;
+
+export const getGrantModerationUserRewardsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof grantModerationUserRewards>>, TError,GrantModerationUserRewardsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof grantModerationUserRewards>>, TError,GrantModerationUserRewardsMutationVariables, TContext> => {
+
+const mutationKey = getGrantModerationUserRewardsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof grantModerationUserRewards>>, GrantModerationUserRewardsMutationVariables> = (props) => {
+          const {username,data} = props ?? {};
+
+          return  grantModerationUserRewards(username,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GrantModerationUserRewardsMutationResult = NonNullable<Awaited<ReturnType<typeof grantModerationUserRewards>>>
+    export type GrantModerationUserRewardsMutationBody = BodyType<AdminRewardInput>
+    export type GrantModerationUserRewardsMutationError = ErrorType<void>
+    export type GrantModerationUserRewardsMutationVariables = {username: string;data: BodyType<AdminRewardInput>}
+
+    /**
+ * @summary Grant points or shards to an account
+ */
+export const useGrantModerationUserRewards = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof grantModerationUserRewards>>, TError,GrantModerationUserRewardsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof grantModerationUserRewards>>,
+        TError,
+        GrantModerationUserRewardsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getGrantModerationUserRewardsMutationOptions(options));
+    }
+
+export const getGetModerationUserHistoryUrl = (username: string,) => {
+
+
+
+
+  return `/api/moderation/users/${username}/history`
+}
+
+/**
+ * @summary Get recent administrative actions for an account
+ */
+export const getModerationUserHistory = async (username: string, options?: Parameters<typeof customFetch>[1]): Promise<AdminHistoryList> => {
+
+  return customFetch<AdminHistoryList>(getGetModerationUserHistoryUrl(username),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetModerationUserHistoryQueryKey = (username: string,) => {
+    return [
+    `/api/moderation/users/${username}/history`
+    ] as const;
+    }
+
+
+export const getGetModerationUserHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getModerationUserHistory>>, TError = ErrorType<void>>(username: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getModerationUserHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetModerationUserHistoryQueryKey(username);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getModerationUserHistory>>> = ({ signal }) => getModerationUserHistory(username, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: username !== null && username !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getModerationUserHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetModerationUserHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getModerationUserHistory>>>
+export type GetModerationUserHistoryQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get recent administrative actions for an account
+ */
+
+export function useGetModerationUserHistory<TData = Awaited<ReturnType<typeof getModerationUserHistory>>, TError = ErrorType<void>>(
+ username: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getModerationUserHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetModerationUserHistoryQueryOptions(username,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetModerationUserSharedTabsUrl = (username: string,) => {
+
+
+
+
+  return `/api/moderation/users/${username}/tabs`
+}
+
+/**
+ * @summary Get tabs explicitly shared by an account
+ */
+export const getModerationUserSharedTabs = async (username: string, options?: Parameters<typeof customFetch>[1]): Promise<ModerationSharedTabs> => {
+
+  return customFetch<ModerationSharedTabs>(getGetModerationUserSharedTabsUrl(username),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetModerationUserSharedTabsQueryKey = (username: string,) => {
+    return [
+    `/api/moderation/users/${username}/tabs`
+    ] as const;
+    }
+
+
+export const getGetModerationUserSharedTabsQueryOptions = <TData = Awaited<ReturnType<typeof getModerationUserSharedTabs>>, TError = ErrorType<void>>(username: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getModerationUserSharedTabs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetModerationUserSharedTabsQueryKey(username);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getModerationUserSharedTabs>>> = ({ signal }) => getModerationUserSharedTabs(username, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: username !== null && username !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getModerationUserSharedTabs>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetModerationUserSharedTabsQueryResult = NonNullable<Awaited<ReturnType<typeof getModerationUserSharedTabs>>>
+export type GetModerationUserSharedTabsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get tabs explicitly shared by an account
+ */
+
+export function useGetModerationUserSharedTabs<TData = Awaited<ReturnType<typeof getModerationUserSharedTabs>>, TError = ErrorType<void>>(
+ username: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getModerationUserSharedTabs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetModerationUserSharedTabsQueryOptions(username,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetCurrentAccountAdminRewardGrantsUrl = () => {
+
+
+
+
+  return `/api/rewards/admin-grants`
+}
+
+/**
+ * @summary Get rewards granted by Study Desk administrators
+ */
+export const getCurrentAccountAdminRewardGrants = async ( options?: Parameters<typeof customFetch>[1]): Promise<AdminRewardGrantTotals> => {
+
+  return customFetch<AdminRewardGrantTotals>(getGetCurrentAccountAdminRewardGrantsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCurrentAccountAdminRewardGrantsQueryKey = () => {
+    return [
+    `/api/rewards/admin-grants`
+    ] as const;
+    }
+
+
+export const getGetCurrentAccountAdminRewardGrantsQueryOptions = <TData = Awaited<ReturnType<typeof getCurrentAccountAdminRewardGrants>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCurrentAccountAdminRewardGrants>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCurrentAccountAdminRewardGrantsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCurrentAccountAdminRewardGrants>>> = ({ signal }) => getCurrentAccountAdminRewardGrants({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCurrentAccountAdminRewardGrants>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCurrentAccountAdminRewardGrantsQueryResult = NonNullable<Awaited<ReturnType<typeof getCurrentAccountAdminRewardGrants>>>
+export type GetCurrentAccountAdminRewardGrantsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get rewards granted by Study Desk administrators
+ */
+
+export function useGetCurrentAccountAdminRewardGrants<TData = Awaited<ReturnType<typeof getCurrentAccountAdminRewardGrants>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCurrentAccountAdminRewardGrants>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCurrentAccountAdminRewardGrantsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetDeveloperAuthStateUrl = () => {
 

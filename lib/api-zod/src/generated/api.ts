@@ -451,6 +451,132 @@ export const UpdateModerationUserBanResponse = zod.object({
 
 
 /**
+ * @summary Promote a regular account to moderator
+ */
+export const promoteModerationUserPathUsernameMin = 3;
+export const promoteModerationUserPathUsernameMax = 24;
+
+
+
+export const PromoteModerationUserParams = zod.object({
+  "username": zod.coerce.string().min(promoteModerationUserPathUsernameMin).max(promoteModerationUserPathUsernameMax)
+})
+
+export const PromoteModerationUserResponse = zod.object({
+  "username": zod.string(),
+  "role": zod.enum(['user', 'moderator']),
+  "banned": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "banReason": zod.string().nullable()
+})
+
+
+/**
+ * @summary Grant points or shards to an account
+ */
+export const grantModerationUserRewardsPathUsernameMin = 3;
+export const grantModerationUserRewardsPathUsernameMax = 24;
+
+
+
+export const GrantModerationUserRewardsParams = zod.object({
+  "username": zod.coerce.string().min(grantModerationUserRewardsPathUsernameMin).max(grantModerationUserRewardsPathUsernameMax)
+})
+
+export const grantModerationUserRewardsBodyAmountMax = 10000;
+
+export const grantModerationUserRewardsBodyReasonMax = 500;
+
+
+
+export const GrantModerationUserRewardsBody = zod.object({
+  "currency": zod.enum(['points', 'shards']),
+  "amount": zod.number().int().min(1).max(grantModerationUserRewardsBodyAmountMax),
+  "reason": zod.string().min(1).max(grantModerationUserRewardsBodyReasonMax)
+})
+
+export const grantModerationUserRewardsResponsePointsMin = 0;
+
+export const grantModerationUserRewardsResponseShardsMin = 0;
+
+
+
+export const GrantModerationUserRewardsResponse = zod.object({
+  "username": zod.string(),
+  "points": zod.number().int().min(grantModerationUserRewardsResponsePointsMin),
+  "shards": zod.number().int().min(grantModerationUserRewardsResponseShardsMin)
+})
+
+
+/**
+ * @summary Get recent administrative actions for an account
+ */
+export const getModerationUserHistoryPathUsernameMin = 3;
+export const getModerationUserHistoryPathUsernameMax = 24;
+
+
+
+export const GetModerationUserHistoryParams = zod.object({
+  "username": zod.coerce.string().min(getModerationUserHistoryPathUsernameMin).max(getModerationUserHistoryPathUsernameMax)
+})
+
+export const GetModerationUserHistoryResponseItem = zod.object({
+  "id": zod.number().int(),
+  "actorUsername": zod.string(),
+  "targetUsername": zod.string(),
+  "action": zod.string(),
+  "reason": zod.string().nullable(),
+  "details": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date()
+})
+export const GetModerationUserHistoryResponse = zod.array(GetModerationUserHistoryResponseItem)
+
+
+/**
+ * @summary Get tabs explicitly shared by an account
+ */
+export const getModerationUserSharedTabsPathUsernameMin = 3;
+export const getModerationUserSharedTabsPathUsernameMax = 24;
+
+
+
+export const GetModerationUserSharedTabsParams = zod.object({
+  "username": zod.coerce.string().min(getModerationUserSharedTabsPathUsernameMin).max(getModerationUserSharedTabsPathUsernameMax)
+})
+
+export const getModerationUserSharedTabsResponseTabsItemTitleMax = 80;
+
+export const getModerationUserSharedTabsResponseTabsItemSiteMax = 253;
+
+export const getModerationUserSharedTabsResponseTabsMax = 12;
+
+
+
+export const GetModerationUserSharedTabsResponse = zod.object({
+  "shared": zod.boolean(),
+  "tabs": zod.array(zod.object({
+  "title": zod.string().max(getModerationUserSharedTabsResponseTabsItemTitleMax),
+  "site": zod.string().max(getModerationUserSharedTabsResponseTabsItemSiteMax)
+})).max(getModerationUserSharedTabsResponseTabsMax)
+})
+
+
+/**
+ * @summary Get rewards granted by Study Desk administrators
+ */
+export const getCurrentAccountAdminRewardGrantsResponsePointsMin = 0;
+
+export const getCurrentAccountAdminRewardGrantsResponseShardsMin = 0;
+
+
+
+export const GetCurrentAccountAdminRewardGrantsResponse = zod.object({
+  "points": zod.number().int().min(getCurrentAccountAdminRewardGrantsResponsePointsMin),
+  "shards": zod.number().int().min(getCurrentAccountAdminRewardGrantsResponseShardsMin)
+})
+
+
+/**
  * @summary Get the current developer authentication state
  */
 export const GetDeveloperAuthStateResponse = zod.object({

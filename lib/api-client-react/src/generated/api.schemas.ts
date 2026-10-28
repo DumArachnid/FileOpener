@@ -186,6 +186,71 @@ export interface ModerationBanInput {
   reason?: string;
 }
 
+export type AdminRewardInputCurrency = typeof AdminRewardInputCurrency[keyof typeof AdminRewardInputCurrency];
+
+
+export const AdminRewardInputCurrency = {
+  points: 'points',
+  shards: 'shards',
+} as const;
+
+export interface AdminRewardInput {
+  currency: AdminRewardInputCurrency;
+  /**
+     * @minimum 1
+     * @maximum 10000
+     */
+  amount: number;
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  reason: string;
+}
+
+export interface AdminRewardGrantTotals {
+  /** @minimum 0 */
+  points: number;
+  /** @minimum 0 */
+  shards: number;
+}
+
+export interface AdminRewardTotals {
+  username: string;
+  /** @minimum 0 */
+  points: number;
+  /** @minimum 0 */
+  shards: number;
+}
+
+export type AdminHistoryEventDetails = { [key: string]: unknown };
+
+export interface AdminHistoryEvent {
+  id: number;
+  actorUsername: string;
+  targetUsername: string;
+  action: string;
+  /** @nullable */
+  reason: string | null;
+  details: AdminHistoryEventDetails;
+  createdAt: string;
+}
+
+export type AdminHistoryList = AdminHistoryEvent[];
+
+export interface ModerationSharedTab {
+  /** @maxLength 80 */
+  title: string;
+  /** @maxLength 253 */
+  site: string;
+}
+
+export interface ModerationSharedTabs {
+  shared: boolean;
+  /** @maxItems 12 */
+  tabs: ModerationSharedTab[];
+}
+
 export interface DeveloperAuthUser {
   email: string;
   /** @nullable */

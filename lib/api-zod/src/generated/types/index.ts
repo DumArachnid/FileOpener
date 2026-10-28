@@ -6,6 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './adminHistoryEvent';
+export * from './adminHistoryEventDetails';
+export * from './adminHistoryList';
+export * from './adminRewardGrantTotals';
+export * from './adminRewardInput';
+export * from './adminRewardInputCurrency';
+export * from './adminRewardTotals';
 export * from './authResult';
 export * from './beginDeveloperLoginParams';
 export * from './communityExtension';
@@ -26,6 +33,8 @@ export * from './loginInput';
 export * from './logOutDeveloperParams';
 export * from './moderationBanInput';
 export * from './moderationExtensionList';
+export * from './moderationSharedTab';
+export * from './moderationSharedTabs';
 export * from './moderationUser';
 export * from './moderationUserRole';
 export * from './recoveryInput';
