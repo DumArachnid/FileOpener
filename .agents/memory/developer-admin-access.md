@@ -20,3 +20,9 @@ Admins may view a user's tab summaries only after that user opts in. Show only w
 **Why:** The user explicitly chose user-approved tab sharing, and browsing activity is sensitive.
 
 **How to apply:** Default to off, keep the opt-in visible in account settings, and enforce the same privacy filter in the server response rather than relying only on the interface.
+
+Keep the native admin dialog outside the Extension Store overlay.
+
+**Why:** The store overlay is hidden when closed; nesting a native dialog inside it prevents reliable modal rendering and can disrupt the client.
+
+**How to apply:** Place workspace dialogs as siblings of hidden overlays, not as their descendants.

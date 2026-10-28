@@ -100,7 +100,7 @@ router.get(
         ),
       )
       .orderBy(desc(communityExtensionsTable.updatedAt))
-      .limit(100);
+      .limit(25);
     res.json(rows.map(extensionSummary));
   },
 );
@@ -182,7 +182,7 @@ router.get(
         ),
       )
       .orderBy(desc(communityExtensionsTable.updatedAt))
-      .limit(100);
+      .limit(25);
     res.json(rows.map(extensionSummary));
   },
 );

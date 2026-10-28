@@ -1180,7 +1180,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     gem: '<path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/>',
     bolt: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
     flame: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
-    alert: '<path d="m10.29 3.86-8.47 14.14a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+     alert: '<path d="m10.29 3.86-8.47 14.14a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+     shield: '<path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z"/><path d="m9 12 2 2 4-4"/>',
     type: '<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/>',
     calc: '<rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><path d="M16 14h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M16 18h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/>',
     hash: '<line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/>',
@@ -4197,6 +4198,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       : '';
   var pendingModerationExtensions = [];
   var publishedModerationExtensions = [];
+  var adminListsLoaded = false;
+  var adminListsLoading = false;
   var moderatedUser = null;
   var pendingCreator = false;
   var onlineExtensions = [];
@@ -4308,17 +4311,19 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   NT.onTabSnapshotChange = refreshSharedTabSnapshot;
   setInterval(refreshSharedTabSnapshot, 5000);
   function setAccountUser(user) {
+    var previousModerator = !!accountUser && accountUser.role === 'moderator';
+    var previousUsername = accountUser && accountUser.username;
     accountUser = user || null;
     var isModerator = !!accountUser && accountUser.role === 'moderator';
+    if (!isModerator || !previousModerator || previousUsername !== accountUser.username) {
+      adminListsLoaded = false;
+      adminListsLoading = false;
+    }
     $('moderatorTools').classList.toggle('hidden', !isModerator);
     $('adminPanelBtn').classList.toggle('hidden', !isModerator);
     if (!isModerator && adminDialog.open) adminDialog.close();
     updateTabShareControl();
-    if (isModerator) {
-      loadModerationQueue();
-      loadPublishedModerationExtensions();
-    }
-    else {
+    if (!isModerator) {
       pendingModerationExtensions = [];
       publishedModerationExtensions = [];
       moderatedUser = null;
@@ -4570,9 +4575,22 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   $('accountBtn').addEventListener('click', function () { openAccount('login'); });
   $('adminPanelBtn').addEventListener('click', function () {
     if (!accountUser || accountUser.role !== 'moderator') return;
-    if (!adminDialog.open) adminDialog.showModal();
-    loadModerationQueue();
-    loadPublishedModerationExtensions();
+    if (!adminDialog.open) {
+      try {
+        adminDialog.showModal();
+      } catch (error) {
+        console.error('Could not open the admin panel as a modal:', error);
+        adminDialog.setAttribute('open', '');
+      }
+    }
+    if (!adminListsLoaded && !adminListsLoading) {
+      adminListsLoading = true;
+      $('moderationQueueStatus').textContent = 'Loading submissions…';
+      $('moderationPublishedStatus').textContent = 'Loading published extensions…';
+      Promise.all([loadModerationQueue(), loadPublishedModerationExtensions()])
+        .then(function (results) { adminListsLoaded = results.every(Boolean); })
+        .finally(function () { adminListsLoading = false; });
+    }
   });
   $('adminCloseBtn').addEventListener('click', function () { adminDialog.close(); });
   adminDialog.addEventListener('click', function (event) {
@@ -4874,34 +4892,42 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
 
   async function loadModerationQueue() {
-    if (!accountUser || accountUser.role !== 'moderator') return;
+    if (!accountUser || accountUser.role !== 'moderator') return false;
     $('moderationQueueStatus').textContent = 'Loading submissions…';
     try {
       pendingModerationExtensions = await api('/moderation/extensions');
-      $('moderationQueueStatus').textContent = pendingModerationExtensions.length
+      $('moderationQueueStatus').textContent = pendingModerationExtensions.length >= 25
+        ? 'Showing the 25 most recently updated submissions.'
+        : pendingModerationExtensions.length
         ? pendingModerationExtensions.length + ' extension' + (pendingModerationExtensions.length === 1 ? '' : 's') + ' awaiting review.'
         : 'The review queue is clear.';
       renderModerationQueue();
+      return true;
     } catch (error) {
       $('moderationQueueStatus').textContent = 'Could not load the review queue: ' + readError(error);
       pendingModerationExtensions = [];
       renderModerationQueue();
+      return false;
     }
   }
 
   async function loadPublishedModerationExtensions() {
-    if (!accountUser || accountUser.role !== 'moderator') return;
+    if (!accountUser || accountUser.role !== 'moderator') return false;
     $('moderationPublishedStatus').textContent = 'Loading published extensions…';
     try {
       publishedModerationExtensions = await api('/moderation/extensions/published');
-      $('moderationPublishedStatus').textContent = publishedModerationExtensions.length
+      $('moderationPublishedStatus').textContent = publishedModerationExtensions.length >= 25
+        ? 'Showing the 25 most recently updated approved extensions.'
+        : publishedModerationExtensions.length
         ? publishedModerationExtensions.length + ' approved extension' + (publishedModerationExtensions.length === 1 ? '' : 's') + ' in the public store.'
         : 'No approved extensions are currently public.';
       renderPublishedModerationExtensions();
+      return true;
     } catch (error) {
       publishedModerationExtensions = [];
       $('moderationPublishedStatus').textContent = 'Could not load published extensions: ' + readError(error);
       renderPublishedModerationExtensions();
+      return false;
     }
   }
 
