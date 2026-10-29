@@ -186,6 +186,31 @@ test("signup, login, logout, and recovery codes behave as one-time credentials",
   assert.equal(newPasswordLogin.status, 200);
 });
 
+test("signup and password recovery require at least 10 characters", async () => {
+  const username = uniqueUsername();
+  const tooShortSignup = await request("/auth/signup", {
+    method: "POST",
+    body: { username, password: "123456789" },
+  });
+  assert.equal(tooShortSignup.status, 400);
+
+  const signup = await request("/auth/signup", {
+    method: "POST",
+    body: { username, password: "1234567890" },
+  });
+  assert.equal(signup.status, 201, "a 10-character password should be accepted");
+
+  const tooShortRecovery = await request("/auth/recover", {
+    method: "POST",
+    body: {
+      username,
+      recoveryCode: signup.data.recoveryCode,
+      newPassword: "123456789",
+    },
+  });
+  assert.equal(tooShortRecovery.status, 400);
+});
+
 test("announcements are public to read and only developer accounts can manage them", async () => {
   const active = await request("/announcements/active");
   assert.equal(active.status, 200);

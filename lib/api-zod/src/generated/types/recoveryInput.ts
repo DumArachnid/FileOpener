@@ -18,7 +18,7 @@ export interface RecoveryInput {
      */
   recoveryCode: string;
   /**
-     * @minLength 12
+     * @minLength 10
      * @maxLength 128
      */
   newPassword: string;

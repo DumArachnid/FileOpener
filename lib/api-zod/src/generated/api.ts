@@ -75,7 +75,7 @@ export const signUpBodyUsernameMax = 24;
 
 
 export const signUpBodyUsernameRegExp = new RegExp('^[A-Za-z0-9_]+$');
-export const signUpBodyPasswordMin = 12;
+export const signUpBodyPasswordMin = 10;
 export const signUpBodyPasswordMax = 128;
 
 
@@ -144,7 +144,7 @@ export const recoverAccountBodyUsernameMax = 24;
 export const recoverAccountBodyRecoveryCodeMin = 12;
 export const recoverAccountBodyRecoveryCodeMax = 100;
 
-export const recoverAccountBodyNewPasswordMin = 12;
+export const recoverAccountBodyNewPasswordMin = 10;
 export const recoverAccountBodyNewPasswordMax = 128;
 
 

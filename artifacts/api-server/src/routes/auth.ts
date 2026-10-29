@@ -52,7 +52,7 @@ async function createSession(userId: number, res: Response): Promise<void> {
 router.post("/auth/signup", authRateLimit, async (req, res): Promise<void> => {
   const parsed = SignUpBody.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Choose a 3–24 character username and a password of at least 12 characters." });
+    res.status(400).json({ error: "Choose a 3–24 character username and a password of at least 10 characters." });
     return;
   }
   const username = parsed.data.username.toLowerCase();

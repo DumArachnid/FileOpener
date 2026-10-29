@@ -1026,15 +1026,15 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </form>
 <form class="account-form hidden" id="accountSignupForm">
 <div class="account-field"><label for="signupUsername">Username</label><input id="signupUsername" name="username" type="text" autocomplete="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="Choose a username" required></div>
-<div class="account-field"><label for="signupPassword">Password</label><input id="signupPassword" name="new-password" type="password" autocomplete="new-password" minlength="12" maxlength="128" placeholder="At least 12 characters" required></div>
-<p class="small muted account-help">Use at least 12 characters. Study Desk accounts use a username, not an email address.</p>
+<div class="account-field"><label for="signupPassword">Password</label><input id="signupPassword" name="new-password" type="password" autocomplete="new-password" minlength="10" maxlength="128" placeholder="At least 10 characters" required></div>
+<p class="small muted account-help">Use at least 10 characters. Study Desk accounts use a username, not an email address.</p>
 <div class="account-actions"><button class="btn primary" type="submit">Create account</button></div>
 <div class="account-form-footer"><span>Already have an account?</span><button class="account-link" id="showLoginFromSignupBtn" type="button">Sign in</button></div>
 </form>
 <form class="account-form hidden" id="accountRecoveryForm">
 <div class="account-field"><label for="recoveryUsername">Username</label><input id="recoveryUsername" name="username" type="text" autocomplete="username" minlength="3" maxlength="24" placeholder="Your username" required></div>
 <div class="account-field"><label for="recoveryCode">Recovery code</label><input id="recoveryCode" name="recoveryCode" type="text" autocomplete="off" placeholder="Paste your recovery code" required></div>
-<div class="account-field"><label for="recoveryNewPassword">New password</label><input id="recoveryNewPassword" name="new-password" type="password" autocomplete="new-password" minlength="12" maxlength="128" placeholder="At least 12 characters" required></div>
+<div class="account-field"><label for="recoveryNewPassword">New password</label><input id="recoveryNewPassword" name="new-password" type="password" autocomplete="new-password" minlength="10" maxlength="128" placeholder="At least 10 characters" required></div>
 <div class="account-actions"><button class="btn primary" type="submit">Reset password</button></div>
 <div class="account-form-footer"><span>Remembered your password?</span><button class="account-link" id="showLoginFromRecoveryBtn" type="button">Back to sign in</button></div>
 </form>

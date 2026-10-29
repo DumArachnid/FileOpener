@@ -17,7 +17,7 @@ export interface SignUpInput {
      */
   username: string;
   /**
-     * @minLength 12
+     * @minLength 10
      * @maxLength 128
      */
   password: string;
@@ -48,7 +48,7 @@ export interface RecoveryInput {
      */
   recoveryCode: string;
   /**
-     * @minLength 12
+     * @minLength 10
      * @maxLength 128
      */
   newPassword: string;

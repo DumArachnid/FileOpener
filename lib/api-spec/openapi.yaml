@@ -901,7 +901,7 @@ components:
           pattern: "^[A-Za-z0-9_]+$"
         password:
           type: string
-          minLength: 12
+          minLength: 10
           maxLength: 128
     LoginInput:
       type: object
@@ -929,7 +929,7 @@ components:
           maxLength: 100
         newPassword:
           type: string
-          minLength: 12
+          minLength: 10
           maxLength: 128
     UserSummary:
       type: object
