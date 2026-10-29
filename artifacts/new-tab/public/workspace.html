@@ -282,6 +282,9 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .admin-panel h2 { margin: 0; font-size: 20px; }
 .admin-panel > p { margin: 0; color: var(--muted); line-height: 1.5; }
 .admin-panel .moderator-tools { border-top: 0; padding-top: 0; }
+.developer-rank-notice { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: color-mix(in srgb, var(--accent) 7%, var(--panel)); }
+.developer-rank-notice h4, .developer-rank-notice p { margin: 0; }
+.developer-rank-notice p { color: var(--muted); font-size: 12px; line-height: 1.5; }
 .site-announcement-banner { position: fixed; top: 8px; left: 50%; z-index: 1200; display: flex; align-items: center; gap: 12px; width: min(900px, calc(100vw - 32px)); max-height: min(180px, calc(100dvh - 20px)); overflow: auto; padding: 13px 18px; transform: translateX(-50%); border: 1.5px solid var(--accent-hover); border-radius: 12px; background: var(--accent); color: var(--on-accent); box-shadow: 4px 4px 0 var(--ink-shadow); }
 .site-announcement-banner[hidden] { display: none !important; }
 .site-announcement-label { flex: none; font-size: 10px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
@@ -923,6 +926,11 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <p>Admin actions are recorded. Tab details appear only when an account has opted in; only page titles and site names are shared.</p>
 <section class="moderator-tools hidden" id="moderatorTools" aria-labelledby="moderatorToolsTitle">
 <div><h4 id="moderatorToolsTitle">Administration</h4><p>Review extensions, manage accounts, grant rewards, and inspect recent account actions.</p></div>
+<div class="developer-rank-notice hidden" id="developerAnnouncementNotice" role="note">
+<h4>Announcements require developer rank</h4>
+<p>Your account is an admin, but announcements are limited to dev accounts. An authorized developer can promote an account from the Extension Store’s Developer controls.</p>
+<button class="btn sm" id="openDeveloperControlsBtn" type="button">Open Developer controls</button>
+</div>
 <section class="moderator-tools hidden" id="developerAnnouncementTools" aria-labelledby="developerAnnouncementTitle">
 <div><h4 id="developerAnnouncementTitle">Site-wide announcement</h4><p>Publish a banner for everyone. A new announcement replaces the current one and expires automatically.</p></div>
 <form class="moderation-search" id="announcementForm">
@@ -1575,6 +1583,23 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
     storeButton.focus();
   }
+  function openDeveloperControlsFromAdmin() {
+    openExtensionStore(true);
+    function scrollToDeveloperControls() {
+      try {
+        var target = storeFrame.contentDocument && storeFrame.contentDocument.getElementById('developerTitle');
+        if (!target) return false;
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return true;
+      } catch (error) { return false; }
+    }
+    if (!scrollToDeveloperControls()) {
+      storeFrame.addEventListener('load', function () {
+        requestAnimationFrame(scrollToDeveloperControls);
+      }, { once: true });
+    }
+  }
+  NT.openDeveloperControls = openDeveloperControlsFromAdmin;
   storeButton.addEventListener('click', function () { openExtensionStore(true); });
   window.addEventListener('message', function (event) {
     if (event.origin !== location.origin || !event.data || event.data.type !== 'study-desk-close-store') return;
@@ -4602,6 +4627,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     $('moderatorTools').classList.toggle('hidden', !isModerator);
     $('adminPanelBtn').classList.toggle('hidden', !isModerator);
     var isDev = !!accountUser && accountUser.role === 'dev';
+    $('developerAnnouncementNotice').classList.toggle('hidden', !accountUser || accountUser.role !== 'moderator');
     $('developerAnnouncementTools').classList.toggle('hidden', !isDev);
     if (isDev) updateAnnouncementAdminState(currentAnnouncement);
     if (!isModerator && adminDialog.open) adminDialog.close();
@@ -4925,6 +4951,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         .then(function (results) { adminListsLoaded = results.every(Boolean); })
         .finally(function () { adminListsLoading = false; });
     }
+  });
+  $('openDeveloperControlsBtn').addEventListener('click', function () {
+    if (adminDialog.open) adminDialog.close();
+    if (typeof NT.openDeveloperControls === 'function') NT.openDeveloperControls();
   });
   $('refreshExtensionReportsBtn').addEventListener('click', loadCommunityExtensionReports);
   $('adminCloseBtn').addEventListener('click', function () { adminDialog.close(); });
