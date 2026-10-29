@@ -806,6 +806,126 @@ export const GetModerationUserSharedTabsResponse = zod.object({
 
 
 /**
+ * @summary Get one random active bookmark link
+ */
+export const getRandomCuratedLinkResponseLinkOneTitleMax = 80;
+
+export const getRandomCuratedLinkResponseLinkOneUrlMax = 2048;
+
+
+
+export const GetRandomCuratedLinkResponse = zod.object({
+  "link": zod.union([zod.object({
+  "id": zod.number().int(),
+  "title": zod.string().max(getRandomCuratedLinkResponseLinkOneTitleMax),
+  "url": zod.string().url().max(getRandomCuratedLinkResponseLinkOneUrlMax)
+}),zod.null()])
+})
+
+
+/**
+ * @summary List curated bookmark links
+ */
+export const listCuratedRandomLinksResponseTitleMax = 80;
+
+export const listCuratedRandomLinksResponseUrlMax = 2048;
+
+
+
+export const ListCuratedRandomLinksResponseItem = zod.object({
+  "id": zod.number().int(),
+  "title": zod.string().min(1).max(listCuratedRandomLinksResponseTitleMax),
+  "url": zod.string().url().max(listCuratedRandomLinksResponseUrlMax),
+  "enabled": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListCuratedRandomLinksResponse = zod.array(ListCuratedRandomLinksResponseItem)
+
+
+/**
+ * @summary Add a curated bookmark link
+ */
+export const createCuratedRandomLinkBodyTitleMax = 80;
+
+export const createCuratedRandomLinkBodyUrlMax = 2048;
+
+
+
+export const CreateCuratedRandomLinkBody = zod.object({
+  "title": zod.string().min(1).max(createCuratedRandomLinkBodyTitleMax),
+  "url": zod.string().url().max(createCuratedRandomLinkBodyUrlMax),
+  "enabled": zod.boolean()
+})
+
+export const createCuratedRandomLinkResponseTitleMax = 80;
+
+export const createCuratedRandomLinkResponseUrlMax = 2048;
+
+
+
+export const CreateCuratedRandomLinkResponse = zod.object({
+  "id": zod.number().int(),
+  "title": zod.string().min(1).max(createCuratedRandomLinkResponseTitleMax),
+  "url": zod.string().url().max(createCuratedRandomLinkResponseUrlMax),
+  "enabled": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Edit or disable a curated bookmark link
+ */
+export const updateCuratedRandomLinkPathIdRegExp = new RegExp('^[1-9][0-9]*$');
+
+
+export const UpdateCuratedRandomLinkParams = zod.object({
+  "id": zod.coerce.string().regex(updateCuratedRandomLinkPathIdRegExp)
+})
+
+export const updateCuratedRandomLinkBodyTitleMax = 80;
+
+export const updateCuratedRandomLinkBodyUrlMax = 2048;
+
+
+
+export const UpdateCuratedRandomLinkBody = zod.object({
+  "title": zod.string().min(1).max(updateCuratedRandomLinkBodyTitleMax),
+  "url": zod.string().url().max(updateCuratedRandomLinkBodyUrlMax),
+  "enabled": zod.boolean()
+})
+
+export const updateCuratedRandomLinkResponseTitleMax = 80;
+
+export const updateCuratedRandomLinkResponseUrlMax = 2048;
+
+
+
+export const UpdateCuratedRandomLinkResponse = zod.object({
+  "id": zod.number().int(),
+  "title": zod.string().min(1).max(updateCuratedRandomLinkResponseTitleMax),
+  "url": zod.string().url().max(updateCuratedRandomLinkResponseUrlMax),
+  "enabled": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Remove a curated bookmark link
+ */
+export const deleteCuratedRandomLinkPathIdRegExp = new RegExp('^[1-9][0-9]*$');
+
+
+export const DeleteCuratedRandomLinkParams = zod.object({
+  "id": zod.coerce.string().regex(deleteCuratedRandomLinkPathIdRegExp)
+})
+
+export const DeleteCuratedRandomLinkResponse = zod.void()
+
+
+/**
  * @summary Get rewards granted by Study Desk administrators
  */
 export const getCurrentAccountAdminRewardGrantsResponsePointsMin = 0;

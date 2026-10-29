@@ -121,7 +121,7 @@ details.sidebar-group[open] summary { color: var(--accent-ink); }
 .count-pill { font-family: var(--mono); font-size: 10px; background: var(--accent-soft); color: var(--accent-ink); border-radius: 999px; padding: 1px 7px; }
 
 /* controls */
-input[type="text"], input[type="number"], input[type="file"], textarea, select { width: 100%; padding: 8px 11px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--input-bg); color: inherit; outline: none; transition: border-color .15s, box-shadow .15s, background .15s; }
+input[type="text"], input[type="url"], input[type="number"], input[type="file"], textarea, select { width: 100%; padding: 8px 11px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--input-bg); color: inherit; outline: none; transition: border-color .15s, box-shadow .15s, background .15s; }
 input[type="range"] { width: 100%; cursor: pointer; accent-color: var(--accent); }
 input:focus, textarea:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); background: var(--panel); }
 input.invalid { border-color: var(--danger) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 16%, transparent) !important; }
@@ -333,7 +333,7 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .moderation-search-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .moderation-search-row input { flex: 1; min-width: 160px; }
 .moderation-source { max-height: 240px; overflow: auto; margin: 8px 0; padding: 10px; border-radius: 8px; background: var(--input-bg); font: 11px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
-#helpBtn, #paletteBtn, #storeBtn, #adminPanelBtn { min-width: 32px; padding-inline: 6px; }
+#helpBtn, #randomLinkBtn, #paletteBtn, #storeBtn, #adminPanelBtn { min-width: 32px; padding-inline: 6px; }
 #extensionStoreView { position: fixed; inset: 0; z-index: 1000; background: var(--bg); }
 #extensionStoreView[hidden] { display: none; }
 #extensionStoreFrame { display: block; width: 100%; height: 100%; min-height: 0; border: 0; background: var(--bg); }
@@ -881,6 +881,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <span class="topbar-gap"></span>
 <button class="timer-pill hidden" id="timerPill" title="Focus timer (Alt+P to pause)"><i data-ic="timer"></i><span id="timerPillText">25:00</span></button>
 <button class="btn sm hide-in-focus" id="helpBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"><i data-ic="keyboard"></i></button>
+<button class="btn sm hide-in-focus" id="randomLinkBtn" type="button" title="Add a random curated link to bookmarks" aria-label="Add a random link bookmark"><i data-ic="link"></i></button>
 <button class="btn sm hide-in-focus" id="storeBtn" type="button" title="Open the Extension Store" aria-label="Open the Extension Store"><i data-ic="cart"></i></button>
 <button class="btn sm hide-in-focus hidden" id="adminPanelBtn" type="button" title="Open admin panel" aria-label="Open admin panel"><i data-ic="shield"></i></button>
 <button class="btn sm hide-in-focus hidden" id="devOnlineBtn" type="button" title="Signed-in accounts active within the last 90 seconds" aria-live="polite">Online: …</button>
@@ -957,6 +958,24 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div><h5>Published extensions</h5><p>Take an extension out of the public store without deleting the creator’s saved code.</p></div>
 <div class="online-store-status" id="moderationPublishedStatus" role="status"></div>
 <div class="community-list" id="moderationPublishedExtensions" aria-label="Published extensions available for moderation"></div>
+<section class="moderator-tools" id="curatedRandomLinksSection" aria-labelledby="curatedRandomLinksTitle">
+<div><h5 id="curatedRandomLinksTitle">Random bookmark links</h5><p>Manage the links users can add with the toolbar button. Requests save a bookmark only; they do not open the page.</p></div>
+<form class="moderation-search" id="curatedRandomLinkForm">
+<input id="curatedRandomLinkId" type="hidden">
+<label for="curatedRandomLinkTitle">Link title</label>
+<input id="curatedRandomLinkTitle" type="text" maxlength="80" required placeholder="Course resource">
+<label for="curatedRandomLinkUrl">Web address</label>
+<input id="curatedRandomLinkUrl" type="url" maxlength="2048" required placeholder="https://example.edu/resource">
+<label class="share-tabs-setting"><input id="curatedRandomLinkEnabled" type="checkbox" checked><span>Include this link in random suggestions</span></label>
+<div class="community-row-actions">
+<button class="btn sm primary" id="curatedRandomLinkSaveBtn" type="submit">Add link</button>
+<button class="btn sm hidden" id="curatedRandomLinkCancelBtn" type="button">Cancel edit</button>
+</div>
+<div class="online-store-status" id="curatedRandomLinkFormStatus" role="status" aria-live="polite"></div>
+</form>
+<div class="online-store-status" id="curatedRandomLinksStatus" role="status" aria-live="polite"></div>
+<div class="community-list" id="curatedRandomLinksList" aria-label="Curated random bookmark links"></div>
+</section>
 <div><h5>Hidden extensions</h5><p>Restore a previously removed listing without changing the creator’s saved draft.</p></div>
 <div class="online-store-status" id="removedExtensionsStatus" role="status"></div>
 <div class="community-list" id="removedModerationExtensions" aria-label="Hidden extensions available for restoration"></div>
@@ -2601,6 +2620,42 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     if (!silent) toast('Bookmarked ' + hostOf(u));
     return true;
   }
+  el('randomLinkBtn').addEventListener('click', async function () {
+    var button = el('randomLinkBtn');
+    if (window.location.protocol === 'file:') {
+      toast('Random link suggestions require the online Study Desk page.', 'error');
+      return;
+    }
+    button.disabled = true;
+    button.setAttribute('aria-busy', 'true');
+    try {
+      var response = await fetch('/api/random-links/random', {
+        headers: { Accept: 'application/json' },
+        cache: 'no-store',
+        credentials: 'omit'
+      });
+      var result = {};
+      try { result = await response.json(); } catch (error) {}
+      if (!response.ok) {
+        throw new Error(response.status === 429
+          ? 'Too many requests. Try again in a minute.'
+          : (result && result.error) || 'Could not get a random link.');
+      }
+      if (!result || !result.link) {
+        toast('There are no active links in the curated list yet.', 'error');
+        return;
+      }
+      if (typeof result.link.title !== 'string' || typeof result.link.url !== 'string') {
+        throw new Error('The server returned an invalid link.');
+      }
+      addBookmark(result.link.url, result.link.title);
+    } catch (error) {
+      toast(error && error.message ? error.message : 'Could not get a random link. Check your connection.', 'error');
+    } finally {
+      button.disabled = false;
+      button.removeAttribute('aria-busy');
+    }
+  });
   function removeBookmark(id) { bookmarks = bookmarks.filter(function (b) { return b.id !== id; }); saveBookmarks(); toast('Bookmark removed'); }
   function renderBookmarks() {
     var box = el('bookmarkList');
@@ -4379,6 +4434,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   var publishedModerationExtensions = [];
   var communityExtensionReports = [];
   var removedModerationExtensions = [];
+  var curatedRandomLinks = [];
   var adminListsLoaded = false;
   var adminListsLoading = false;
   var moderatedUser = null;
@@ -4745,8 +4801,13 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       $('removedExtensionsStatus').textContent = '';
       $('moderationHistoryResult').replaceChildren();
       $('moderationTabsResult').replaceChildren();
+      $('curatedRandomLinksList').replaceChildren();
+      curatedRandomLinks = [];
+      resetCuratedRandomLinkForm();
       $('moderationHistoryStatus').textContent = 'Search for an account to view its ban and admin-action history.';
       $('moderationTabsStatus').textContent = 'Tab details are only available when that user opts in.';
+      $('curatedRandomLinksStatus').textContent = '';
+      $('curatedRandomLinkFormStatus').textContent = '';
       $('adminRewardForm').classList.add('hidden');
     }
     $('accountBtnText').textContent = accountUser ? accountUser.username : 'Account';
@@ -5172,6 +5233,155 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   });
   $('accountNudgeLater').addEventListener('click', hideAccountNudge);
   $('accountNudgeClose').addEventListener('click', hideAccountNudge);
+  function resetCuratedRandomLinkForm() {
+    $('curatedRandomLinkForm').reset();
+    $('curatedRandomLinkId').value = '';
+    $('curatedRandomLinkEnabled').checked = true;
+    $('curatedRandomLinkSaveBtn').textContent = 'Add link';
+    $('curatedRandomLinkCancelBtn').classList.add('hidden');
+    $('curatedRandomLinkFormStatus').textContent = '';
+  }
+
+  function renderCuratedRandomLinks() {
+    var container = $('curatedRandomLinksList');
+    container.replaceChildren();
+    if (!curatedRandomLinks.length) {
+      var empty = document.createElement('div');
+      empty.className = 'list-empty';
+      empty.textContent = 'No curated links yet. Add one above to make it available to users.';
+      container.appendChild(empty);
+      return;
+    }
+
+    curatedRandomLinks.forEach(function (link) {
+      var row = document.createElement('div');
+      row.className = 'community-row';
+      var details = document.createElement('div');
+      details.style.minWidth = '0';
+      var title = document.createElement('strong');
+      title.textContent = link.title;
+      var url = document.createElement('div');
+      url.className = 'small muted';
+      url.textContent = link.url;
+      var status = document.createElement('div');
+      status.className = 'small muted';
+      status.textContent = link.enabled ? 'Included in random suggestions' : 'Disabled';
+      details.append(title, url, status);
+
+      var actions = document.createElement('div');
+      actions.className = 'community-row-actions';
+      var edit = document.createElement('button');
+      edit.className = 'btn sm';
+      edit.type = 'button';
+      edit.textContent = 'Edit';
+      edit.addEventListener('click', function () {
+        $('curatedRandomLinkId').value = String(link.id);
+        $('curatedRandomLinkTitle').value = link.title;
+        $('curatedRandomLinkUrl').value = link.url;
+        $('curatedRandomLinkEnabled').checked = link.enabled;
+        $('curatedRandomLinkSaveBtn').textContent = 'Save changes';
+        $('curatedRandomLinkCancelBtn').classList.remove('hidden');
+        $('curatedRandomLinkFormStatus').textContent = 'Editing “' + link.title + '”.';
+        $('curatedRandomLinkTitle').focus();
+      });
+
+      var toggle = document.createElement('button');
+      toggle.className = 'btn sm';
+      toggle.type = 'button';
+      toggle.textContent = link.enabled ? 'Disable' : 'Enable';
+      toggle.addEventListener('click', async function () {
+        if (!hasModeratorAccess(accountUser)) return;
+        toggle.disabled = true;
+        $('curatedRandomLinksStatus').textContent = 'Updating link…';
+        try {
+          await api('/moderation/random-links/' + encodeURIComponent(link.id), {
+            method: 'PATCH',
+            body: { title: link.title, url: link.url, enabled: !link.enabled },
+          });
+          await loadCuratedRandomLinks();
+        } catch (error) {
+          $('curatedRandomLinksStatus').textContent = readError(error);
+          toggle.disabled = false;
+        }
+      });
+
+      var remove = document.createElement('button');
+      remove.className = 'btn sm danger-ghost';
+      remove.type = 'button';
+      remove.textContent = 'Remove';
+      remove.addEventListener('click', async function () {
+        if (!hasModeratorAccess(accountUser)) return;
+        var confirmed = await NT.confirmDialog(
+          'Remove curated link?',
+          '“' + link.title + '” will no longer be available as a random bookmark.',
+          'Remove link',
+          true,
+        );
+        if (!confirmed) return;
+        remove.disabled = true;
+        $('curatedRandomLinksStatus').textContent = 'Removing link…';
+        try {
+          await api('/moderation/random-links/' + encodeURIComponent(link.id), { method: 'DELETE' });
+          await loadCuratedRandomLinks();
+        } catch (error) {
+          $('curatedRandomLinksStatus').textContent = readError(error);
+          remove.disabled = false;
+        }
+      });
+      actions.append(edit, toggle, remove);
+      row.append(details, actions);
+      container.appendChild(row);
+    });
+  }
+
+  async function loadCuratedRandomLinks() {
+    $('curatedRandomLinksStatus').textContent = 'Loading curated links…';
+    try {
+      var rows = await api('/moderation/random-links');
+      curatedRandomLinks = Array.isArray(rows) ? rows : [];
+      renderCuratedRandomLinks();
+      $('curatedRandomLinksStatus').textContent = curatedRandomLinks.length
+        ? curatedRandomLinks.length + ' curated link' + (curatedRandomLinks.length === 1 ? '' : 's') + '.'
+        : 'No curated links have been added yet.';
+      return true;
+    } catch (error) {
+      curatedRandomLinks = [];
+      renderCuratedRandomLinks();
+      $('curatedRandomLinksStatus').textContent = 'Could not load curated links: ' + readError(error);
+      return false;
+    }
+  }
+
+  $('curatedRandomLinkForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    if (!hasModeratorAccess(accountUser)) return;
+    var id = $('curatedRandomLinkId').value;
+    var form = event.currentTarget;
+    var saveButton = $('curatedRandomLinkSaveBtn');
+    setBusy(form, true);
+    $('curatedRandomLinkFormStatus').textContent = id ? 'Saving changes…' : 'Adding link…';
+    try {
+      await api(id
+        ? '/moderation/random-links/' + encodeURIComponent(id)
+        : '/moderation/random-links', {
+        method: id ? 'PATCH' : 'POST',
+        body: {
+          title: $('curatedRandomLinkTitle').value,
+          url: $('curatedRandomLinkUrl').value,
+          enabled: $('curatedRandomLinkEnabled').checked,
+        },
+      });
+      resetCuratedRandomLinkForm();
+      $('curatedRandomLinkFormStatus').textContent = id ? 'Link updated.' : 'Link added.';
+      await loadCuratedRandomLinks();
+    } catch (error) {
+      $('curatedRandomLinkFormStatus').textContent = readError(error);
+    } finally {
+      saveButton.disabled = false;
+    }
+  });
+  $('curatedRandomLinkCancelBtn').addEventListener('click', resetCuratedRandomLinkForm);
+
   $('adminPanelBtn').addEventListener('click', function () {
     if (!hasModeratorAccess(accountUser)) return;
     if (!adminDialog.open) {
@@ -5194,6 +5404,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         loadPublishedModerationExtensions(),
         loadCommunityExtensionReports(),
         loadRemovedModerationExtensions(),
+        loadCuratedRandomLinks(),
       ])
         .then(function (results) { adminListsLoaded = results.every(Boolean); })
         .finally(function () { adminListsLoading = false; });

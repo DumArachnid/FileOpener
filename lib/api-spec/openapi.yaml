@@ -22,6 +22,8 @@ tags:
     description: Replit-authenticated developer controls
   - name: announcements
     description: Public Study Desk announcements managed by developers
+  - name: random-links
+    description: Random bookmark suggestions and moderator-managed catalog
 paths:
   /healthz:
     get:
@@ -802,6 +804,118 @@ paths:
           description: Moderator access required
         "404":
           description: Account not found
+  /random-links/random:
+    get:
+      operationId: getRandomCuratedLink
+      tags: [random-links]
+      summary: Get one random active bookmark link
+      responses:
+        "200":
+          description: A random active link, or null when no links are available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RandomLinkResult"
+        "429":
+          description: Too many requests
+  /moderation/random-links:
+    get:
+      operationId: listCuratedRandomLinks
+      tags: [moderation]
+      summary: List curated bookmark links
+      responses:
+        "200":
+          description: Curated link catalog
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CuratedRandomLinkList"
+        "401":
+          description: Sign in required
+        "403":
+          description: Moderator access required
+    post:
+      operationId: createCuratedRandomLink
+      tags: [moderation]
+      summary: Add a curated bookmark link
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CuratedRandomLinkInput"
+      responses:
+        "201":
+          description: Curated link created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CuratedRandomLink"
+        "400":
+          description: Invalid title or URL
+        "401":
+          description: Sign in required
+        "403":
+          description: Moderator access required
+        "409":
+          description: URL already exists in the catalog
+  /moderation/random-links/{id}:
+    patch:
+      operationId: updateCuratedRandomLink
+      tags: [moderation]
+      summary: Edit or disable a curated bookmark link
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[1-9][0-9]*$"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CuratedRandomLinkInput"
+      responses:
+        "200":
+          description: Curated link updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CuratedRandomLink"
+        "400":
+          description: Invalid id, title, or URL
+        "401":
+          description: Sign in required
+        "403":
+          description: Moderator access required
+        "404":
+          description: Curated link not found
+        "409":
+          description: URL already exists in the catalog
+    delete:
+      operationId: deleteCuratedRandomLink
+      tags: [moderation]
+      summary: Remove a curated bookmark link
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[1-9][0-9]*$"
+      responses:
+        "204":
+          description: Curated link removed
+        "400":
+          description: Invalid id
+        "401":
+          description: Sign in required
+        "403":
+          description: Moderator access required
+        "404":
+          description: Curated link not found
   /rewards/admin-grants:
     get:
       operationId: getCurrentAccountAdminRewardGrants
@@ -1305,6 +1419,67 @@ components:
           maxItems: 12
           items:
             $ref: "#/components/schemas/ModerationSharedTab"
+    RandomLinkResult:
+      type: object
+      required: [link]
+      properties:
+        link:
+          oneOf:
+            - $ref: "#/components/schemas/RandomLinkChoice"
+            - type: "null"
+    RandomLinkChoice:
+      type: object
+      required: [id, title, url]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+          maxLength: 80
+        url:
+          type: string
+          format: uri
+          maxLength: 2048
+    CuratedRandomLink:
+      type: object
+      required: [id, title, url, enabled, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+          minLength: 1
+          maxLength: 80
+        url:
+          type: string
+          format: uri
+          maxLength: 2048
+        enabled:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CuratedRandomLinkList:
+      type: array
+      items:
+        $ref: "#/components/schemas/CuratedRandomLink"
+    CuratedRandomLinkInput:
+      type: object
+      required: [title, url, enabled]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 80
+        url:
+          type: string
+          format: uri
+          maxLength: 2048
+        enabled:
+          type: boolean
     DeveloperAuthUser:
       type: object
       required: [email, firstName, lastName, profileImageUrl]

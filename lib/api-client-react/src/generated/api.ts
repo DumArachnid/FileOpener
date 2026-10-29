@@ -32,6 +32,9 @@ import type {
   AuthResult,
   BeginDeveloperLoginParams,
   CommunityExtension,
+  CuratedRandomLink,
+  CuratedRandomLinkInput,
+  CuratedRandomLinkList,
   CurrentUser,
   DeveloperAuthState,
   DeveloperOnlineCount,
@@ -54,6 +57,7 @@ import type {
   ModerationUser,
   OfflineHandoffInput,
   OpenOfflineAccountHandoffParams,
+  RandomLinkResult,
   RecoveryInput,
   ReviewExtensionInput,
   SignUpInput,
@@ -3261,6 +3265,411 @@ export function useGetModerationUserSharedTabs<TData = Awaited<ReturnType<typeof
 
 
 
+
+export const getGetRandomCuratedLinkUrl = () => {
+
+
+
+
+  return `/api/random-links/random`
+}
+
+/**
+ * @summary Get one random active bookmark link
+ */
+export const getRandomCuratedLink = async ( options?: Parameters<typeof customFetch>[1]): Promise<RandomLinkResult> => {
+
+  return customFetch<RandomLinkResult>(getGetRandomCuratedLinkUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRandomCuratedLinkQueryKey = () => {
+    return [
+    `/api/random-links/random`
+    ] as const;
+    }
+
+
+export const getGetRandomCuratedLinkQueryOptions = <TData = Awaited<ReturnType<typeof getRandomCuratedLink>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRandomCuratedLink>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRandomCuratedLinkQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRandomCuratedLink>>> = ({ signal }) => getRandomCuratedLink({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRandomCuratedLink>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRandomCuratedLinkQueryResult = NonNullable<Awaited<ReturnType<typeof getRandomCuratedLink>>>
+export type GetRandomCuratedLinkQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get one random active bookmark link
+ */
+
+export function useGetRandomCuratedLink<TData = Awaited<ReturnType<typeof getRandomCuratedLink>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRandomCuratedLink>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRandomCuratedLinkQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListCuratedRandomLinksUrl = () => {
+
+
+
+
+  return `/api/moderation/random-links`
+}
+
+/**
+ * @summary List curated bookmark links
+ */
+export const listCuratedRandomLinks = async ( options?: Parameters<typeof customFetch>[1]): Promise<CuratedRandomLinkList> => {
+
+  return customFetch<CuratedRandomLinkList>(getListCuratedRandomLinksUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCuratedRandomLinksQueryKey = () => {
+    return [
+    `/api/moderation/random-links`
+    ] as const;
+    }
+
+
+export const getListCuratedRandomLinksQueryOptions = <TData = Awaited<ReturnType<typeof listCuratedRandomLinks>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCuratedRandomLinks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCuratedRandomLinksQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCuratedRandomLinks>>> = ({ signal }) => listCuratedRandomLinks({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCuratedRandomLinks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCuratedRandomLinksQueryResult = NonNullable<Awaited<ReturnType<typeof listCuratedRandomLinks>>>
+export type ListCuratedRandomLinksQueryError = ErrorType<void>
+
+
+/**
+ * @summary List curated bookmark links
+ */
+
+export function useListCuratedRandomLinks<TData = Awaited<ReturnType<typeof listCuratedRandomLinks>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCuratedRandomLinks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCuratedRandomLinksQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateCuratedRandomLinkUrl = () => {
+
+
+
+
+  return `/api/moderation/random-links`
+}
+
+/**
+ * @summary Add a curated bookmark link
+ */
+export const createCuratedRandomLink = async (curatedRandomLinkInput: CuratedRandomLinkInput, options?: Parameters<typeof customFetch>[1]): Promise<CuratedRandomLink> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CuratedRandomLink>(getCreateCuratedRandomLinkUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(curatedRandomLinkInput)
+  }
+);}
+
+
+
+
+
+export const getCreateCuratedRandomLinkMutationKey = () => ['createCuratedRandomLink'] as const;
+
+export const getCreateCuratedRandomLinkMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCuratedRandomLink>>, TError,CreateCuratedRandomLinkMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCuratedRandomLink>>, TError,CreateCuratedRandomLinkMutationVariables, TContext> => {
+
+const mutationKey = getCreateCuratedRandomLinkMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCuratedRandomLink>>, CreateCuratedRandomLinkMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCuratedRandomLink(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCuratedRandomLinkMutationResult = NonNullable<Awaited<ReturnType<typeof createCuratedRandomLink>>>
+    export type CreateCuratedRandomLinkMutationBody = BodyType<CuratedRandomLinkInput>
+    export type CreateCuratedRandomLinkMutationError = ErrorType<void>
+    export type CreateCuratedRandomLinkMutationVariables = {data: BodyType<CuratedRandomLinkInput>}
+
+    /**
+ * @summary Add a curated bookmark link
+ */
+export const useCreateCuratedRandomLink = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCuratedRandomLink>>, TError,CreateCuratedRandomLinkMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCuratedRandomLink>>,
+        TError,
+        CreateCuratedRandomLinkMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateCuratedRandomLinkMutationOptions(options));
+    }
+
+export const getUpdateCuratedRandomLinkUrl = (id: string,) => {
+
+
+
+
+  return `/api/moderation/random-links/${id}`
+}
+
+/**
+ * @summary Edit or disable a curated bookmark link
+ */
+export const updateCuratedRandomLink = async (id: string,
+    curatedRandomLinkInput: CuratedRandomLinkInput, options?: Parameters<typeof customFetch>[1]): Promise<CuratedRandomLink> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CuratedRandomLink>(getUpdateCuratedRandomLinkUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(curatedRandomLinkInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateCuratedRandomLinkMutationKey = () => ['updateCuratedRandomLink'] as const;
+
+export const getUpdateCuratedRandomLinkMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCuratedRandomLink>>, TError,UpdateCuratedRandomLinkMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCuratedRandomLink>>, TError,UpdateCuratedRandomLinkMutationVariables, TContext> => {
+
+const mutationKey = getUpdateCuratedRandomLinkMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCuratedRandomLink>>, UpdateCuratedRandomLinkMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateCuratedRandomLink(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCuratedRandomLinkMutationResult = NonNullable<Awaited<ReturnType<typeof updateCuratedRandomLink>>>
+    export type UpdateCuratedRandomLinkMutationBody = BodyType<CuratedRandomLinkInput>
+    export type UpdateCuratedRandomLinkMutationError = ErrorType<void>
+    export type UpdateCuratedRandomLinkMutationVariables = {id: string;data: BodyType<CuratedRandomLinkInput>}
+
+    /**
+ * @summary Edit or disable a curated bookmark link
+ */
+export const useUpdateCuratedRandomLink = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCuratedRandomLink>>, TError,UpdateCuratedRandomLinkMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateCuratedRandomLink>>,
+        TError,
+        UpdateCuratedRandomLinkMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateCuratedRandomLinkMutationOptions(options));
+    }
+
+export const getDeleteCuratedRandomLinkUrl = (id: string,) => {
+
+
+
+
+  return `/api/moderation/random-links/${id}`
+}
+
+/**
+ * @summary Remove a curated bookmark link
+ */
+export const deleteCuratedRandomLink = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteCuratedRandomLinkUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteCuratedRandomLinkMutationKey = () => ['deleteCuratedRandomLink'] as const;
+
+export const getDeleteCuratedRandomLinkMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCuratedRandomLink>>, TError,DeleteCuratedRandomLinkMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCuratedRandomLink>>, TError,DeleteCuratedRandomLinkMutationVariables, TContext> => {
+
+const mutationKey = getDeleteCuratedRandomLinkMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCuratedRandomLink>>, DeleteCuratedRandomLinkMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteCuratedRandomLink(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCuratedRandomLinkMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCuratedRandomLink>>>
+
+    export type DeleteCuratedRandomLinkMutationError = ErrorType<void>
+    export type DeleteCuratedRandomLinkMutationVariables = {id: string}
+
+    /**
+ * @summary Remove a curated bookmark link
+ */
+export const useDeleteCuratedRandomLink = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCuratedRandomLink>>, TError,DeleteCuratedRandomLinkMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCuratedRandomLink>>,
+        TError,
+        DeleteCuratedRandomLinkMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteCuratedRandomLinkMutationOptions(options));
+    }
 
 export const getGetCurrentAccountAdminRewardGrantsUrl = () => {
 

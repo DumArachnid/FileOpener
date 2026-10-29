@@ -350,6 +350,45 @@ export interface ModerationSharedTabs {
   tabs: ModerationSharedTab[];
 }
 
+export interface RandomLinkChoice {
+  id: number;
+  /** @maxLength 80 */
+  title: string;
+  /** @maxLength 2048 */
+  url: string;
+}
+
+export interface RandomLinkResult {
+  link: RandomLinkChoice | null;
+}
+
+export interface CuratedRandomLink {
+  id: number;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  title: string;
+  /** @maxLength 2048 */
+  url: string;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CuratedRandomLinkList = CuratedRandomLink[];
+
+export interface CuratedRandomLinkInput {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  title: string;
+  /** @maxLength 2048 */
+  url: string;
+  enabled: boolean;
+}
+
 export interface DeveloperAuthUser {
   email: string;
   /** @nullable */

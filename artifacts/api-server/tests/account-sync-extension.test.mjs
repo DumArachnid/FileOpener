@@ -15,6 +15,7 @@ const requireDatabasePackage = createRequire(
 const { Pool } = requireDatabasePackage("pg");
 const cleanupPool = new Pool({ connectionString: process.env.DATABASE_URL });
 const fixtureUsernames = [];
+const fixtureRandomLinkIds = [];
 
 let apiProcess;
 let apiBaseUrl;
@@ -113,6 +114,11 @@ after(async () => {
   if (fixtureUsernames.length) {
     await cleanupPool.query("DELETE FROM study_desk_users WHERE username = ANY($1)", [
       fixtureUsernames,
+    ]);
+  }
+  if (fixtureRandomLinkIds.length) {
+    await cleanupPool.query("DELETE FROM study_desk_random_links WHERE id = ANY($1::int[])", [
+      fixtureRandomLinkIds,
     ]);
   }
   await cleanupPool.end();
@@ -425,4 +431,100 @@ test("extension drafts stay private and only their owner can edit or delete them
     cookie: owner.cookie,
   });
   assert.equal(ownerDelete.status, 204);
+});
+
+test("random curated links are public to request and moderator-managed", async () => {
+  const initialCatalogResponse = await request("/moderation/random-links");
+  assert.equal(initialCatalogResponse.status, 401);
+
+  const regularAccount = await signUp();
+  assert.equal(
+    (await request("/moderation/random-links", { cookie: regularAccount.cookie })).status,
+    403,
+  );
+
+  const moderator = await signUp();
+  await cleanupPool.query("UPDATE study_desk_users SET role = 'moderator' WHERE username = $1", [
+    moderator.username,
+  ]);
+  const initialCatalog = await request("/moderation/random-links", { cookie: moderator.cookie });
+  assert.equal(initialCatalog.status, 200);
+  const initiallyActiveIds = initialCatalog.data.filter((link) => link.enabled).map((link) => link.id);
+
+  const initialRandom = await request("/random-links/random");
+  assert.equal(initialRandom.status, 200);
+  if (!initiallyActiveIds.length) {
+    assert.deepEqual(initialRandom.data, { link: null });
+  } else {
+    assert.ok(initiallyActiveIds.includes(initialRandom.data.link?.id));
+  }
+
+  const linkUrl = `https://random-link-${randomUUID()}.example.test/course`;
+  const created = await request("/moderation/random-links", {
+    method: "POST",
+    cookie: moderator.cookie,
+    body: { title: "  Curated test resource  ", url: linkUrl, enabled: true },
+  });
+  assert.equal(created.status, 201);
+  assert.equal(created.data.title, "Curated test resource");
+  assert.equal(created.data.url, linkUrl);
+  assert.equal(created.data.enabled, true);
+  fixtureRandomLinkIds.push(created.data.id);
+
+  const duplicate = await request("/moderation/random-links", {
+    method: "POST",
+    cookie: moderator.cookie,
+    body: { title: "Duplicate", url: linkUrl, enabled: true },
+  });
+  assert.equal(duplicate.status, 409);
+
+  for (const unsafeUrl of ["javascript:alert(1)", "https://user:password@example.test/"]) {
+    const invalid = await request("/moderation/random-links", {
+      method: "POST",
+      cookie: moderator.cookie,
+      body: { title: "Unsafe link", url: unsafeUrl, enabled: true },
+    });
+    assert.equal(invalid.status, 400);
+  }
+
+  const randomWithCreatedLink = await request("/random-links/random");
+  assert.equal(randomWithCreatedLink.status, 200);
+  assert.ok(randomWithCreatedLink.data.link);
+  const activeIds = (await request("/moderation/random-links", { cookie: moderator.cookie }))
+    .data.filter((link) => link.enabled).map((link) => link.id);
+  assert.ok(activeIds.includes(randomWithCreatedLink.data.link.id));
+
+  const disabled = await request(`/moderation/random-links/${created.data.id}`, {
+    method: "PATCH",
+    cookie: moderator.cookie,
+    body: { title: created.data.title, url: created.data.url, enabled: false },
+  });
+  assert.equal(disabled.status, 200);
+  assert.equal(disabled.data.enabled, false);
+  const randomAfterDisable = await request("/random-links/random");
+  assert.equal(randomAfterDisable.status, 200);
+  assert.notEqual(randomAfterDisable.data.link?.id, created.data.id);
+
+  const updatedUrl = `${linkUrl}?source=updated`;
+  const updated = await request(`/moderation/random-links/${created.data.id}`, {
+    method: "PATCH",
+    cookie: moderator.cookie,
+    body: { title: "Updated resource", url: updatedUrl, enabled: true },
+  });
+  assert.equal(updated.status, 200);
+  assert.equal(updated.data.title, "Updated resource");
+  assert.equal(updated.data.url, updatedUrl);
+
+  assert.equal(
+    (await request(`/moderation/random-links/${created.data.id}`, {
+      method: "DELETE",
+      cookie: regularAccount.cookie,
+    })).status,
+    403,
+  );
+  const removed = await request(`/moderation/random-links/${created.data.id}`, {
+    method: "DELETE",
+    cookie: moderator.cookie,
+  });
+  assert.equal(removed.status, 204);
 });

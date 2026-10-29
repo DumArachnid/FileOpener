@@ -8,6 +8,7 @@ import developerControlsRouter from "./developerControls";
 import adminPanelRouter from "./adminPanel";
 import presenceRouter from "./presence";
 import announcementsRouter from "./announcements";
+import randomLinksRouter from "./randomLinks";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(developerControlsRouter);
 router.use(adminPanelRouter);
 router.use(presenceRouter);
 router.use(announcementsRouter);
+router.use(randomLinksRouter);
 
 export default router;
