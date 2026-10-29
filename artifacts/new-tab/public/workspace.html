@@ -265,6 +265,20 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .admin-dialog { width: min(1060px, calc(100% - 28px)); max-width: 1060px; max-height: 90vh; padding: 0; overflow: auto; border: 1.5px solid var(--border-strong); border-radius: 14px; background: var(--panel); color: var(--text); box-shadow: 5px 5px 0 var(--ink-shadow); }
 .account-dialog::backdrop { background: color-mix(in srgb, var(--text) 48%, transparent); backdrop-filter: blur(5px) saturate(.8); }
 .admin-dialog::backdrop { background: color-mix(in srgb, var(--text) 45%, transparent); backdrop-filter: blur(3px); }
+.screen-sleep-settings { display: flex; flex-direction: column; gap: 9px; padding: 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--input-bg); }
+.screen-sleep-toggle { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--text); font-size: 12px; }
+.screen-sleep-toggle input { width: auto; margin: 0; accent-color: var(--accent); }
+.screen-sleep-password-form { display: flex; flex-direction: column; gap: 8px; }
+.screen-sleep-password-form input { width: 100%; }
+.screen-sleep-overlay { position: fixed; inset: 0; z-index: 100000; display: grid; place-items: center; margin: 0; padding: 20px; width: 100vw; height: 100dvh; max-width: none; max-height: none; border: 0; background: #000; color: #fff; }
+.screen-sleep-overlay::backdrop { background: #000; }
+.screen-sleep-overlay:not([open]), .screen-sleep-panel[hidden] { display: none !important; }
+.screen-sleep-panel { width: min(380px, calc(100vw - 32px)); padding: 24px; border: 1px solid #333; border-radius: 16px; background: #111; color: #fff; box-shadow: 0 24px 80px #000; }
+.screen-sleep-panel h2 { margin: 0 0 8px; color: #fff; }
+.screen-sleep-panel p { margin: 0 0 14px; color: #c8c8c8; line-height: 1.5; }
+.screen-sleep-panel label { color: #e8e8e8; }
+.screen-sleep-panel input { width: 100%; background: #222; border-color: #555; color: #fff; }
+.screen-sleep-panel .screen-sleep-error { min-height: 1.4em; margin: 8px 0 0; color: #ffaaa5; }
 .account-panel { display: flex; flex-direction: column; padding: clamp(22px, 5vw, 32px); }
 .account-topbar { display: flex; align-items: center; justify-content: space-between; min-height: 36px; }
 .account-brand { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .11em; }
@@ -984,6 +998,33 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </div>
 <p id="tabMemoryHelp" class="sr-only">Keeps your most recently used pages loaded, including the current tab. Older pages reload when reopened and may lose unsaved website form entries. Uses more memory; does not survive a browser refresh. Background pages may keep playing audio.</p>
 </div>
+<section class="screen-sleep-settings" aria-labelledby="screenSleepSettingsTitle">
+<strong class="small" id="screenSleepSettingsTitle">Screen sleep</strong>
+<label class="screen-sleep-toggle" for="screenSleepAutoEnabled"><input id="screenSleepAutoEnabled" type="checkbox"><span>Sleep automatically when inactive</span></label>
+<div>
+<label for="screenSleepMinutes">Sleep after</label>
+<select id="screenSleepMinutes">
+<option value="1">1 minute</option>
+<option value="5">5 minutes</option>
+<option value="10">10 minutes</option>
+<option value="15">15 minutes</option>
+<option value="30">30 minutes</option>
+</select>
+</div>
+<p class="small muted tight">Use the Sleep button in the top bar any time. The screen turns black; open viewer tabs stay loaded.</p>
+<div>
+<label for="screenSleepPassword">Screen-sleep password</label>
+<form class="screen-sleep-password-form" id="screenSleepPasswordForm">
+<input id="screenSleepPassword" type="password" minlength="6" maxlength="64" autocomplete="new-password" placeholder="At least 6 characters" aria-describedby="screenSleepPasswordStatus">
+<input id="screenSleepPasswordConfirm" type="password" minlength="6" maxlength="64" autocomplete="new-password" placeholder="Confirm password">
+<button class="btn sm primary" type="submit">Set or change password</button>
+</form>
+<button class="btn sm danger-ghost hidden" id="clearScreenSleepPasswordBtn" type="button" style="margin-top:8px">Remove password</button>
+<p class="small muted tight" id="screenSleepPasswordStatus" role="status" aria-live="polite">No password set. Click or press a key to wake the screen.</p>
+<p class="tiny muted tight" style="margin-top:6px">This password stays in this browser and is not your account password. It is a local privacy lock, not account security.</p>
+<p class="tiny muted tight" style="margin-top:6px">If you forget it, clearing this browser’s Study Desk site data removes it and the other local settings.</p>
+</div>
+</section>
 <button class="btn" id="helpOpenBtn"><i data-ic="keyboard"></i>Keyboard shortcuts</button>
 <div>
 <label for="shortcutSettingsToggle">Customize keyboard shortcuts</label>
@@ -1021,6 +1062,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <button class="btn sm hide-in-focus hidden" id="devOnlineBtn" type="button" title="Signed-in accounts active within the last 90 seconds" aria-live="polite">Online: …</button>
 <button class="btn sm hide-in-focus" id="accountBtn" type="button" title="Sign in to sync your workspace"><i data-ic="user"></i><span id="accountBtnText">Account</span></button>
 <button class="btn sm hide-in-focus" id="paletteBtn" title="Command palette (Ctrl/Cmd+K)"><i data-ic="command"></i></button>
+<button class="btn sm" id="screenSleepBtn" type="button" title="Put the screen to sleep" aria-label="Put the screen to sleep"><i data-ic="moon"></i><span>Sleep</span></button>
 <button class="btn sm" id="focusModeBtn" title="Expand view / toggle focus mode (Alt+Z)"><i data-ic="eye"></i><span>Focus</span></button>
 </div>
 
@@ -1377,6 +1419,19 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <p><strong>Study Desk was updated.</strong> This tab is on an older version. Refresh to load the latest version.</p>
 <button class="btn sm primary" id="refreshForUpdateBtn" type="button">Refresh now</button>
 </aside>
+<dialog class="screen-sleep-overlay" id="screenSleepOverlay" aria-label="Study Desk screen asleep" tabindex="-1">
+<p class="sr-only" id="screenSleepAccessibleStatus" role="status" aria-live="polite">The screen is asleep. Use a key or click to wake it.</p>
+<section class="screen-sleep-panel" id="screenSleepPanel" hidden>
+<h2 id="screenSleepTitle">Study Desk is asleep</h2>
+<p>Enter your screen-sleep password to return to your workspace.</p>
+<form id="screenSleepUnlockForm">
+<label for="screenSleepUnlockPassword">Password</label>
+<input id="screenSleepUnlockPassword" name="screen-sleep-password" type="password" autocomplete="off" required>
+<button class="btn primary" type="submit" style="width:100%;margin-top:10px">Unlock workspace</button>
+</form>
+<p class="screen-sleep-error" id="screenSleepError" role="status" aria-live="polite"></p>
+</section>
+</dialog>
 <aside id="accountNudge" class="account-nudge" role="region" aria-label="Account recommendation" hidden>
 <div class="row-between"><h3>Keep your Study Desk in sync</h3><button class="icon-btn" id="accountNudgeClose" type="button" aria-label="Dismiss account recommendation">×</button></div>
 <p>Create an account to sync your notes, bookmarks, and preferences across devices. You can keep using Study Desk without one.</p>
@@ -1458,6 +1513,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     check: '<path d="M20 6 9 17l-5-5"/>',
     unlock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>',
     lock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+     moon: '<path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z"/>',
     timer: '<line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/>',
     chevronUp: '<path d="m18 15-6-6-6 6"/>',
     chevronDown: '<path d="m6 9 6 6 6-6"/>',
@@ -2716,7 +2772,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   // ---------- Config export / import / reset (only this app's disguise_ keys) ----------
   function exportConfig() {
     const data = {};
-    for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith('disguise_')) data[k] = localStorage.getItem(k); }
+    for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith('disguise_') && k !== 'disguise_screen_sleep_password' && k !== 'disguise_screen_sleep_locked') data[k] = localStorage.getItem(k); }
     const u = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
     const a = document.createElement('a'); a.href = u; a.download = 'disguise_config.json'; a.click();
     setTimeout(() => URL.revokeObjectURL(u), 2000);
@@ -2734,7 +2790,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('shape');
         let n = 0;
         Object.keys(data).forEach(k => {
-          if (!k.startsWith('disguise_') || k === 'disguise_theme') return;
+          if (!k.startsWith('disguise_') || k === 'disguise_theme' || k === 'disguise_screen_sleep_password' || k === 'disguise_screen_sleep_locked') return;
           let v = data[k];
           if (v == null || typeof v === 'object') return;
           v = String(v);
@@ -4725,6 +4781,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   var idleSleepTimer = null;
   var lastPointerActivity = 0;
   var backgroundSleepListeners = [];
+  var workspaceActivityListeners = [];
   function publishBackgroundSleepState(reason) {
     document.dispatchEvent(new CustomEvent('study-desk-background-sleep', {
       detail: { sleeping: backgroundSleeping, reason: reason }
@@ -4770,10 +4827,27 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       lastPointerActivity = now;
     }
     lastWorkspaceActivity = Date.now();
+    var wasScreenLocked = NT.isScreenSleepLocked && NT.isScreenSleepLocked();
+    workspaceActivityListeners.slice().forEach(function (listener) {
+      try { listener(event || null); } catch (error) { console.error('A Study Desk activity listener failed:', error); }
+    });
+    if (NT.isScreenSleepLocked && NT.isScreenSleepLocked()) {
+      var overlay = document.getElementById('screenSleepOverlay');
+      if (event && !wasScreenLocked && !(overlay && overlay.contains(event.target))) event.stopImmediatePropagation();
+      return;
+    }
     setBackgroundSleeping(false, 'activity');
     scheduleIdleSleep();
   }
   NT.isBackgroundSleeping = function () { return backgroundSleeping; };
+  NT.setBackgroundSleeping = setBackgroundSleeping;
+  NT.onWorkspaceActivity = function (listener) {
+    if (typeof listener !== 'function') return function () {};
+    workspaceActivityListeners.push(listener);
+    return function () {
+      workspaceActivityListeners = workspaceActivityListeners.filter(function (entry) { return entry !== listener; });
+    };
+  };
   NT.onBackgroundSleepChange = function (listener) {
     if (typeof listener !== 'function') return function () {};
     backgroundSleepListeners.push(listener);
@@ -4795,6 +4869,13 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       setBackgroundSleeping(true, 'hidden');
       return;
     }
+    workspaceActivityListeners.slice().forEach(function (listener) {
+      try { listener({ type: 'visibilitychange' }); } catch (error) { console.error('A Study Desk activity listener failed:', error); }
+    });
+    if (NT.isScreenSleepLocked && NT.isScreenSleepLocked()) {
+      scheduleIdleSleep();
+      return;
+    }
     lastWorkspaceActivity = Date.now();
     setBackgroundSleeping(false, 'visible');
     scheduleIdleSleep();
@@ -4805,6 +4886,284 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       noteWorkspaceActivity();
     }
   });
+  (function initScreenSleep() {
+    var PASSWORD_KEY = 'disguise_screen_sleep_password';
+    var LOCKED_KEY = 'disguise_screen_sleep_locked';
+    var encoder = new TextEncoder();
+    var overlay = document.getElementById('screenSleepOverlay');
+    var panel = document.getElementById('screenSleepPanel');
+    var appRoot = document.getElementById('app');
+    var sleepButton = document.getElementById('screenSleepBtn');
+    var autoToggle = document.getElementById('screenSleepAutoEnabled');
+    var minuteSelect = document.getElementById('screenSleepMinutes');
+    var passwordStatus = document.getElementById('screenSleepPasswordStatus');
+    var passwordForm = document.getElementById('screenSleepPasswordForm');
+    var passwordInput = document.getElementById('screenSleepPassword');
+    var passwordConfirm = document.getElementById('screenSleepPasswordConfirm');
+    var clearPasswordButton = document.getElementById('clearScreenSleepPasswordBtn');
+    var unlockForm = document.getElementById('screenSleepUnlockForm');
+    var unlockInput = document.getElementById('screenSleepUnlockPassword');
+    var unlockError = document.getElementById('screenSleepError');
+    var accessibleStatus = document.getElementById('screenSleepAccessibleStatus');
+    var autoEnabled = localStorage.getItem('disguise_screen_sleep_enabled') !== 'false';
+    var minutes = Number(localStorage.getItem('disguise_screen_sleep_minutes')) || 5;
+    var restoreLocked = localStorage.getItem(LOCKED_KEY) === 'true';
+    var locked = false;
+    var idleTimer = null;
+    var lastActivity = Date.now();
+    var previousFocus = null;
+    var cryptoIterations = 120000;
+
+    function readPasswordRecord() {
+      try {
+        var record = JSON.parse(localStorage.getItem(PASSWORD_KEY) || 'null');
+        if (!record || record.version !== 1 || !/^[a-f0-9]{32}$/i.test(record.salt) ||
+            !/^[a-f0-9]{64}$/i.test(record.hash)) return null;
+        return record;
+      } catch (error) { return null; }
+    }
+    function hex(bytes) {
+      return Array.prototype.map.call(bytes, function (byte) { return byte.toString(16).padStart(2, '0'); }).join('');
+    }
+    function unhex(value) {
+      var bytes = new Uint8Array(value.length / 2);
+      for (var i = 0; i < bytes.length; i++) bytes[i] = parseInt(value.slice(i * 2, i * 2 + 2), 16);
+      return bytes;
+    }
+    async function derivePasswordHash(password, salt) {
+      if (!window.crypto || !window.crypto.subtle) throw new Error('Secure password storage is not available in this browser.');
+      var key = await window.crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, ['deriveBits']);
+      var result = await window.crypto.subtle.deriveBits({
+        name: 'PBKDF2', salt: salt, iterations: cryptoIterations, hash: 'SHA-256'
+      }, key, 256);
+      return hex(new Uint8Array(result));
+    }
+    function hashesMatch(left, right) {
+      if (typeof left !== 'string' || typeof right !== 'string' || left.length !== right.length) return false;
+      var difference = 0;
+      for (var i = 0; i < left.length; i++) difference |= left.charCodeAt(i) ^ right.charCodeAt(i);
+      return difference === 0;
+    }
+    async function verifyPassword(password) {
+      var record = readPasswordRecord();
+      if (!record) return false;
+      return hashesMatch(await derivePasswordHash(password, unhex(record.salt)), record.hash);
+    }
+    function passwordEnabled() { return !!readPasswordRecord(); }
+    function updatePasswordSettings() {
+      var enabled = passwordEnabled();
+      clearPasswordButton.classList.toggle('hidden', !enabled);
+      passwordStatus.textContent = enabled
+        ? 'A screen-sleep password is set. Enter a new one above to change it.'
+        : 'No password set. Click or press a key to wake the screen.';
+    }
+    function sleepDuration() {
+      var chosen = Number(minuteSelect.value);
+      return (chosen === 1 || chosen === 5 || chosen === 10 || chosen === 15 || chosen === 30 ? chosen : 5) * 60000;
+    }
+    function clearIdleTimer() {
+      if (idleTimer) clearTimeout(idleTimer);
+      idleTimer = null;
+    }
+    function scheduleScreenSleep() {
+      clearIdleTimer();
+      if (!autoEnabled || locked || document.hidden) return;
+      var remaining = sleepDuration() - (Date.now() - lastActivity);
+      if (remaining <= 0) {
+        enterScreenSleep('idle');
+        return;
+      }
+      idleTimer = setTimeout(function () {
+        idleTimer = null;
+        if (Date.now() - lastActivity >= sleepDuration() && !document.hidden && autoEnabled && !locked) {
+          enterScreenSleep('idle');
+        } else scheduleScreenSleep();
+      }, remaining);
+    }
+    function showUnlockPanel() {
+      if (!locked || !passwordEnabled() || !panel.hidden) return;
+      panel.hidden = false;
+      unlockError.textContent = '';
+      setTimeout(function () {
+        if (locked && !panel.hidden) unlockInput.focus();
+      }, 0);
+    }
+    function enterScreenSleep(reason) {
+      if (locked) return;
+      clearIdleTimer();
+      previousFocus = document.activeElement;
+      locked = true;
+      try { localStorage.setItem(LOCKED_KEY, 'true'); } catch (error) {}
+      if (appRoot) appRoot.inert = true;
+      panel.hidden = true;
+      unlockInput.value = '';
+      unlockError.textContent = '';
+      accessibleStatus.textContent = passwordEnabled()
+        ? 'The screen is asleep. Click or press a key to show the password prompt.'
+        : 'The screen is asleep. Click or press a key to wake it.';
+      if (!overlay.open) {
+        try { overlay.showModal(); }
+        catch (error) { overlay.setAttribute('open', ''); }
+      }
+      overlay.focus();
+      if (NT.setBackgroundSleeping) NT.setBackgroundSleeping(true, 'screen-lock');
+    }
+    function leaveScreenSleep() {
+      if (!locked) return;
+      locked = false;
+      try { localStorage.removeItem(LOCKED_KEY); } catch (error) {}
+      if (overlay.open) overlay.close();
+      panel.hidden = true;
+      if (appRoot) appRoot.inert = false;
+      unlockInput.value = '';
+      unlockError.textContent = '';
+      lastActivity = Date.now();
+      scheduleScreenSleep();
+      noteWorkspaceActivity();
+      var focusTarget = previousFocus && previousFocus.isConnected ? previousFocus : sleepButton;
+      previousFocus = null;
+      if (focusTarget && typeof focusTarget.focus === 'function') setTimeout(function () { focusTarget.focus(); }, 0);
+    }
+    function shouldRevealOrWake(event) {
+      var type = event && event.type;
+      if (passwordEnabled()) {
+        if (type === 'pointerdown' || type === 'keydown' || type === 'touchstart' || type === 'wheel' || type === 'scroll') showUnlockPanel();
+      }
+    }
+    function onWorkspaceActivity(event) {
+      if (document.hidden) return;
+      if (!locked && autoEnabled && Date.now() - lastActivity >= sleepDuration()) enterScreenSleep('idle');
+      if (locked) {
+        shouldRevealOrWake(event);
+        return;
+      }
+      lastActivity = Date.now();
+      scheduleScreenSleep();
+    }
+    function savePassword(event) {
+      event.preventDefault();
+      var password = passwordInput.value;
+      if (password.length < 6 || password.length > 64) {
+        passwordStatus.textContent = 'Use a password between 6 and 64 characters.';
+        return;
+      }
+      if (password !== passwordConfirm.value) {
+        passwordStatus.textContent = 'The passwords do not match.';
+        passwordConfirm.focus();
+        return;
+      }
+      passwordStatus.textContent = 'Saving password on this browser…';
+      (async function () {
+        try {
+          var salt = new Uint8Array(16);
+          window.crypto.getRandomValues(salt);
+          var record = { version: 1, salt: hex(salt), hash: await derivePasswordHash(password, salt) };
+          localStorage.setItem(PASSWORD_KEY, JSON.stringify(record));
+          passwordInput.value = '';
+          passwordConfirm.value = '';
+          updatePasswordSettings();
+        } catch (error) {
+          passwordStatus.textContent = error && error.message || 'Could not save the password in this browser.';
+        }
+      })();
+    }
+    async function removePassword() {
+      if (NT.confirmDialog && !(await NT.confirmDialog(
+        'Remove screen-sleep password?',
+        'After it is removed, anyone can wake the screen with a click or key press.',
+        'Remove password',
+        true
+      ))) return;
+      try { localStorage.removeItem(PASSWORD_KEY); }
+      catch (error) { passwordStatus.textContent = 'Could not remove the password from this browser.'; return; }
+      passwordInput.value = '';
+      passwordConfirm.value = '';
+      updatePasswordSettings();
+    }
+
+    autoToggle.checked = autoEnabled;
+    minuteSelect.value = String(minutes);
+    if (!['1', '5', '10', '15', '30'].includes(minuteSelect.value)) minuteSelect.value = '5';
+    updatePasswordSettings();
+    NT.isScreenSleepLocked = function () { return locked; };
+    NT.onWorkspaceActivity(onWorkspaceActivity);
+    sleepButton.addEventListener('click', function () { enterScreenSleep('manual'); });
+    autoToggle.addEventListener('change', function () {
+      autoEnabled = autoToggle.checked;
+      try { localStorage.setItem('disguise_screen_sleep_enabled', String(autoEnabled)); } catch (error) {}
+      lastActivity = Date.now();
+      scheduleScreenSleep();
+    });
+    minuteSelect.addEventListener('change', function () {
+      minutes = Number(minuteSelect.value) || 5;
+      try { localStorage.setItem('disguise_screen_sleep_minutes', String(minutes)); } catch (error) {}
+      lastActivity = Date.now();
+      scheduleScreenSleep();
+    });
+    passwordForm.addEventListener('submit', savePassword);
+    clearPasswordButton.addEventListener('click', removePassword);
+    overlay.addEventListener('pointerdown', function (event) {
+      if (!locked || passwordEnabled()) return;
+      event.preventDefault();
+      event.stopPropagation();
+      leaveScreenSleep();
+    });
+    overlay.addEventListener('cancel', function (event) {
+      event.preventDefault();
+    });
+    unlockForm.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      unlockError.textContent = '';
+      try {
+        if (await verifyPassword(unlockInput.value)) leaveScreenSleep();
+        else {
+          unlockError.textContent = 'That password did not match. Try again.';
+          unlockInput.select();
+        }
+      } catch (error) {
+        unlockError.textContent = error && error.message || 'Could not check the password.';
+      }
+    });
+    document.addEventListener('keydown', function (event) {
+      if (!locked) return;
+      event.stopImmediatePropagation();
+      if (!passwordEnabled()) {
+        event.preventDefault();
+        leaveScreenSleep();
+        return;
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        return;
+      }
+      if (event.key !== 'Tab' || !passwordEnabled()) return;
+      var unlockButton = unlockForm.querySelector('button[type="submit"]');
+      if (panel.hidden) {
+        event.preventDefault();
+        showUnlockPanel();
+      } else if (document.activeElement !== unlockInput && document.activeElement !== unlockButton) {
+        event.preventDefault();
+        unlockInput.focus();
+      } else if (event.shiftKey && document.activeElement === unlockInput) {
+        event.preventDefault();
+        unlockButton.focus();
+      } else if (!event.shiftKey && document.activeElement === unlockButton) {
+        event.preventDefault();
+        unlockInput.focus();
+      }
+    }, true);
+    overlay.addEventListener('wheel', function (event) {
+      if (!locked || passwordEnabled()) return;
+      event.preventDefault();
+      leaveScreenSleep();
+    }, { passive: false });
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) clearIdleTimer();
+      else if (!locked) scheduleScreenSleep();
+    });
+    if (restoreLocked) enterScreenSleep('restore');
+    else scheduleScreenSleep();
+  })();
   scheduleIdleSleep();
 
   var announcementExpiryTimer = null;
@@ -6843,7 +7202,19 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     if (sleeping) stopCloudBackgroundTasks();
     else startCloudBackgroundTasks();
   });
-  restoreSession();
+  var sessionRestoreStarted = false;
+  function startSessionRestore() {
+    if (sessionRestoreStarted) return;
+    sessionRestoreStarted = true;
+    restoreSession();
+  }
+  if (NT.isBackgroundSleeping && NT.isBackgroundSleeping()) {
+    var removeScreenSleepRestoreListener = NT.onBackgroundSleepChange(function (sleeping) {
+      if (sleeping || sessionRestoreStarted) return;
+      removeScreenSleepRestoreListener();
+      startSessionRestore();
+    });
+  } else startSessionRestore();
   document.addEventListener('visibilitychange', function () {
     if (isOfflineCopy || document.hidden || !accountUser) return;
     loadPublicExtensions();
