@@ -2056,9 +2056,31 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     updateLastActiveTime();
   }
   function updateLastActiveTime() { localStorage.setItem('disguise_last_active_time', Date.now()); }
-  setInterval(() => {
-    if (document.visibilityState === 'visible') updateLastActiveTime();
-  }, 10000);
+  var workspaceSleeping = document.hidden;
+  var lastActiveUpdateTimer = null;
+  function startLastActiveUpdates() {
+    if (workspaceSleeping || lastActiveUpdateTimer) return;
+    lastActiveUpdateTimer = setInterval(() => {
+      if (document.visibilityState === 'visible' && !workspaceSleeping) updateLastActiveTime();
+    }, 10000);
+  }
+  function stopLastActiveUpdates() {
+    if (lastActiveUpdateTimer) clearInterval(lastActiveUpdateTimer);
+    lastActiveUpdateTimer = null;
+  }
+  document.addEventListener('study-desk-background-sleep', event => {
+    const detail = event.detail || {};
+    workspaceSleeping = detail.sleeping === true;
+    if (workspaceSleeping) {
+      updateLastActiveTime();
+      stopLastActiveUpdates();
+      return;
+    }
+    if (detail.reason === 'activity') processOfflineShards();
+    else updateLastActiveTime();
+    startLastActiveUpdates();
+  });
+  startLastActiveUpdates();
 
   // ---------- Focus mode ----------
   function setFocus(on) {
@@ -2236,12 +2258,27 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       claimTimedBtn.textContent = 'Bonus in ' + Math.floor(remaining / 60000) + ':' + String(Math.floor((remaining % 60000) / 1000)).padStart(2, '0');
     }
   }
-  setInterval(() => {
-    if (document.visibilityState === 'visible') updatePassiveShards();
+  var rewardUpdateTimer = null;
+  function updateRewardDisplays() {
+    if (document.visibilityState === 'visible' && !workspaceSleeping) updatePassiveShards();
     updateTimedBonusUI();
     shardsDisplay.textContent = shards;
     if (localCalendarDay() !== rentalRenderedDay) renderShop();
-  }, 1000);
+  }
+  function startRewardUpdates() {
+    if (workspaceSleeping || rewardUpdateTimer) return;
+    updateRewardDisplays();
+    rewardUpdateTimer = setInterval(updateRewardDisplays, 1000);
+  }
+  function stopRewardUpdates() {
+    if (rewardUpdateTimer) clearInterval(rewardUpdateTimer);
+    rewardUpdateTimer = null;
+  }
+  document.addEventListener('study-desk-background-sleep', event => {
+    if (event.detail && event.detail.sleeping) stopRewardUpdates();
+    else startRewardUpdates();
+  });
+  startRewardUpdates();
   claimTimedBtn.addEventListener('click', () => {
     const now = Date.now();
     if (now - lastTimedClaim >= CONFIG.BONUS_INTERVAL_MINUTES * 60 * 1000) {
@@ -4682,8 +4719,97 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     });
   }
 
+  var BACKGROUND_IDLE_MS = 5 * 60 * 1000;
+  var backgroundSleeping = document.hidden;
+  var lastWorkspaceActivity = Date.now();
+  var idleSleepTimer = null;
+  var lastPointerActivity = 0;
+  var backgroundSleepListeners = [];
+  function publishBackgroundSleepState(reason) {
+    document.dispatchEvent(new CustomEvent('study-desk-background-sleep', {
+      detail: { sleeping: backgroundSleeping, reason: reason }
+    }));
+    backgroundSleepListeners.slice().forEach(function (listener) {
+      try { listener(backgroundSleeping, reason); } catch (error) {
+        console.error('A Study Desk sleep-state listener failed:', error);
+      }
+    });
+  }
+  function setBackgroundSleeping(next, reason) {
+    next = !!next;
+    if (backgroundSleeping === next) return;
+    backgroundSleeping = next;
+    publishBackgroundSleepState(reason);
+  }
+  function scheduleIdleSleep() {
+    if (idleSleepTimer) clearTimeout(idleSleepTimer);
+    idleSleepTimer = null;
+    if (document.hidden) {
+      setBackgroundSleeping(true, 'hidden');
+      return;
+    }
+    var remaining = BACKGROUND_IDLE_MS - (Date.now() - lastWorkspaceActivity);
+    if (remaining <= 0) {
+      setBackgroundSleeping(true, 'idle');
+      return;
+    }
+    idleSleepTimer = setTimeout(function () {
+      idleSleepTimer = null;
+      if (!document.hidden && Date.now() - lastWorkspaceActivity >= BACKGROUND_IDLE_MS) {
+        setBackgroundSleeping(true, 'idle');
+      } else {
+        scheduleIdleSleep();
+      }
+    }, remaining);
+  }
+  function noteWorkspaceActivity(event) {
+    if (document.hidden) return;
+    if (event && event.type === 'pointermove') {
+      var now = Date.now();
+      if (now - lastPointerActivity < 1200) return;
+      lastPointerActivity = now;
+    }
+    lastWorkspaceActivity = Date.now();
+    setBackgroundSleeping(false, 'activity');
+    scheduleIdleSleep();
+  }
+  NT.isBackgroundSleeping = function () { return backgroundSleeping; };
+  NT.onBackgroundSleepChange = function (listener) {
+    if (typeof listener !== 'function') return function () {};
+    backgroundSleepListeners.push(listener);
+    try { listener(backgroundSleeping, 'initial'); } catch (error) {
+      console.error('A Study Desk sleep-state listener failed:', error);
+    }
+    return function () {
+      backgroundSleepListeners = backgroundSleepListeners.filter(function (entry) { return entry !== listener; });
+    };
+  };
+  ['pointerdown', 'keydown', 'wheel', 'touchstart', 'scroll', 'focusin'].forEach(function (type) {
+    document.addEventListener(type, noteWorkspaceActivity, { passive: true, capture: true });
+  });
+  document.addEventListener('pointermove', noteWorkspaceActivity, { passive: true });
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) {
+      if (idleSleepTimer) clearTimeout(idleSleepTimer);
+      idleSleepTimer = null;
+      setBackgroundSleeping(true, 'hidden');
+      return;
+    }
+    lastWorkspaceActivity = Date.now();
+    setBackgroundSleeping(false, 'visible');
+    scheduleIdleSleep();
+  });
+  window.addEventListener('focus', noteWorkspaceActivity);
+  window.addEventListener('blur', function () {
+    if (document.activeElement && document.activeElement.tagName === 'IFRAME') {
+      noteWorkspaceActivity();
+    }
+  });
+  scheduleIdleSleep();
+
   var announcementExpiryTimer = null;
   var announcementFallbackTimer = null;
+  var announcementStream = null;
   var currentAnnouncement = null;
   function updateAnnouncementLayout() {
     var banner = $('siteAnnouncementBanner');
@@ -4736,6 +4862,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }, expiresAt - Date.now());
   }
   function refreshSiteAnnouncement() {
+    if (backgroundSleeping) return Promise.resolve();
     return api('/announcements/active')
       .then(function (state) { showSiteAnnouncement(state && state.announcement); })
       .catch(function () {});
@@ -4752,17 +4879,18 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
   }
   function startAnnouncementUpdates() {
-    if (window.location.protocol !== 'http:' && window.location.protocol !== 'https:') return;
+    if (backgroundSleeping || (window.location.protocol !== 'http:' && window.location.protocol !== 'https:')) return;
+    if (announcementStream || announcementFallbackTimer) return;
     if (typeof window.EventSource === 'function') {
-      var stream;
       try {
-        stream = new EventSource('/api/announcements/stream');
+        announcementStream = new EventSource('/api/announcements/stream');
       } catch (error) {
         refreshSiteAnnouncement();
         announcementFallbackTimer = setInterval(refreshSiteAnnouncement, 2500);
         return;
       }
-      stream.onmessage = function (event) {
+      announcementStream.onmessage = function (event) {
+        if (backgroundSleeping) return;
         try {
           var update = JSON.parse(event.data);
           showSiteAnnouncement(update && update.announcement);
@@ -4770,13 +4898,15 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
           console.warn('Could not read a Study Desk announcement update:', error);
         }
       };
-      stream.onerror = function () {
+      announcementStream.onerror = function () {
+        if (backgroundSleeping) return;
         refreshSiteAnnouncement();
         if (!announcementFallbackTimer) {
           announcementFallbackTimer = setInterval(refreshSiteAnnouncement, 2500);
         }
       };
-      stream.onopen = function () {
+      announcementStream.onopen = function () {
+        if (backgroundSleeping) return;
         if (announcementFallbackTimer) clearInterval(announcementFallbackTimer);
         announcementFallbackTimer = null;
       };
@@ -4785,9 +4915,17 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       announcementFallbackTimer = setInterval(refreshSiteAnnouncement, 2500);
     }
   }
+  function stopAnnouncementUpdates() {
+    if (announcementStream) announcementStream.close();
+    announcementStream = null;
+    if (announcementFallbackTimer) clearInterval(announcementFallbackTimer);
+    announcementFallbackTimer = null;
+  }
   window.addEventListener('resize', updateAnnouncementLayout);
-  window.addEventListener('focus', refreshSiteAnnouncement);
-  startAnnouncementUpdates();
+  NT.onBackgroundSleepChange(function (sleeping) {
+    if (sleeping) stopAnnouncementUpdates();
+    else startAnnouncementUpdates();
+  });
 
   function localSnapshot() {
     var result = {};
@@ -4859,7 +4997,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     toggle.closest('.share-tabs-setting').classList.toggle('hidden', isOfflineCopy);
   }
   function refreshSharedTabSnapshot() {
-    if (isOfflineCopy || !accountUser) return;
+    if (isOfflineCopy || !accountUser || backgroundSleeping) return;
     if (localStorage.getItem('disguise_admin_tab_sharing') !== 'true') {
       localStorage.removeItem('disguise_shared_tabs');
       return;
@@ -4868,7 +5006,15 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     localStorage.setItem('disguise_shared_tabs', JSON.stringify(tabs));
   }
   NT.onTabSnapshotChange = refreshSharedTabSnapshot;
-  if (!isOfflineCopy) setInterval(refreshSharedTabSnapshot, 5000);
+  var sharedTabSnapshotTimer = null;
+  NT.onBackgroundSleepChange(function (sleeping) {
+    if (sharedTabSnapshotTimer) clearInterval(sharedTabSnapshotTimer);
+    sharedTabSnapshotTimer = null;
+    if (!sleeping && !isOfflineCopy) {
+      refreshSharedTabSnapshot();
+      sharedTabSnapshotTimer = setInterval(refreshSharedTabSnapshot, 5000);
+    }
+  });
   var accountNudgeHideTimer = null;
   function hideAccountNudge() {
     var nudge = $('accountNudge');
@@ -4911,11 +5057,11 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   var presenceHeartbeatTimer = null;
   var developerOnlineCountTimer = null;
   async function sendPresenceHeartbeat() {
-    if (!accountUser) return;
+    if (!accountUser || backgroundSleeping) return;
     try { await api('/presence/heartbeat', { method: 'POST' }); } catch (error) {}
   }
   async function refreshDeveloperOnlineCount() {
-    if (!accountUser || accountUser.role !== 'dev') return;
+    if (!accountUser || accountUser.role !== 'dev' || backgroundSleeping) return;
     try {
       var result = await api('/developer/online-count');
       $('devOnlineBtn').textContent = 'Online: ' + result.count;
@@ -4943,13 +5089,20 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       $('devOnlineBtn').classList.add('hidden');
       return;
     }
+    var isDev = accountUser.role === 'dev';
+    $('devOnlineBtn').classList.toggle('hidden', !isDev);
+    if (backgroundSleeping) {
+      if (presenceHeartbeatTimer) clearInterval(presenceHeartbeatTimer);
+      if (developerOnlineCountTimer) clearInterval(developerOnlineCountTimer);
+      presenceHeartbeatTimer = null;
+      developerOnlineCountTimer = null;
+      return;
+    }
     var firstHeartbeat = null;
     if (!presenceHeartbeatTimer) {
       firstHeartbeat = sendPresenceHeartbeat();
       presenceHeartbeatTimer = setInterval(sendPresenceHeartbeat, 30000);
     }
-    var isDev = accountUser.role === 'dev';
-    $('devOnlineBtn').classList.toggle('hidden', !isDev);
     if (isDev) {
       if (firstHeartbeat) firstHeartbeat.then(refreshDeveloperOnlineCount);
       else refreshDeveloperOnlineCount();
@@ -4961,6 +5114,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       developerOnlineCountTimer = null;
     }
   }
+  NT.onBackgroundSleepChange(function () { updatePresenceTracking(); });
   $('devOnlineBtn').addEventListener('click', refreshDeveloperOnlineCount);
   function setAccountUser(user) {
     var previousModerator = !isOfflineCopy && hasModeratorAccess(accountUser);
@@ -5285,7 +5439,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   });
 
   async function saveLocalChanges() {
-    if (isOfflineCopy || !accountUser || !lastLocalSnapshot || syncBusy) return;
+    if (isOfflineCopy || !accountUser || !lastLocalSnapshot || syncBusy || backgroundSleeping) return;
     var current = localSnapshot();
     var updates = {};
     syncKeys.forEach(function (key) {
@@ -5306,7 +5460,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
 
   async function syncAccountData(isFirstLoad) {
-    if (isOfflineCopy || !accountUser || syncBusy) return;
+    if (isOfflineCopy || !accountUser || syncBusy || backgroundSleeping) return;
     syncBusy = true;
     try {
       var local = localSnapshot();
@@ -5361,7 +5515,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 
   var adminGrantsBusy = false;
   async function applyAdminRewardGrants() {
-    if (isOfflineCopy || !accountUser || typeof NT.applyAdminRewardGrant !== 'function' || adminGrantsBusy) return;
+    if (isOfflineCopy || !accountUser || typeof NT.applyAdminRewardGrant !== 'function' || adminGrantsBusy || backgroundSleeping) return;
     var username = accountUser.username;
     adminGrantsBusy = true;
     try {
@@ -6640,52 +6794,72 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       }
     }
   }
-  restoreSession();
-  if (!isOfflineCopy) {
-    setInterval(saveLocalChanges, 2500);
-    setInterval(async function () {
-      if (!accountUser || syncBusy) return;
-      try {
-        await saveLocalChanges();
-        var result = await api('/sync');
-        if (result.revision !== revision) {
-          revision = result.revision;
-          var current = localSnapshot();
-          var changed = [];
-          Object.keys(result.data || {}).forEach(function (key) {
-            if (syncKeys.indexOf(key) === -1) return;
-            if (localStorage.getItem(key) !== result.data[key]) {
-              localStorage.setItem(key, result.data[key]);
-              changed.push(key);
-            }
-          });
-          lastLocalSnapshot = localSnapshot();
-          dispatchCloudChange(changed);
-          setCloudStatus('Signed in as ' + accountUser.username + ' · synced just now.', false);
-        }
-      } catch (error) { setCloudStatus('Sync paused: ' + readError(error), true); }
-    }, 15000);
-    setInterval(function () {
-      if (accountUser) applyAdminRewardGrants();
-    }, 30000);
+  async function pollCloudState() {
+    if (backgroundSleeping || !accountUser || syncBusy) return;
+    try {
+      await saveLocalChanges();
+      if (backgroundSleeping || !accountUser || syncBusy) return;
+      var result = await api('/sync');
+      if (result.revision !== revision) {
+        revision = result.revision;
+        var changed = [];
+        Object.keys(result.data || {}).forEach(function (key) {
+          if (syncKeys.indexOf(key) === -1) return;
+          if (localStorage.getItem(key) !== result.data[key]) {
+            localStorage.setItem(key, result.data[key]);
+            changed.push(key);
+          }
+        });
+        lastLocalSnapshot = localSnapshot();
+        dispatchCloudChange(changed);
+        setCloudStatus('Signed in as ' + accountUser.username + ' · synced just now.', false);
+      }
+    } catch (error) { setCloudStatus('Sync paused: ' + readError(error), true); }
   }
+  var localSaveTimer = null;
+  var cloudSyncTimer = null;
+  var adminGrantTimer = null;
+  function stopCloudBackgroundTasks() {
+    if (localSaveTimer) clearInterval(localSaveTimer);
+    if (cloudSyncTimer) clearInterval(cloudSyncTimer);
+    if (adminGrantTimer) clearInterval(adminGrantTimer);
+    localSaveTimer = null;
+    cloudSyncTimer = null;
+    adminGrantTimer = null;
+  }
+  function startCloudBackgroundTasks() {
+    if (isOfflineCopy || backgroundSleeping) return;
+    if (!localSaveTimer) localSaveTimer = setInterval(saveLocalChanges, 2500);
+    if (!cloudSyncTimer) cloudSyncTimer = setInterval(pollCloudState, 15000);
+    if (!adminGrantTimer) adminGrantTimer = setInterval(applyAdminRewardGrants, 30000);
+    if (accountUser) {
+      Promise.resolve(saveLocalChanges()).then(function () {
+        if (!backgroundSleeping && accountUser) return syncAccountData(false);
+      });
+      applyAdminRewardGrants();
+    }
+  }
+  NT.onBackgroundSleepChange(function (sleeping) {
+    if (sleeping) stopCloudBackgroundTasks();
+    else startCloudBackgroundTasks();
+  });
+  restoreSession();
   document.addEventListener('visibilitychange', function () {
     if (isOfflineCopy || document.hidden || !accountUser) return;
     loadPublicExtensions();
-    sendPresenceHeartbeat();
-    if (accountUser.role === 'dev') refreshDeveloperOnlineCount();
   });
 })();
 </script>
 <script>
 (function () {
   'use strict';
+  var NT = window.NT;
   var loadedBuild = new URLSearchParams(window.location.search).get('build');
   var notice = document.getElementById('updateNotice');
   if (!loadedBuild || !notice) return;
 
   async function checkForNewerBuild() {
-    if (document.hidden || !loadedBuild) return;
+    if (document.hidden || !loadedBuild || NT.isBackgroundSleeping()) return;
     try {
       var indexUrl = new URL('./index.html', window.location.href);
       indexUrl.searchParams.set('_study_desk_version_check', String(Date.now()));
@@ -6701,10 +6875,22 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   document.getElementById('refreshForUpdateBtn').addEventListener('click', function () {
     window.top.location.reload();
   });
-  window.setTimeout(checkForNewerBuild, 15000);
-  window.setInterval(checkForNewerBuild, 60000);
-  document.addEventListener('visibilitychange', function () {
-    if (!document.hidden) checkForNewerBuild();
+  var updateCheckTimeout = null;
+  var updateCheckInterval = null;
+  function stopUpdateChecks() {
+    if (updateCheckTimeout) window.clearTimeout(updateCheckTimeout);
+    if (updateCheckInterval) window.clearInterval(updateCheckInterval);
+    updateCheckTimeout = null;
+    updateCheckInterval = null;
+  }
+  function startUpdateChecks() {
+    if (NT.isBackgroundSleeping() || updateCheckInterval) return;
+    updateCheckTimeout = window.setTimeout(checkForNewerBuild, 15000);
+    updateCheckInterval = window.setInterval(checkForNewerBuild, 60000);
+  }
+  NT.onBackgroundSleepChange(function (sleeping) {
+    if (sleeping) stopUpdateChecks();
+    else startUpdateChecks();
   });
 })();
 </script>
