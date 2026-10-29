@@ -730,7 +730,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </div>
 <div class="rewards-row">
 <span class="stat"><i data-ic="bolt"></i>Shards <b id="shardsDisplay" class="shd">0</b></span>
-<span class="small muted">Next shard <strong id="shardTimerDisplay">1:00</strong></span>
+<span class="small muted">Next shard <strong id="shardTimerDisplay">20:00</strong></span>
 </div>
 </div>
 <button class="btn primary" id="claimRewardBtn">Claim daily reward</button>
@@ -1047,7 +1047,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div id="fileActions" class="file-actions hidden" role="group" aria-label="File actions">
 <button class="btn primary" id="saveFileBtn" title="Save text file to localStorage"><i data-ic="download"></i>Save text</button>
 <button class="btn" id="downloadBtn"><i data-ic="download"></i>Download</button>
-<button class="btn" id="openBlankBtn" title="Open in a blank window"><i data-ic="window"></i>Open blank window</button>
+<button class="btn" id="openBlankBtn" title="10 shards on the first blank-page opening each day; +10 points per open"><i data-ic="window"></i>Open blank window</button>
 <button class="btn" id="openHereBtn" title="Render as HTML"><i data-ic="code"></i>Render HTML</button>
 <button class="btn" id="editBtn" title="Edit text (Alt+X)"><i data-ic="edit"></i>Edit text</button>
 <button class="btn" id="copyBtn"><i data-ic="copy"></i>Copy</button>
@@ -1379,7 +1379,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     DAILY_REWARD_AMOUNT: 100,
     BONUS_REWARD_AMOUNT: 50,
     BONUS_INTERVAL_MINUTES: 10,
-    SHARD_INTERVAL_MS: 1 * 60 * 1000,
+    SHARD_INTERVAL_MS: 20 * 60 * 1000,
     OFFLINE_GRACE_PERIOD_MS: 3 * 60 * 60 * 1000,
     OFFLINE_SHARD_INTERVAL_MS: 60 * 60 * 1000,
     OFFLINE_SHARDS_PER_HOUR: 0.5,
@@ -1464,13 +1464,13 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   let unlockedItems = NT.getJSON('disguise_unlocked', []);
   if (!Array.isArray(unlockedItems)) unlockedItems = [];
 
-  // Shop: tools you can unlock (themes were removed; colors are free)
+  // Shop: tools to unlock or rent (themes were removed; colors are free)
   const FEATURES = [
     { id: 'feature_calc', name: 'Calculator', cost: 50, currency: 'pts' },
     { id: 'feature_fonts', name: 'Font system', cost: 200, currency: 'pts' },
     { id: 'feature_disguise', name: 'Tab appearance tools', cost: 175, currency: 'pts' },
     { id: 'feature_download', name: 'File downloads', cost: 30, currency: 'pts' },
-    { id: 'feature_about_blank', name: 'Open a blank workspace', cost: 10, currency: 'shards' }
+    { id: 'feature_about_blank', name: 'Open a blank workspace', cost: 10, currency: 'shards', rental: true }
   ];
 
   function flash(btn, msg) {
@@ -1665,6 +1665,32 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 
   // ---------- Gating / unlocks ----------
   const isFeatureUnlocked = id => unlockedItems.includes(id);
+  function localCalendarDay(timestamp) {
+    const date = new Date(timestamp == null ? Date.now() : timestamp);
+    return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+  }
+  function hasBlankRentalToday() {
+    return localStorage.getItem('disguise_blank_rental_day') === localCalendarDay();
+  }
+  let rentalRenderedDay = localCalendarDay();
+  function hasFeatureAccess(id) {
+    return isFeatureUnlocked(id) || (id === 'feature_about_blank' && hasBlankRentalToday());
+  }
+  function rentFeatureForToday(id) {
+    const feature = FEATURES.find(item => item.id === id);
+    if (!feature || !feature.rental) return false;
+    if (isFeatureUnlocked(id) || hasBlankRentalToday()) return true;
+    if (shards < feature.cost) {
+      toast('You need ' + feature.cost + ' shards to rent ' + feature.name + ' for today', 'error');
+      return false;
+    }
+    shards -= feature.cost;
+    localStorage.setItem('disguise_shards', shards);
+    localStorage.setItem('disguise_blank_rental_day', localCalendarDay());
+    updateRewardsUI();
+    toast('Blank workspace rented for today');
+    return true;
+  }
   function refreshPaywallUI() {
     calcLock.classList.toggle('hidden', isFeatureUnlocked('feature_calc'));
     calcBody.classList.toggle('hidden', !isFeatureUnlocked('feature_calc'));
@@ -1676,6 +1702,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   function unlockFeature(id) {
     const f = FEATURES.find(x => x.id === id);
     if (!f || isFeatureUnlocked(id)) return true;
+    if (f.rental) return rentFeatureForToday(id);
     const bal = f.currency === 'pts' ? points : shards;
     if (bal < f.cost) { toast('You need ' + f.cost + ' ' + (f.currency === 'pts' ? 'points' : 'shards') + ' to unlock ' + f.name, 'error'); return false; }
     if (f.currency === 'pts') { points -= f.cost; localStorage.setItem('disguise_points', points); }
@@ -1690,10 +1717,15 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   unlockDisguiseBtn.addEventListener('click', () => unlockFeature('feature_disguise'));
   unlockFontsBtn.addEventListener('click', () => unlockFeature('feature_fonts'));
   async function requireFeature(id, prompt) {
-    if (isFeatureUnlocked(id)) return true;
+    if (hasFeatureAccess(id)) return true;
     const f = FEATURES.find(x => x.id === id);
+    if (!f) return false;
     const bal = f.currency === 'pts' ? points : shards;
-    if (bal < f.cost) { toast('You need ' + f.cost + ' ' + (f.currency === 'pts' ? 'points' : 'shards') + ' for this. Try the free unlock in Settings.', 'error'); return false; }
+    if (bal < f.cost) { toast('You need ' + f.cost + ' ' + (f.currency === 'pts' ? 'points' : 'shards') + ' for this.', 'error'); return false; }
+    if (f.rental) {
+      if (!(await confirmDialog('Rent ' + f.name + '?', prompt, 'Rent today'))) return false;
+      return rentFeatureForToday(id);
+    }
     if (!(await confirmDialog('Unlock ' + f.name + '?', prompt, 'Unlock'))) return false;
     return unlockFeature(id);
   }
@@ -1878,13 +1910,15 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   // ---------- Rewards ----------
   function updatePassiveShards() {
     const now = Date.now();
-    const gained = Math.floor((now - lastShardTime) / CONFIG.SHARD_INTERVAL_MS);
-    if (gained > 0) {
-      shards += gained;
-      lastShardTime += gained * CONFIG.SHARD_INTERVAL_MS;
-      localStorage.setItem('disguise_shards', shards);
-      localStorage.setItem('disguise_last_shard_time', lastShardTime);
-      renderShop();
+    if (document.visibilityState === 'visible') {
+      const gained = Math.floor((now - lastShardTime) / CONFIG.SHARD_INTERVAL_MS);
+      if (gained > 0) {
+        shards += gained;
+        lastShardTime += gained * CONFIG.SHARD_INTERVAL_MS;
+        localStorage.setItem('disguise_shards', shards);
+        localStorage.setItem('disguise_last_shard_time', lastShardTime);
+        renderShop();
+      }
     }
     const remaining = CONFIG.SHARD_INTERVAL_MS - ((now - lastShardTime) % CONFIG.SHARD_INTERVAL_MS);
     shardTimerDisplay.textContent = Math.floor(remaining / 60000) + ':' + String(Math.floor((remaining % 60000) / 1000)).padStart(2, '0');
@@ -1903,6 +1937,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     if (document.visibilityState === 'visible') updatePassiveShards();
     updateTimedBonusUI();
     shardsDisplay.textContent = shards;
+    if (localCalendarDay() !== rentalRenderedDay) renderShop();
   }, 1000);
   claimTimedBtn.addEventListener('click', () => {
     const now = Date.now();
@@ -1945,20 +1980,28 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   };
   NT.claimDaily = () => claimRewardBtn.click();
   function renderShop() {
+    rentalRenderedDay = localCalendarDay();
     shopContainer.innerHTML = '';
     FEATURES.forEach(f => {
-      const owned = isFeatureUnlocked(f.id);
+      const permanentlyUnlocked = isFeatureUnlocked(f.id);
+      const rentedToday = f.rental && hasBlankRentalToday();
+      const owned = permanentlyUnlocked || rentedToday;
       const afford = f.currency === 'pts' ? points >= f.cost : shards >= f.cost;
       const d = document.createElement('div');
       d.className = 'shop-item' + (owned ? ' owned' : '');
       const icon = ic(owned ? 'unlock' : f.currency === 'pts' ? 'gem' : 'bolt');
       d.innerHTML = '<div><b></b><span class="cost">' + icon + '<span></span></span></div>';
       d.querySelector('b').textContent = f.name;
-      d.querySelector('.cost span').textContent = owned ? 'Unlocked' : f.cost + ' ' + (f.currency === 'pts' ? 'points' : 'shards');
+      d.querySelector('.cost span').textContent = permanentlyUnlocked
+        ? (f.rental ? 'Unlocked permanently' : 'Unlocked')
+        : rentedToday ? 'Rented today'
+          : f.cost + ' ' + (f.currency === 'pts' ? 'points' : 'shards') + (f.rental ? ' / day' : '');
       if (!owned) {
         const b = document.createElement('button');
-        b.className = 'btn sm' + (afford ? ' primary' : ''); b.textContent = 'Unlock'; b.disabled = !afford;
-        b.addEventListener('click', () => unlockFeature(f.id));
+        b.className = 'btn sm' + (afford ? ' primary' : '');
+        b.textContent = f.rental ? 'Rent today' : 'Unlock';
+        b.disabled = !afford;
+        b.addEventListener('click', () => f.rental ? rentFeatureForToday(f.id) : unlockFeature(f.id));
         d.appendChild(b);
       }
       shopContainer.appendChild(d);
@@ -2225,14 +2268,20 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
 
   // ---------- blank workspace window (sandboxed without allow-same-origin) ----------
-  async function openBlank() {
-    if (!(await requireFeature('feature_about_blank', 'Unlock the blank workspace window for 10 shards?'))) return;
+  function openBlank() {
     let targetUrl = '';
     if (V.saved || V.isText) targetUrl = URL.createObjectURL(new Blob([savedText()], { type: 'text/html' }));
     else if (V.blobURL) targetUrl = V.blobURL;
     if (!targetUrl) { toast('Open something first', 'error'); return; }
+    const rentalRequired = !isFeatureUnlocked('feature_about_blank') && !hasBlankRentalToday();
+    const blankFeature = FEATURES.find(feature => feature.id === 'feature_about_blank');
+    if (rentalRequired && shards < blankFeature.cost) {
+      toast('You need ' + blankFeature.cost + ' shards to rent the blank workspace for today', 'error');
+      return;
+    }
     const w = window.open('about:blank', '_blank');
     if (!w) { toast('Pop-up blocked. Allow pop-ups to open a blank window', 'error'); return; }
+    if (rentalRequired && !rentFeatureForToday('feature_about_blank')) { w.close(); return; }
     const d = w.document;
     d.title = localStorage.getItem('disguise_blank_title') || 'New tab';
     const fav = localStorage.getItem('disguise_favicon') || '';
@@ -2244,6 +2293,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     f.setAttribute('sandbox', 'allow-scripts allow-forms allow-popups allow-pointer-lock' + (/^https?:/i.test(targetUrl) ? ' allow-same-origin' : ''));
     f.src = targetUrl;
     d.body.appendChild(f);
+    points += 10;
+    localStorage.setItem('disguise_points', points);
+    updateRewardsUI();
+    toast('+10 points for opening a blank workspace');
   }
   NT.openBlank = openBlank;
   openBlankBtn.addEventListener('click', openBlank);
