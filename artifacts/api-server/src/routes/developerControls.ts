@@ -28,6 +28,7 @@ import {
   upsertReplitDeveloper,
 } from "../lib/developerAuth";
 import { requireAuthorizedDeveloper } from "../middlewares/developerAuth";
+import { expireSuspensionForUser, isSuspensionActive } from "../lib/suspensions";
 import {
   hashOpaqueValue,
   newSessionToken,
@@ -84,13 +85,14 @@ function userSummary(row: {
   username: string;
   role: string;
   bannedAt: Date | null;
+  bannedUntil: Date | null;
   banReason: string | null;
   createdAt: Date;
 }) {
   return {
     username: row.username,
     role: row.role === "moderator" || row.role === "dev" ? row.role : "user",
-    banned: row.bannedAt !== null,
+    banned: isSuspensionActive(row.bannedAt, row.bannedUntil),
     createdAt: row.createdAt,
     banReason: row.banReason,
   };
@@ -135,6 +137,7 @@ router.post(
         username: studyUsersTable.username,
         role: studyUsersTable.role,
         bannedAt: studyUsersTable.bannedAt,
+        bannedUntil: studyUsersTable.bannedUntil,
       })
       .from(studyUsersTable)
       .where(eq(studyUsersTable.username, username))
@@ -144,7 +147,12 @@ router.post(
       res.status(404).json({ error: "The linked Study Desk account was not found." });
       return;
     }
-    if (user.bannedAt) {
+    if (user.bannedUntil && user.bannedUntil <= new Date()) {
+      await expireSuspensionForUser(user.id);
+      user.bannedAt = null;
+      user.bannedUntil = null;
+    }
+    if (isSuspensionActive(user.bannedAt, user.bannedUntil)) {
       res.status(403).json({ error: "The linked Study Desk account is suspended." });
       return;
     }
@@ -293,6 +301,7 @@ router.get(
         username: studyUsersTable.username,
         role: studyUsersTable.role,
         bannedAt: studyUsersTable.bannedAt,
+        bannedUntil: studyUsersTable.bannedUntil,
         banReason: studyUsersTable.banReason,
         createdAt: studyUsersTable.createdAt,
       })
@@ -328,6 +337,7 @@ router.patch(
         username: studyUsersTable.username,
         role: studyUsersTable.role,
         bannedAt: studyUsersTable.bannedAt,
+        bannedUntil: studyUsersTable.bannedUntil,
         banReason: studyUsersTable.banReason,
         createdAt: studyUsersTable.createdAt,
       })
@@ -338,7 +348,13 @@ router.patch(
       res.status(404).json({ error: "No Study Desk account found with that username." });
       return;
     }
-    if (body.data.role !== "user" && target.bannedAt) {
+    const targetExpired = target.bannedUntil && target.bannedUntil <= new Date()
+      ? await expireSuspensionForUser(target.id)
+      : false;
+    const effectiveTarget = targetExpired
+      ? { ...target, bannedAt: null, bannedUntil: null, banReason: null }
+      : target;
+    if (body.data.role !== "user" && isSuspensionActive(effectiveTarget.bannedAt, effectiveTarget.bannedUntil)) {
       res.status(409).json({ error: "Restore this account before assigning a privileged role." });
       return;
     }
@@ -350,6 +366,7 @@ router.patch(
         username: studyUsersTable.username,
         role: studyUsersTable.role,
         bannedAt: studyUsersTable.bannedAt,
+        bannedUntil: studyUsersTable.bannedUntil,
         banReason: studyUsersTable.banReason,
         createdAt: studyUsersTable.createdAt,
       });

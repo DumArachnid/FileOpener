@@ -68,10 +68,14 @@ async function request(route, { method = "GET", cookie, body } = {}) {
   const sessionCookie = (response.headers.getSetCookie?.() ?? [])
     .map((value) => value.match(/(?:^|,\s*)study_desk_session=([^;]*)/))
     .find(Boolean)?.[1];
+  const appealCookie = (response.headers.getSetCookie?.() ?? [])
+    .map((value) => value.match(/(?:^|,\s*)study_desk_suspension_appeal=([^;]*)/))
+    .find(Boolean)?.[1];
   return {
     status: response.status,
     data,
     cookie: sessionCookie ? `study_desk_session=${sessionCookie}` : undefined,
+    appealCookie: appealCookie ? `study_desk_suspension_appeal=${appealCookie}` : undefined,
   };
 }
 
@@ -160,6 +164,10 @@ after(async () => {
     ]);
   }
   if (fixtureUsernames.length) {
+    await cleanupPool.query(
+      "DELETE FROM study_desk_admin_audit WHERE target_username = ANY($1) OR actor_username = ANY($1)",
+      [fixtureUsernames],
+    );
     await cleanupPool.query("DELETE FROM study_desk_users WHERE username = ANY($1)", [
       fixtureUsernames,
     ]);
@@ -241,6 +249,131 @@ test("signup, login, logout, and recovery codes behave as one-time credentials",
     body: { username: account.username, password: "replacement-password-456" },
   });
   assert.equal(newPasswordLogin.status, 200);
+});
+
+test("timed suspensions expire and appeals are reviewed without creating a session", async () => {
+  const target = await signUp();
+  const moderator = await signUp();
+  await cleanupPool.query("UPDATE study_desk_users SET role = 'moderator' WHERE username = $1", [
+    moderator.username,
+  ]);
+
+  const hiddenQueue = await request("/moderation/suspension-appeals", { cookie: target.cookie });
+  assert.equal(hiddenQueue.status, 403, "regular accounts must not access the appeal review queue");
+  const selfBan = await request(`/moderation/users/${moderator.username}/ban`, {
+    method: "PATCH",
+    cookie: moderator.cookie,
+    body: { banned: true, reason: "self test", durationHours: 1 },
+  });
+  assert.equal(selfBan.status, 409, "moderators must not suspend themselves");
+
+  const ban = await request(`/moderation/users/${target.username}/ban`, {
+    method: "PATCH",
+    cookie: moderator.cookie,
+    body: { banned: true, reason: "Testing a timed suspension", durationHours: 24 },
+  });
+  assert.equal(ban.status, 200);
+  assert.equal(ban.data.banned, true);
+  assert.ok(Date.parse(ban.data.banExpiresAt) > Date.now());
+
+  const handoffState = randomUUID().replaceAll("-", "").repeat(2).slice(0, 64);
+  const suspendedHandoff = await request("/auth/offline-handoff", {
+    method: "POST",
+    body: {
+      state: handoffState,
+      username: target.username,
+      password: "fixture-password-123",
+    },
+  });
+  assert.equal(suspendedHandoff.status, 403);
+  assert.match(suspendedHandoff.data, /Account suspended/);
+  assert.match(suspendedHandoff.data, /action="\/api\/auth\/suspension-appeals"/);
+  assert.ok(suspendedHandoff.appealCookie, "valid credentials should receive an appeal-only cookie");
+  assert.equal(suspendedHandoff.cookie, undefined, "suspension handoff must not create an account session");
+  assert.equal((await request("/auth/me", { cookie: target.cookie })).status, 401);
+
+  const submitted = await request("/auth/suspension-appeals", {
+    method: "POST",
+    cookie: suspendedHandoff.appealCookie,
+    body: { statement: "I believe this suspension was applied by mistake." },
+  });
+  assert.equal(submitted.status, 201);
+  assert.equal(submitted.data.status, "pending");
+  assert.equal(submitted.cookie, undefined);
+
+  const queue = await request("/moderation/suspension-appeals", { cookie: moderator.cookie });
+  assert.equal(queue.status, 200);
+  const appeal = queue.data.find((item) => item.id === submitted.data.id);
+  assert.ok(appeal, "pending appeal should appear in the moderator queue");
+  assert.equal(appeal.username, target.username);
+  assert.equal(appeal.suspensionReason, "Testing a timed suspension");
+
+  const missingReason = await request(`/moderation/suspension-appeals/${appeal.id}/decision`, {
+    method: "POST",
+    cookie: moderator.cookie,
+    body: { decision: "uphold" },
+  });
+  assert.equal(missingReason.status, 400);
+
+  const upheld = await request(`/moderation/suspension-appeals/${appeal.id}/decision`, {
+    method: "POST",
+    cookie: moderator.cookie,
+    body: { decision: "uphold", reason: "The original report was confirmed." },
+  });
+  assert.equal(upheld.status, 200);
+  assert.equal(upheld.data.status, "upheld");
+  assert.equal(upheld.data.reviewerUsername, moderator.username);
+
+  const stillSuspended = await request("/auth/login", {
+    method: "POST",
+    body: { username: target.username, password: "fixture-password-123" },
+  });
+  assert.equal(stillSuspended.status, 403);
+  assert.equal(stillSuspended.data.suspension.appealStatus, "upheld");
+  assert.equal(
+    stillSuspended.data.suspension.appealDecisionReason,
+    "The original report was confirmed.",
+  );
+
+  const lifted = await request(`/moderation/users/${target.username}/ban`, {
+    method: "PATCH",
+    cookie: moderator.cookie,
+    body: { banned: false },
+  });
+  assert.equal(lifted.status, 200);
+  assert.equal(lifted.data.banned, false);
+  assert.equal(lifted.data.banExpiresAt, null);
+
+  const secondBan = await request(`/moderation/users/${target.username}/ban`, {
+    method: "PATCH",
+    cookie: moderator.cookie,
+    body: { banned: true, reason: "Testing automatic expiry", durationHours: 1 },
+  });
+  assert.equal(secondBan.status, 200);
+  await cleanupPool.query(
+    "UPDATE study_desk_users SET banned_until = NOW() - INTERVAL '1 minute' WHERE username = $1",
+    [target.username],
+  );
+
+  const afterExpiry = await request("/auth/login", {
+    method: "POST",
+    body: { username: target.username, password: "fixture-password-123" },
+  });
+  assert.equal(afterExpiry.status, 200, "expired suspensions should not require an admin visit to lift");
+  const storedUser = await cleanupPool.query(
+    "SELECT banned_at, banned_until, ban_reason FROM study_desk_users WHERE username = $1",
+    [target.username],
+  );
+  assert.equal(storedUser.rows[0].banned_at, null);
+  assert.equal(storedUser.rows[0].banned_until, null);
+  assert.equal(storedUser.rows[0].ban_reason, null);
+
+  const history = await request(`/moderation/users/${target.username}/history`, {
+    cookie: moderator.cookie,
+  });
+  assert.equal(history.status, 200);
+  assert.ok(history.data.some((entry) => entry.action === "user.suspension.expired"));
+  assert.ok(history.data.some((entry) => entry.action === "user.suspension.appeal_upheld"));
 });
 
 test("an allowlisted verified developer signs in to an explicitly linked existing account", async () => {

@@ -1,4 +1,4 @@
-import { and, eq, gt, isNull, sql } from "drizzle-orm";
+import { and, eq, gt, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
 import { Router, type IRouter } from "express";
 import { GetDeveloperOnlineCountResponse } from "@workspace/api-zod";
 import { db, studyPresenceTable, studyUsersTable } from "@workspace/db";
@@ -31,7 +31,13 @@ router.get(
       .innerJoin(studyUsersTable, eq(studyPresenceTable.userId, studyUsersTable.id))
       .where(and(
         gt(studyPresenceTable.lastSeenAt, activeSince),
-        isNull(studyUsersTable.bannedAt),
+        or(
+          isNull(studyUsersTable.bannedAt),
+          and(
+            isNotNull(studyUsersTable.bannedUntil),
+            lte(studyUsersTable.bannedUntil, new Date()),
+          ),
+        ),
       ));
     res.json(GetDeveloperOnlineCountResponse.parse({
       count: Number(result?.count ?? 0),

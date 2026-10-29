@@ -61,17 +61,17 @@ export function newRecoveryCode(): string {
   return bytes.match(/.{1,6}/g)?.join("-") || bytes;
 }
 
-export function setSessionCookie(res: { setHeader(name: string, value: string): unknown }, token: string): void {
+export function setSessionCookie(res: { append(name: string, value: string): unknown }, token: string): void {
   const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
-  res.setHeader(
+  res.append(
     "Set-Cookie",
     `${SESSION_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}${secure}`,
   );
 }
 
-export function clearSessionCookie(res: { setHeader(name: string, value: string): unknown }): void {
+export function clearSessionCookie(res: { append(name: string, value: string): unknown }): void {
   const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
-  res.setHeader(
+  res.append(
     "Set-Cookie",
     `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`,
   );

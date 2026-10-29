@@ -564,6 +564,8 @@ router.patch(
       .select({
         id: studyUsersTable.id,
         role: studyUsersTable.role,
+        bannedAt: studyUsersTable.bannedAt,
+        bannedUntil: studyUsersTable.bannedUntil,
       })
       .from(studyUsersTable)
       .where(eq(studyUsersTable.username, normalizedUsername))
@@ -599,6 +601,22 @@ router.patch(
         });
       if (body.banned) {
         await tx.delete(studySessionsTable).where(eq(studySessionsTable.userId, target.id));
+      } else if (target.bannedAt) {
+        await tx
+          .update(suspensionAppealsTable)
+          .set({
+            status: "lifted",
+            decisionReason: body.reason?.trim() || "The suspension was lifted by a moderator.",
+            reviewerUsername: req.studyDeskUser!.username,
+            decidedAt: now,
+          })
+          .where(
+            and(
+              eq(suspensionAppealsTable.userId, target.id),
+              eq(suspensionAppealsTable.suspensionStartedAt, target.bannedAt),
+              eq(suspensionAppealsTable.status, "pending"),
+            ),
+          );
       }
       await tx.insert(adminAuditTable).values({
         actorUsername: req.studyDeskUser!.username,
@@ -619,6 +637,168 @@ router.patch(
       return;
     }
     res.json(UpdateModerationUserBanResponse.parse(userSummary(updatedUser)));
+  },
+);
+
+router.get(
+  "/moderation/suspension-appeals",
+  requireModerator,
+  async (_req, res): Promise<void> => {
+    const now = new Date();
+    const rows = await db
+      .select({
+        id: suspensionAppealsTable.id,
+        username: studyUsersTable.username,
+        statement: suspensionAppealsTable.statement,
+        suspensionReason: studyUsersTable.banReason,
+        suspensionStartedAt: suspensionAppealsTable.suspensionStartedAt,
+        suspensionEndsAt: studyUsersTable.bannedUntil,
+        status: suspensionAppealsTable.status,
+        submittedAt: suspensionAppealsTable.submittedAt,
+        decisionReason: suspensionAppealsTable.decisionReason,
+        reviewerUsername: suspensionAppealsTable.reviewerUsername,
+        decidedAt: suspensionAppealsTable.decidedAt,
+      })
+      .from(suspensionAppealsTable)
+      .innerJoin(
+        studyUsersTable,
+        and(
+          eq(studyUsersTable.id, suspensionAppealsTable.userId),
+          eq(studyUsersTable.bannedAt, suspensionAppealsTable.suspensionStartedAt),
+        ),
+      )
+      .where(
+        and(
+          eq(suspensionAppealsTable.status, "pending"),
+          isNotNull(studyUsersTable.bannedAt),
+          or(isNull(studyUsersTable.bannedUntil), gt(studyUsersTable.bannedUntil, now)),
+        ),
+      )
+      .orderBy(desc(suspensionAppealsTable.submittedAt))
+      .limit(100);
+    res.json(ListSuspensionAppealsResponse.parse(rows));
+  },
+);
+
+router.post(
+  "/moderation/suspension-appeals/:id/decision",
+  requireModerator,
+  async (req, res): Promise<void> => {
+    const params = ReviewSuspensionAppealParams.safeParse(req.params);
+    const parsedBody = ReviewSuspensionAppealBody.safeParse(req.body);
+    if (!params.success || !parsedBody.success) {
+      res.status(400).json({ error: "Check the appeal and decision details." });
+      return;
+    }
+    const reason = parsedBody.data.reason?.trim() || null;
+    if (parsedBody.data.decision === "uphold" && !reason) {
+      res.status(400).json({ error: "Add a reason when upholding a suspension." });
+      return;
+    }
+
+    const result = await db.transaction(async (tx) => {
+      const [appeal] = await tx
+        .select()
+        .from(suspensionAppealsTable)
+        .where(eq(suspensionAppealsTable.id, params.data.id))
+        .for("update")
+        .limit(1);
+      if (!appeal) return { kind: "not-found" as const };
+      if (appeal.status !== "pending") return { kind: "decided" as const };
+
+      const [target] = await tx
+        .select({
+          id: studyUsersTable.id,
+          username: studyUsersTable.username,
+          bannedAt: studyUsersTable.bannedAt,
+          bannedUntil: studyUsersTable.bannedUntil,
+          banReason: studyUsersTable.banReason,
+        })
+        .from(studyUsersTable)
+        .where(eq(studyUsersTable.id, appeal.userId))
+        .for("update")
+        .limit(1);
+      if (!target) return { kind: "not-found" as const };
+      if (
+        !target.bannedAt ||
+        target.bannedAt.getTime() !== appeal.suspensionStartedAt.getTime() ||
+        !isSuspensionActive(target.bannedAt, target.bannedUntil)
+      ) {
+        return { kind: "expired" as const };
+      }
+
+      if (parsedBody.data.decision === "lift") {
+        await tx
+          .update(studyUsersTable)
+          .set({ bannedAt: null, bannedUntil: null, banReason: null })
+          .where(
+            and(
+              eq(studyUsersTable.id, target.id),
+              eq(studyUsersTable.bannedAt, appeal.suspensionStartedAt),
+            ),
+          );
+      }
+
+      const status = parsedBody.data.decision === "lift" ? "lifted" : "upheld";
+      const [updatedAppeal] = await tx
+        .update(suspensionAppealsTable)
+        .set({
+          status,
+          decisionReason: reason,
+          reviewerUsername: req.studyDeskUser!.username,
+          decidedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(suspensionAppealsTable.id, appeal.id),
+            eq(suspensionAppealsTable.status, "pending"),
+          ),
+        )
+        .returning({
+          id: suspensionAppealsTable.id,
+          statement: suspensionAppealsTable.statement,
+          suspensionStartedAt: suspensionAppealsTable.suspensionStartedAt,
+          status: suspensionAppealsTable.status,
+          submittedAt: suspensionAppealsTable.submittedAt,
+          decisionReason: suspensionAppealsTable.decisionReason,
+          reviewerUsername: suspensionAppealsTable.reviewerUsername,
+          decidedAt: suspensionAppealsTable.decidedAt,
+        });
+      if (!updatedAppeal) return { kind: "decided" as const };
+
+      await tx.insert(adminAuditTable).values({
+        actorUsername: req.studyDeskUser!.username,
+        targetUsername: target.username,
+        action: status === "lifted"
+          ? "user.suspension.appeal_lifted"
+          : "user.suspension.appeal_upheld",
+        reason,
+        details: { appealId: appeal.id },
+      });
+      return {
+        kind: "ok" as const,
+        appeal: {
+          ...updatedAppeal,
+          username: target.username,
+          suspensionReason: target.banReason,
+          suspensionEndsAt: status === "lifted" ? null : target.bannedUntil,
+        },
+      };
+    });
+
+    if (result.kind === "not-found") {
+      res.status(404).json({ error: "No appeal was found with that ID." });
+      return;
+    }
+    if (result.kind === "decided") {
+      res.status(409).json({ error: "This appeal has already been reviewed." });
+      return;
+    }
+    if (result.kind === "expired") {
+      res.status(409).json({ error: "The suspension expired or changed before this appeal was reviewed." });
+      return;
+    }
+    res.json(ReviewSuspensionAppealResponse.parse(result.appeal));
   },
 );
 

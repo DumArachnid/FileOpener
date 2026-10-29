@@ -285,6 +285,21 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .developer-rank-notice { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: color-mix(in srgb, var(--accent) 7%, var(--panel)); }
 .developer-rank-notice h4, .developer-rank-notice p { margin: 0; }
 .developer-rank-notice p { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.account-review-card { padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--input-bg); }
+.account-review-card h5 { margin: 0 0 7px; }
+.account-review-card p { margin: 4px 0; overflow-wrap: anywhere; }
+.review-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; color: var(--muted); font-size: 11px; }
+.review-form { display: grid; gap: 8px; margin-top: 10px; }
+.review-form label { color: var(--text); }
+.review-actions { display: flex; gap: 7px; flex-wrap: wrap; }
+.review-status { min-height: 16px; color: var(--muted); font-size: 11px; }
+.suspension-panel { display: grid; gap: 12px; margin: 0 0 16px; padding: 16px; border: 1px solid var(--border-strong); border-radius: 12px; background: color-mix(in srgb, var(--accent-soft) 55%, var(--panel)); }
+.suspension-panel h3 { margin: 0; font-size: 17px; }
+.suspension-panel p { margin: 0; line-height: 1.5; }
+.suspension-details { display: grid; gap: 6px; padding: 10px; border-radius: 8px; background: var(--input-bg); font-size: 12px; }
+.suspension-details strong { color: var(--text); }
+.suspension-panel textarea { min-height: 110px; }
+.suspension-panel[hidden] { display: none !important; }
 .site-announcement-banner { position: fixed; top: 8px; left: 50%; z-index: 1200; display: flex; align-items: center; gap: 12px; width: min(900px, calc(100vw - 32px)); max-height: min(180px, calc(100dvh - 20px)); overflow: auto; padding: 13px 18px; transform: translateX(-50%); border: 1.5px solid var(--accent-hover); border-radius: 12px; background: var(--accent); color: var(--on-accent); box-shadow: 4px 4px 0 var(--ink-shadow); }
 .site-announcement-banner[hidden] { display: none !important; }
 .site-announcement-label { flex: none; font-size: 10px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
@@ -991,8 +1006,14 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <label for="moderationUsernameSearch">Find an account by exact username</label>
 <div class="moderation-search-row"><input id="moderationUsernameSearch" minlength="3" maxlength="24" required><button class="btn sm" type="submit">Search</button></div>
 <label for="moderationBanReason">Ban reason (optional)</label><input id="moderationBanReason" maxlength="500" placeholder="Briefly explain the reason">
+<label for="moderationBanDuration">Suspension duration</label><select id="moderationBanDuration"><option value="1">1 hour</option><option value="24" selected>24 hours</option><option value="72">72 hours</option><option value="168">7 days</option><option value="720">30 days</option><option value="permanent">Permanent</option></select>
 </form>
 <div class="community-list" id="moderationUserResult" role="status" aria-live="polite"></div>
+<section class="moderator-tools" aria-labelledby="suspensionAppealsTitle">
+<div class="row-between"><h5 id="suspensionAppealsTitle">Suspension appeals</h5><button class="btn sm" id="refreshSuspensionAppealsBtn" type="button">Refresh queue</button></div>
+<div class="online-store-status" id="suspensionAppealsStatus" role="status" aria-live="polite">Appeals awaiting review will appear here.</div>
+<div class="community-list" id="suspensionAppealsQueue" aria-label="Suspension appeals awaiting review"></div>
+</section>
 <form class="moderation-search hidden" id="adminRewardForm">
 <h5>Give a reward to <span id="adminRewardUsername"></span></h5>
 <label for="adminRewardCurrency">Reward</label><select id="adminRewardCurrency"><option value="points">Points</option><option value="shards">Shards</option></select>
@@ -1090,6 +1111,17 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <button class="btn sm" id="copyRecoveryCodeBtn" type="button">Copy recovery code</button>
 </div>
 <div class="account-error" id="accountError" role="status" aria-live="polite"></div>
+<section class="suspension-panel" id="accountSuspensionPanel" hidden aria-labelledby="suspensionTitle">
+<h3 id="suspensionTitle">Account temporarily unavailable</h3>
+<p>Your account is suspended. You can submit a statement for review below.</p>
+<div class="suspension-details" id="accountSuspensionDetails" aria-live="polite"></div>
+<form class="account-form" id="suspensionAppealForm">
+<div class="account-field"><label for="suspensionAppealStatement">Statement to the review team</label><textarea id="suspensionAppealStatement" minlength="10" maxlength="1500" required aria-describedby="suspensionAppealHint"></textarea></div>
+<p class="small muted tight" id="suspensionAppealHint">10–1,500 characters. Your statement is sent for review and is not saved on this device.</p>
+<div class="account-actions"><button class="btn primary" id="submitSuspensionAppealBtn" type="submit">Submit statement</button></div>
+<div class="review-status" id="suspensionAppealStatus" role="status" aria-live="polite"></div>
+</form>
+</section>
 </div>
 </dialog>
 
@@ -4486,7 +4518,12 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       if (response.status === 204) return null;
       var data = {};
       try { data = await response.json(); } catch (e) {}
-      if (!response.ok) throw new Error(data && data.error || 'The request could not be completed.');
+      if (!response.ok) {
+        var requestError = new Error(data && data.error || 'The request could not be completed.');
+        requestError.data = data;
+        requestError.status = response.status;
+        throw requestError;
+      }
       return data;
     });
   }
@@ -4857,6 +4894,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
   function accountMode(mode) {
     $('accountError').textContent = '';
+    $('accountSuspensionPanel').hidden = true;
+    $('suspensionAppealStatus').textContent = '';
     $('accountDialogEyebrow').textContent = mode === 'recovery' ? 'RECOVERY' : 'ACCOUNT';
     $('accountDialogTitle').textContent = mode === 'signup'
       ? 'Create your account'
@@ -4929,6 +4968,50 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     $('accountError').textContent = 'Copy and save this recovery code now. It will not be shown again.';
   }
   function readError(error) { return error && error.message || 'Something went wrong. Try again.'; }
+  function showAccountSuspension(error) {
+    var suspension = error && error.status === 403 && error.data && error.data.suspension;
+    if (!suspension) return false;
+    $('accountError').textContent = '';
+    $('accountLoginForm').classList.add('hidden');
+    $('accountSignupForm').classList.add('hidden');
+    $('accountRecoveryForm').classList.add('hidden');
+    $('loginPassword').value = '';
+    $('recoveryCode').value = '';
+    $('recoveryNewPassword').value = '';
+    $('accountSuspensionPanel').hidden = false;
+    $('accountDialogEyebrow').textContent = 'ACCOUNT REVIEW';
+    $('accountDialogTitle').textContent = 'Suspension notice';
+    $('accountDialogIntro').textContent = 'Your account cannot sign in while this suspension is active.';
+    var details = $('accountSuspensionDetails');
+    details.replaceChildren();
+    function addSuspensionDetail(label, value) {
+      var line = document.createElement('div');
+      var strong = document.createElement('strong');
+      strong.textContent = label + ': ';
+      line.append(strong, document.createTextNode(value));
+      details.appendChild(line);
+    }
+    addSuspensionDetail('Reason', String(suspension.reason || 'No reason provided'));
+    addSuspensionDetail('Ends', formatSuspensionEnd(suspension.endsAt));
+    addSuspensionDetail('Appeal', suspension.appealStatus || 'No appeal submitted');
+    if (suspension.appealDecisionReason) addSuspensionDetail('Review decision', String(suspension.appealDecisionReason));
+    var form = $('suspensionAppealForm');
+    var status = $('suspensionAppealStatus');
+    var appealState = String(suspension.appealStatus || 'none').toLowerCase();
+    form.dataset.appealState = appealState === 'not_submitted' ? 'none' : appealState;
+    if (appealState && appealState !== 'none' && appealState !== 'not_submitted' && appealState !== 'pending') {
+      status.textContent = 'A statement has already been reviewed for this suspension.';
+    } else if (suspension.appealStatus === 'pending') {
+      status.textContent = 'Your statement is awaiting review.';
+    } else {
+      status.textContent = '';
+    }
+    $('submitSuspensionAppealBtn').disabled = appealState === 'pending' ||
+      (appealState !== 'none' && appealState !== 'not_submitted');
+    var first = $('suspensionAppealStatement');
+    if (!first.disabled) first.focus();
+    return true;
+  }
 
   function clearOfflineAuthWatcher() {
     if (offlineAuthWatcher) clearInterval(offlineAuthWatcher);
@@ -5184,7 +5267,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       }
       await finishSignIn(result.user, false);
       NT.toast('Signed in. Your workspace is syncing.');
-    } catch (error) { accountError.textContent = readError(error); }
+    } catch (error) {
+      if (!showAccountSuspension(error)) accountError.textContent = readError(error);
+    }
     finally { submit.disabled = false; }
   });
   $('accountSignupForm').addEventListener('submit', async function (event) {
@@ -5200,7 +5285,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       $('signupPassword').value = '';
       await finishSignIn(result.user, true);
       displayRecoveryCode(result.recoveryCode);
-    } catch (error) { accountError.textContent = readError(error); }
+    } catch (error) {
+      if (!showAccountSuspension(error)) accountError.textContent = readError(error);
+    }
     finally { setBusy(form, false); }
   });
   $('accountRecoveryForm').addEventListener('submit', async function (event) {
@@ -5221,8 +5308,41 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       $('recoveryNewPassword').value = '';
       await finishSignIn(result.user, true);
       displayRecoveryCode(result.recoveryCode);
-    } catch (error) { accountError.textContent = readError(error); }
+    } catch (error) {
+      if (!showAccountSuspension(error)) accountError.textContent = readError(error);
+    }
     finally { setBusy(form, false); }
+  });
+  $('suspensionAppealForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    var form = event.currentTarget;
+    var statementInput = $('suspensionAppealStatement');
+    var statement = statementInput.value.trim();
+    var status = $('suspensionAppealStatus');
+    var submit = $('submitSuspensionAppealBtn');
+    if (statement.length < 10 || statement.length > 1500) {
+      status.textContent = 'Write a statement between 10 and 1,500 characters.';
+      statementInput.focus();
+      return;
+    }
+    if (form.dataset.appealState && form.dataset.appealState !== 'none') return;
+    submit.disabled = true;
+    status.textContent = 'Sending your statement…';
+    try {
+      await api('/auth/suspension-appeals', { method: 'POST', body: { statement: statement } });
+      form.dataset.appealState = 'pending';
+      status.textContent = 'Statement submitted. It is now awaiting review.';
+      submit.disabled = true;
+    } catch (error) {
+      if (error && error.status === 409) {
+        form.dataset.appealState = 'reviewed';
+        status.textContent = readError(error) + ' Your statement remains in the box.';
+        submit.disabled = true;
+      } else {
+        status.textContent = readError(error);
+        submit.disabled = false;
+      }
+    }
   });
   $('developerAccountLoginBtn').addEventListener('click', function () {
     accountError.textContent = '';
@@ -5460,6 +5580,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         .then(function (results) { adminListsLoaded = results.every(Boolean); })
         .finally(function () { adminListsLoading = false; });
     }
+    if (hasModeratorAccess(accountUser)) loadSuspensionAppeals();
   });
   $('openDeveloperControlsBtn').addEventListener('click', function () {
     if (adminDialog.open) adminDialog.close();
@@ -5924,6 +6045,118 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
   }
 
+  var suspensionAppeals = [];
+  function formatSuspensionEnd(value) {
+    if (!value) return 'Permanent';
+    var date = new Date(value);
+    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+  }
+  function renderSuspensionAppeals() {
+    var container = $('suspensionAppealsQueue');
+    container.replaceChildren();
+    if (!suspensionAppeals.length) {
+      var empty = document.createElement('p');
+      empty.className = 'small muted';
+      empty.textContent = 'No suspension appeals are waiting for review.';
+      container.appendChild(empty);
+      return;
+    }
+    suspensionAppeals.forEach(function (appeal) {
+      var card = document.createElement('article');
+      card.className = 'account-review-card';
+      var heading = document.createElement('h5');
+      var appealUsername = appeal.username || appeal.accountUsername || appeal.user && appeal.user.username;
+      heading.textContent = appealUsername || 'Account appeal';
+      var statement = document.createElement('p');
+      statement.textContent = appeal.statement || '';
+      var reason = document.createElement('p');
+      reason.textContent = 'Suspension reason: ' + (appeal.suspensionReason || appeal.originalSuspensionReason || appeal.banReason || 'No reason provided');
+      var meta = document.createElement('div');
+      meta.className = 'review-meta';
+      var start = appeal.suspensionStartedAt || appeal.startedAt || appeal.banStartedAt || appeal.createdAt || appeal.suspendedAt;
+      var end = appeal.endsAt || appeal.suspensionEndsAt || appeal.banEndsAt || null;
+      meta.textContent = 'Started ' + (start ? new Date(start).toLocaleString() : 'Unknown') +
+        ' · Ends ' + formatSuspensionEnd(end);
+      var decisionReason = document.createElement('input');
+      decisionReason.type = 'text';
+      decisionReason.maxLength = 500;
+      decisionReason.placeholder = 'Required reason for upholding';
+      decisionReason.setAttribute('aria-label', 'Reason for upholding ' + (appealUsername || 'this account'));
+      var status = document.createElement('div');
+      status.className = 'review-status';
+      status.setAttribute('role', 'status');
+      var actions = document.createElement('div');
+      actions.className = 'review-actions';
+      var lift = makeButton('Lift suspension', 'btn sm primary', function () {
+        decideSuspensionAppeal(appeal, 'lift', '', actions, status);
+      });
+      var uphold = makeButton('Uphold suspension', 'btn sm', function () {
+        var reasonText = decisionReason.value.trim();
+        if (!reasonText) {
+          status.textContent = 'Add a reason before upholding this suspension.';
+          decisionReason.focus();
+          return;
+        }
+        decideSuspensionAppeal(appeal, 'uphold', reasonText, actions, status);
+      });
+      actions.append(lift, uphold);
+      card.append(heading, statement, reason, meta, decisionReason, actions, status);
+      container.appendChild(card);
+    });
+  }
+  async function loadSuspensionAppeals() {
+    if (!hasModeratorAccess(accountUser)) return false;
+    var status = $('suspensionAppealsStatus');
+    status.textContent = 'Loading suspension appeals…';
+    try {
+      var result = await api('/moderation/suspension-appeals');
+      suspensionAppeals = Array.isArray(result) ? result
+        : Array.isArray(result && result.appeals) ? result.appeals
+        : Array.isArray(result && result.items) ? result.items : [];
+      renderSuspensionAppeals();
+      status.textContent = suspensionAppeals.length
+        ? suspensionAppeals.length + ' appeal' + (suspensionAppeals.length === 1 ? '' : 's') + ' awaiting review.'
+        : 'The appeal queue is clear.';
+      return true;
+    } catch (error) {
+      suspensionAppeals = [];
+      renderSuspensionAppeals();
+      status.textContent = 'Could not load the appeal queue: ' + readError(error);
+      return false;
+    }
+  }
+  async function decideSuspensionAppeal(appeal, decision, reason, actions, status) {
+    if (!hasModeratorAccess(accountUser)) return;
+    actions.querySelectorAll('button').forEach(function (button) { button.disabled = true; });
+    status.textContent = 'Saving review decision…';
+    try {
+      await api('/moderation/suspension-appeals/' + encodeURIComponent(String(appeal.id)) + '/decision', {
+        method: 'POST',
+        body: decision === 'lift' ? { decision: 'lift' } : { decision: 'uphold', reason: reason },
+      });
+      status.textContent = decision === 'lift' ? 'Suspension lifted.' : 'Suspension upheld.';
+      var username = appeal.username || appeal.accountUsername || appeal.user && appeal.user.username;
+      if (username) {
+        var searchMatches = $('moderationUsernameSearch').value.trim() === username;
+        if (searchMatches || (moderatedUser && moderatedUser.username === username)) {
+          try {
+            var updated = await api('/moderation/users?username=' + encodeURIComponent(username));
+            renderModeratedUser(updated);
+          } catch (refreshError) {
+            $('moderationUserResult').textContent = 'Decision saved; account details could not be refreshed: ' + readError(refreshError);
+          }
+        }
+        await loadAdminHistory(username);
+      }
+      await loadSuspensionAppeals();
+      $('suspensionAppealsStatus').textContent = 'Decision recorded. The queue and account history have been refreshed.';
+    } catch (error) {
+      status.textContent = readError(error);
+      actions.querySelectorAll('button').forEach(function (button) { button.disabled = false; });
+    }
+  }
+  $('refreshSuspensionAppealsBtn').addEventListener('click', loadSuspensionAppeals);
+
   function renderModeratedUser(user) {
     moderatedUser = user;
     var container = $('moderationUserResult');
@@ -5935,9 +6168,12 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     title.textContent = user.username + (user.role === 'dev' ? ' · dev' : user.role === 'moderator' ? ' · admin' : '');
     var detail = document.createElement('div');
     detail.className = 'small muted';
+      var suspensionEndsAt = user.banExpiresAt || user.banEndsAt || user.bannedUntil || user.suspensionEndsAt || user.endsAt || null;
     detail.textContent = user.banned
-      ? 'Banned' + (user.banReason ? ' · ' + user.banReason : '')
+      ? 'Suspended · ' + formatSuspensionEnd(suspensionEndsAt) + (user.banReason ? ' · ' + user.banReason : '')
       : 'Account is active';
+    if (user.username === accountUser.username) detail.textContent += ' · You cannot moderate your own account.';
+    else if (hasModeratorAccess(user)) detail.textContent += ' · Only regular user accounts can be moderated here.';
     label.append(title, detail);
     row.appendChild(label);
     var actions = document.createElement('div');
@@ -5947,23 +6183,33 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         user.banned ? 'btn sm' : 'btn sm danger-ghost',
         async function () {
           var banned = !user.banned;
+          var durationValue = $('moderationBanDuration').value;
+          var durationHours = durationValue === 'permanent' ? null : Number(durationValue);
           if (banned && !(await NT.confirmDialog(
-            'Ban this account?',
-            'This signs the user out and blocks them from signing in until restored.',
-            'Ban account',
+            'Suspend this account?',
+            'This signs the user out and blocks sign-in for ' + (durationHours === null ? 'an unlimited time.' : durationHours + ' hour' + (durationHours === 1 ? '.' : 's.')),
+            'Suspend account',
             true,
           ))) return;
           try {
             var updated = await api('/moderation/users/' + encodeURIComponent(user.username) + '/ban', {
               method: 'PATCH',
-              body: {
-                banned: banned,
+              body: banned ? {
+                banned: true,
                 reason: $('moderationBanReason').value.trim(),
-              },
+                durationHours: durationHours,
+              } : { banned: false },
             });
+            if (banned && !updated.banExpiresAt && !updated.banEndsAt && !updated.bannedUntil && !updated.suspensionEndsAt && !updated.endsAt) {
+              updated.suspensionEndsAt = durationHours === null
+                ? null
+                : new Date(Date.now() + durationHours * 3600000).toISOString();
+            }
             renderModeratedUser(updated);
             await loadAdminHistory(updated.username);
-            NT.toast(banned ? 'Account banned and signed out.' : 'Account restored.');
+            NT.toast(banned
+              ? 'Suspension applied; ' + formatSuspensionEnd(updated.banExpiresAt || updated.banEndsAt || updated.bannedUntil || updated.suspensionEndsAt || (durationHours === null ? null : new Date(Date.now() + durationHours * 3600000).toISOString())) + '.'
+              : 'Suspension lifted.');
           } catch (error) {
             NT.toast(readError(error), 'error');
           }

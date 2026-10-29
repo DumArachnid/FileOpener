@@ -23,6 +23,7 @@ import {
   workspaceSyncTable,
 } from "@workspace/db";
 import { requireAccount, requireModerator } from "../middlewares/accountSession";
+import { expireSuspensionForUser, isSuspensionActive } from "../lib/suspensions";
 
 const router: IRouter = Router();
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,24}$/;
@@ -97,6 +98,7 @@ router.post(
         username: studyUsersTable.username,
         role: studyUsersTable.role,
         bannedAt: studyUsersTable.bannedAt,
+        bannedUntil: studyUsersTable.bannedUntil,
         banReason: studyUsersTable.banReason,
         createdAt: studyUsersTable.createdAt,
       })
@@ -107,7 +109,17 @@ router.post(
       res.status(404).json({ error: "No account found with that username." });
       return;
     }
-    if (target.id === req.studyDeskUser!.id || target.role !== "user" || target.bannedAt) {
+    const expired = target.bannedUntil && target.bannedUntil <= new Date()
+      ? await expireSuspensionForUser(target.id)
+      : false;
+    const effectiveTarget = expired
+      ? { ...target, bannedAt: null, bannedUntil: null, banReason: null }
+      : target;
+    if (
+      effectiveTarget.id === req.studyDeskUser!.id ||
+      effectiveTarget.role !== "user" ||
+      isSuspensionActive(effectiveTarget.bannedAt, effectiveTarget.bannedUntil)
+    ) {
       res.status(409).json({ error: "Only an active regular account can be promoted." });
       return;
     }
@@ -124,6 +136,7 @@ router.post(
           username: studyUsersTable.username,
           role: studyUsersTable.role,
           bannedAt: studyUsersTable.bannedAt,
+          bannedUntil: studyUsersTable.bannedUntil,
           banReason: studyUsersTable.banReason,
           createdAt: studyUsersTable.createdAt,
         });
@@ -144,7 +157,7 @@ router.post(
     res.json(PromoteModerationUserResponse.parse({
       username: updated.username,
       role: updated.role === "moderator" || updated.role === "dev" ? updated.role : "user",
-      banned: updated.bannedAt !== null,
+      banned: isSuspensionActive(updated.bannedAt, updated.bannedUntil),
       createdAt: updated.createdAt,
       banReason: updated.banReason,
     }));
