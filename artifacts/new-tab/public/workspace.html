@@ -736,6 +736,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <button class="btn primary" id="claimRewardBtn">Claim daily reward</button>
 <button class="btn" id="claimTimedBtn">Claim bonus</button>
 </div>
+<div class="small muted" style="margin-top:2px">Offline shards start after 3 hours away: 0.5 per eligible hour, rounded down, up to 50 per return.</div>
 <div class="small muted" style="margin-top:2px">Spend points and shards on tools:</div>
 <div id="shopContainer"></div>
 </div>
@@ -1379,8 +1380,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     BONUS_REWARD_AMOUNT: 50,
     BONUS_INTERVAL_MINUTES: 10,
     SHARD_INTERVAL_MS: 1 * 60 * 1000,
-    MAX_AWAY_TIME_MS: 3 * 60 * 60 * 1000,
-    SHARDS_PER_SECOND: 1
+    OFFLINE_GRACE_PERIOD_MS: 3 * 60 * 60 * 1000,
+    OFFLINE_SHARD_INTERVAL_MS: 60 * 60 * 1000,
+    OFFLINE_SHARDS_PER_HOUR: 0.5,
+    MAX_OFFLINE_SHARDS: 50
   };
   const LIGHT_DEFAULT_COLORS = { accent: '#333333', bg: '#ffffff', panel: '#ebebeb', text: '#000000' };
   const DARK_DEFAULT_COLORS = { accent: '#000000', bg: '#000000', panel: '#333333', text: '#ffffff' };
@@ -1698,22 +1701,29 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   // ---------- Offline / passive shards ----------
   function processOfflineShards() {
     const now = Date.now();
-    const last = parseInt(localStorage.getItem('disguise_last_active_time') || now.toString(), 10);
-    const timeAway = now - last;
-    if (timeAway > 2000) {
-      const earned = Math.floor(Math.min(timeAway, CONFIG.MAX_AWAY_TIME_MS) / 1000) * CONFIG.SHARDS_PER_SECOND;
-      if (earned > 0) {
-        shards += earned;
-        localStorage.setItem('disguise_shards', shards);
-        toast('+' + earned + ' offline shards' + (timeAway > CONFIG.MAX_AWAY_TIME_MS ? ' (3 hour max)' : ''));
-        renderShop();
-        shardsDisplay.textContent = shards;
-      }
+    const savedLastActive = Number(localStorage.getItem('disguise_last_active_time'));
+    const lastActive = Number.isFinite(savedLastActive) && savedLastActive > 0 ? savedLastActive : now;
+    const timeAway = Math.max(0, now - lastActive);
+    const eligibleTime = Math.max(0, timeAway - CONFIG.OFFLINE_GRACE_PERIOD_MS);
+    const unroundedEarned = eligibleTime / CONFIG.OFFLINE_SHARD_INTERVAL_MS * CONFIG.OFFLINE_SHARDS_PER_HOUR;
+    const earned = Math.min(CONFIG.MAX_OFFLINE_SHARDS, Math.floor(unroundedEarned));
+    if (earned > 0) {
+      shards += earned;
+      localStorage.setItem('disguise_shards', shards);
+      const label = earned === 1 ? 'offline shard' : 'offline shards';
+      toast('+' + earned + ' ' + label + (unroundedEarned >= CONFIG.MAX_OFFLINE_SHARDS ? ' (50 max)' : ''));
+      renderShop();
+      shardsDisplay.textContent = shards;
     }
+    // The per-minute shard timer is for active use; don't let it also pay out for time away.
+    lastShardTime = now;
+    localStorage.setItem('disguise_last_shard_time', String(now));
     updateLastActiveTime();
   }
   function updateLastActiveTime() { localStorage.setItem('disguise_last_active_time', Date.now()); }
-  setInterval(updateLastActiveTime, 10000);
+  setInterval(() => {
+    if (document.visibilityState === 'visible') updateLastActiveTime();
+  }, 10000);
 
   // ---------- Focus mode ----------
   function setFocus(on) {
@@ -1889,7 +1899,11 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       claimTimedBtn.textContent = 'Bonus in ' + Math.floor(remaining / 60000) + ':' + String(Math.floor((remaining % 60000) / 1000)).padStart(2, '0');
     }
   }
-  setInterval(() => { updatePassiveShards(); updateTimedBonusUI(); shardsDisplay.textContent = shards; }, 1000);
+  setInterval(() => {
+    if (document.visibilityState === 'visible') updatePassiveShards();
+    updateTimedBonusUI();
+    shardsDisplay.textContent = shards;
+  }, 1000);
   claimTimedBtn.addEventListener('click', () => {
     const now = Date.now();
     if (now - lastTimedClaim >= CONFIG.BONUS_INTERVAL_MINUTES * 60 * 1000) {
