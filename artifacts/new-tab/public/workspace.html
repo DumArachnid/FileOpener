@@ -9,11 +9,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-/* New Tab workspace — "stationery desk": warm paper, vermilion ink, stamped edges.
-   Colors are user-controlled (accent / background / panel / text); everything else derives from them. */
+/* Study Desk workspace — colors are user-controlled; defaults follow the device color preference. */
 :root {
-  --bg: #f2ebdd; --panel: #fbf7ee; --text: #25211b; --accent: #d4451f;
-  --on-accent: #ffffff; --on-accent-hover: #ffffff; --accent-ink: #d4451f;
+  --bg: #ffffff; --panel: #ebebeb; --text: #000000; --accent: #ffffff;
+  --on-accent: #000000; --on-accent-hover: #000000; --accent-ink: #000000;
   --accent-hover: color-mix(in srgb, var(--accent) 84%, #000);
   --accent-soft: color-mix(in srgb, var(--accent) 12%, var(--panel));
   --border: color-mix(in srgb, var(--text) 15%, var(--bg));
@@ -21,11 +20,19 @@
   --muted: color-mix(in srgb, var(--text) 56%, var(--bg));
   --input-bg: color-mix(in srgb, var(--panel) 55%, var(--bg));
   --ink-shadow: color-mix(in srgb, var(--text) 82%, transparent);
+  color-scheme: light;
   --danger: #b3261e; --danger-hover: #8f1d17;
   --radius: 12px; --gap: 16px; --sidebar-w: 340px;
   --main-font: 'Bricolage Grotesque', system-ui, -apple-system, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
   --ease: cubic-bezier(.2, .8, .2, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000; --panel: #333333; --text: #ffffff; --accent: #000000;
+    --on-accent: #ffffff; --on-accent-hover: #ffffff; --accent-ink: #ffffff;
+    color-scheme: dark;
+  }
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; font-family: var(--main-font); color: var(--text); background: var(--bg); transition: opacity .2s; font-size: 14px; }
@@ -1338,7 +1345,15 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     MAX_AWAY_TIME_MS: 3 * 60 * 60 * 1000,
     SHARDS_PER_SECOND: 1
   };
-  const DEFAULT_COLORS = { accent: '#d4451f', bg: '#f2ebdd', panel: '#fbf7ee', text: '#25211b' };
+  const LIGHT_DEFAULT_COLORS = { accent: '#ffffff', bg: '#ffffff', panel: '#ebebeb', text: '#000000' };
+  const DARK_DEFAULT_COLORS = { accent: '#000000', bg: '#000000', panel: '#333333', text: '#ffffff' };
+  const COLOR_KEYS = Object.keys(LIGHT_DEFAULT_COLORS);
+  const systemColorPreference = typeof window.matchMedia === 'function'
+    ? window.matchMedia('(prefers-color-scheme: dark)')
+    : null;
+  function defaultColors() {
+    return Object.assign({}, systemColorPreference && systemColorPreference.matches ? DARK_DEFAULT_COLORS : LIGHT_DEFAULT_COLORS);
+  }
   const COLOR_LABELS = { accent: 'Accent', bg: 'Background', panel: 'Panel', text: 'Text' };
   const DEFAULT_FONT = "'Bricolage Grotesque', system-ui, -apple-system, sans-serif";
 
@@ -1551,7 +1566,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
   }
   function contrast(a, b) { const la = lum(a), lb = lum(b); return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05); }
-  let colors = Object.assign({}, DEFAULT_COLORS);
+  let colors = defaultColors();
   function applyColors() {
     const r = document.documentElement.style;
     r.setProperty('--accent', colors.accent);
@@ -1576,15 +1591,15 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     hint.textContent = 'Text contrast ' + ratio.toFixed(1) + ':1' + (ratio < 4.5 ? ' (hard to read, try more contrast)' : '');
   }
   function syncColorInputs() {
-    Object.keys(DEFAULT_COLORS).forEach(k => { el('color_' + k).value = colors[k]; el('hex_' + k).value = colors[k]; el('hex_' + k).classList.remove('invalid'); });
+    COLOR_KEYS.forEach(k => { el('color_' + k).value = colors[k]; el('hex_' + k).value = colors[k]; el('hex_' + k).classList.remove('invalid'); });
   }
   function sanitizeColors(obj) {
-    const out = Object.assign({}, DEFAULT_COLORS);
-    if (obj && typeof obj === 'object') Object.keys(DEFAULT_COLORS).forEach(k => { const h = normHex(obj[k]); if (h) out[k] = h; });
+    const out = defaultColors();
+    if (obj && typeof obj === 'object') COLOR_KEYS.forEach(k => { const h = normHex(obj[k]); if (h) out[k] = h; });
     return out;
   }
   NT.sanitizeColorsJSON = function (raw) { try { return JSON.stringify(sanitizeColors(JSON.parse(raw))); } catch (e) { return null; } };
-  Object.keys(DEFAULT_COLORS).forEach(k => {
+  COLOR_KEYS.forEach(k => {
     const picker = el('color_' + k), hex = el('hex_' + k);
     picker.addEventListener('input', () => { colors[k] = picker.value; hex.value = picker.value; hex.classList.remove('invalid'); applyColors(); NT.setJSON('disguise_colors', colors); });
     hex.addEventListener('input', () => {
@@ -1595,10 +1610,18 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     hex.addEventListener('blur', () => { hex.value = colors[k]; hex.classList.remove('invalid'); applyColors(); });
   });
   el('resetColorsBtn').addEventListener('click', () => {
-    colors = Object.assign({}, DEFAULT_COLORS); syncColorInputs(); applyColors();
+    colors = defaultColors(); syncColorInputs(); applyColors();
     localStorage.removeItem('disguise_colors'); toast('Default colors restored');
   });
   NT.getColors = () => Object.assign({}, colors);
+  if (systemColorPreference) {
+    const applySystemDefaults = () => {
+      if (localStorage.getItem('disguise_colors') !== null) return;
+      colors = defaultColors(); syncColorInputs(); applyColors();
+    };
+    if (typeof systemColorPreference.addEventListener === 'function') systemColorPreference.addEventListener('change', applySystemDefaults);
+    else if (typeof systemColorPreference.addListener === 'function') systemColorPreference.addListener(applySystemDefaults);
+  }
 
   // ---------- Gating / unlocks ----------
   const isFeatureUnlocked = id => unlockedItems.includes(id);
