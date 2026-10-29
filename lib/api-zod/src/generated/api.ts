@@ -213,6 +213,31 @@ export const CreateCommunityExtensionResponse = zod.object({
 
 
 /**
+ * @summary Report a published extension
+ */
+export const ReportCommunityExtensionParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const reportCommunityExtensionBodyReasonMin = 3;
+export const reportCommunityExtensionBodyReasonMax = 500;
+
+
+
+export const ReportCommunityExtensionBody = zod.object({
+  "reason": zod.string().min(reportCommunityExtensionBodyReasonMin).max(reportCommunityExtensionBodyReasonMax)
+})
+
+export const ReportCommunityExtensionResponse = zod.object({
+  "id": zod.number().int(),
+  "extensionId": zod.string(),
+  "reason": zod.string(),
+  "status": zod.enum(['open', 'dismissed', 'actioned']),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
  * @summary Get a published extension and its source
  */
 export const GetPublicExtensionParams = zod.object({
@@ -355,6 +380,95 @@ export const ListPublishedModerationExtensionsResponseItem = zod.object({
   "code": zod.string()
 }))
 export const ListPublishedModerationExtensionsResponse = zod.array(ListPublishedModerationExtensionsResponseItem)
+
+
+/**
+ * @summary List extensions hidden from the public store
+ */
+export const ListRemovedModerationExtensionsResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "version": zod.string(),
+  "publisherUsername": zod.string(),
+  "published": zod.boolean(),
+  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected', 'removed']),
+  "moderationNote": zod.string().nullish(),
+  "updatedAt": zod.coerce.date()
+}).and(zod.object({
+  "code": zod.string()
+}))
+export const ListRemovedModerationExtensionsResponse = zod.array(ListRemovedModerationExtensionsResponseItem)
+
+
+/**
+ * @summary List open community extension reports
+ */
+export const ListCommunityExtensionReportsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "extensionId": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "code": zod.string(),
+  "version": zod.string(),
+  "publisherUsername": zod.string(),
+  "published": zod.boolean(),
+  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected', 'removed']),
+  "reportReason": zod.string(),
+  "reporterUsername": zod.string(),
+  "reportedAt": zod.coerce.date()
+})
+export const ListCommunityExtensionReportsResponse = zod.array(ListCommunityExtensionReportsResponseItem)
+
+
+/**
+ * @summary Dismiss a report or hide its extension
+ */
+
+
+
+export const ReviewCommunityExtensionReportParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const reviewCommunityExtensionReportBodyNoteMax = 500;
+
+
+
+export const ReviewCommunityExtensionReportBody = zod.object({
+  "action": zod.enum(['dismiss', 'hide']),
+  "note": zod.string().max(reviewCommunityExtensionReportBodyNoteMax).optional()
+})
+
+export const ReviewCommunityExtensionReportResponse = zod.object({
+  "id": zod.number().int(),
+  "extensionId": zod.string(),
+  "reason": zod.string(),
+  "status": zod.enum(['open', 'dismissed', 'actioned']),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Restore a hidden extension to the public store
+ */
+export const RestoreCommunityExtensionParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const RestoreCommunityExtensionResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string(),
+  "version": zod.string(),
+  "publisherUsername": zod.string(),
+  "published": zod.boolean(),
+  "approvalStatus": zod.enum(['draft', 'pending', 'approved', 'rejected', 'removed']),
+  "moderationNote": zod.string().nullish(),
+  "updatedAt": zod.coerce.date()
+}).and(zod.object({
+  "code": zod.string()
+}))
 
 
 /**

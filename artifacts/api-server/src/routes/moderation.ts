@@ -1,6 +1,23 @@
 import { and, desc, eq } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { Router, type IRouter } from "express";
-import { adminAuditTable, communityExtensionsTable, db, studySessionsTable, studyUsersTable } from "@workspace/db";
+import {
+  adminAuditTable,
+  communityExtensionReportsTable,
+  communityExtensionsTable,
+  db,
+  studySessionsTable,
+  studyUsersTable,
+} from "@workspace/db";
+import {
+  ListCommunityExtensionReportsResponse,
+  ListRemovedModerationExtensionsResponse,
+  RestoreCommunityExtensionParams,
+  RestoreCommunityExtensionResponse,
+  ReviewCommunityExtensionReportBody,
+  ReviewCommunityExtensionReportParams,
+  ReviewCommunityExtensionReportResponse,
+} from "@workspace/api-zod";
 import { requireModerator } from "../middlewares/accountSession";
 
 const router: IRouter = Router();
@@ -184,6 +201,239 @@ router.get(
       .orderBy(desc(communityExtensionsTable.updatedAt))
       .limit(25);
     res.json(rows.map(extensionSummary));
+  },
+);
+
+router.get(
+  "/moderation/extensions/removed",
+  requireModerator,
+  async (_req, res): Promise<void> => {
+    const rows = await db
+      .select({
+        id: communityExtensionsTable.id,
+        name: communityExtensionsTable.name,
+        description: communityExtensionsTable.description,
+        code: communityExtensionsTable.code,
+        version: communityExtensionsTable.version,
+        published: communityExtensionsTable.published,
+        approvalStatus: communityExtensionsTable.approvalStatus,
+        moderationNote: communityExtensionsTable.moderationNote,
+        updatedAt: communityExtensionsTable.updatedAt,
+        username: studyUsersTable.username,
+      })
+      .from(communityExtensionsTable)
+      .innerJoin(studyUsersTable, eq(communityExtensionsTable.ownerId, studyUsersTable.id))
+      .where(
+        and(
+          eq(communityExtensionsTable.published, false),
+          eq(communityExtensionsTable.approvalStatus, "removed"),
+        ),
+      )
+      .orderBy(desc(communityExtensionsTable.updatedAt))
+      .limit(100);
+    res.json(
+      ListRemovedModerationExtensionsResponse.parse(
+        rows.map((row) => ({
+          ...extensionSummary(row),
+          moderationNote: row.moderationNote,
+        })),
+      ),
+    );
+  },
+);
+
+router.get(
+  "/moderation/extension-reports",
+  requireModerator,
+  async (_req, res): Promise<void> => {
+    const reporter = alias(studyUsersTable, "extension_reporter");
+    const owner = alias(studyUsersTable, "extension_owner");
+    const rows = await db
+      .select({
+        id: communityExtensionReportsTable.id,
+        extensionId: communityExtensionsTable.id,
+        name: communityExtensionsTable.name,
+        description: communityExtensionsTable.description,
+        code: communityExtensionsTable.code,
+        version: communityExtensionsTable.version,
+        publisherUsername: owner.username,
+        published: communityExtensionsTable.published,
+        approvalStatus: communityExtensionsTable.approvalStatus,
+        reportReason: communityExtensionReportsTable.reason,
+        reporterUsername: reporter.username,
+        reportedAt: communityExtensionReportsTable.createdAt,
+      })
+      .from(communityExtensionReportsTable)
+      .innerJoin(communityExtensionsTable, eq(communityExtensionReportsTable.extensionId, communityExtensionsTable.id))
+      .innerJoin(owner, eq(communityExtensionsTable.ownerId, owner.id))
+      .innerJoin(reporter, eq(communityExtensionReportsTable.reporterId, reporter.id))
+      .where(eq(communityExtensionReportsTable.status, "open"))
+      .orderBy(desc(communityExtensionReportsTable.createdAt))
+      .limit(100);
+    res.json(ListCommunityExtensionReportsResponse.parse(rows));
+  },
+);
+
+router.post(
+  "/moderation/extension-reports/:id/review",
+  requireModerator,
+  async (req, res): Promise<void> => {
+    const params = ReviewCommunityExtensionReportParams.safeParse(req.params);
+    const parsed = ReviewCommunityExtensionReportBody.safeParse(req.body);
+    if (!params.success || !parsed.success) {
+      res.status(400).json({ error: "Check the report review and try again." });
+      return;
+    }
+    const now = new Date();
+    const report = await db.transaction(async (tx) => {
+      const [openReport] = await tx
+        .select({
+          id: communityExtensionReportsTable.id,
+          extensionId: communityExtensionsTable.id,
+          extensionName: communityExtensionsTable.name,
+          ownerId: communityExtensionsTable.ownerId,
+          ownerUsername: studyUsersTable.username,
+          reason: communityExtensionReportsTable.reason,
+        })
+        .from(communityExtensionReportsTable)
+        .innerJoin(communityExtensionsTable, eq(communityExtensionReportsTable.extensionId, communityExtensionsTable.id))
+        .innerJoin(studyUsersTable, eq(communityExtensionsTable.ownerId, studyUsersTable.id))
+        .where(
+          and(
+            eq(communityExtensionReportsTable.id, params.data.id),
+            eq(communityExtensionReportsTable.status, "open"),
+          ),
+        )
+        .limit(1)
+        .for("update", { of: communityExtensionReportsTable });
+      if (!openReport) return { error: "not-found" as const };
+      if (parsed.data.action === "hide" && openReport.ownerId === req.studyDeskUser!.id) {
+        return { error: "own-extension" as const };
+      }
+
+      const status = parsed.data.action === "hide" ? "actioned" : "dismissed";
+      if (parsed.data.action === "hide") {
+        const note = parsed.data.note?.trim() || "Removed after a community report.";
+        await tx
+          .update(communityExtensionsTable)
+          .set({
+            published: false,
+            approvalStatus: "removed",
+            moderationNote: note,
+            reviewedAt: now,
+            reviewedBy: req.studyDeskUser!.id,
+            updatedAt: now,
+          })
+          .where(
+            and(
+              eq(communityExtensionsTable.id, openReport.extensionId),
+              eq(communityExtensionsTable.published, true),
+              eq(communityExtensionsTable.approvalStatus, "approved"),
+            ),
+          );
+        await tx
+          .update(communityExtensionReportsTable)
+          .set({ status, reviewedAt: now, reviewedBy: req.studyDeskUser!.id })
+          .where(
+            and(
+              eq(communityExtensionReportsTable.extensionId, openReport.extensionId),
+              eq(communityExtensionReportsTable.status, "open"),
+            ),
+          );
+        await tx.insert(adminAuditTable).values({
+          actorUsername: req.studyDeskUser!.username,
+          targetUsername: openReport.ownerUsername,
+          action: "extension.removed",
+          reason: parsed.data.note?.trim() || openReport.reason,
+          details: {
+            extensionId: openReport.extensionId,
+            extensionName: openReport.extensionName,
+            reportId: openReport.id,
+          },
+        });
+      } else {
+        await tx
+          .update(communityExtensionReportsTable)
+          .set({ status, reviewedAt: now, reviewedBy: req.studyDeskUser!.id })
+          .where(
+            and(
+              eq(communityExtensionReportsTable.id, openReport.id),
+              eq(communityExtensionReportsTable.status, "open"),
+            ),
+          );
+      }
+      const [updated] = await tx
+        .select()
+        .from(communityExtensionReportsTable)
+        .where(eq(communityExtensionReportsTable.id, openReport.id))
+        .limit(1);
+      return updated ? { report: updated } : { error: "not-found" as const };
+    });
+    if ("error" in report) {
+      res.status(report.error === "own-extension" ? 409 : 404).json({
+        error:
+          report.error === "own-extension"
+            ? "Moderators cannot review reports about their own extensions."
+            : "Open report not found.",
+      });
+      return;
+    }
+    res.json(ReviewCommunityExtensionReportResponse.parse(report.report));
+  },
+);
+
+router.post(
+  "/moderation/extensions/:id/restore",
+  requireModerator,
+  async (req, res): Promise<void> => {
+    const params = RestoreCommunityExtensionParams.safeParse(req.params);
+    if (!params.success || !UUID_RE.test(params.data.id)) {
+      res.status(400).json({ error: "Invalid extension id." });
+      return;
+    }
+    const [row] = await db
+      .update(communityExtensionsTable)
+      .set({
+        published: true,
+        approvalStatus: "approved",
+        moderationNote: null,
+        reviewedAt: new Date(),
+        reviewedBy: req.studyDeskUser!.id,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(communityExtensionsTable.id, params.data.id),
+          eq(communityExtensionsTable.published, false),
+          eq(communityExtensionsTable.approvalStatus, "removed"),
+        ),
+      )
+      .returning();
+    if (!row) {
+      res.status(404).json({ error: "Hidden extension not found." });
+      return;
+    }
+    const [owner] = await db
+      .select({ username: studyUsersTable.username })
+      .from(studyUsersTable)
+      .where(eq(studyUsersTable.id, row.ownerId))
+      .limit(1);
+    if (!owner) {
+      res.status(404).json({ error: "Extension owner not found." });
+      return;
+    }
+    await db.insert(adminAuditTable).values({
+      actorUsername: req.studyDeskUser!.username,
+      targetUsername: owner.username,
+      action: "extension.restored",
+      reason: "Extension restored to the public store.",
+      details: { extensionId: row.id, extensionName: row.name },
+    });
+    res.json(RestoreCommunityExtensionResponse.parse({
+      ...extensionSummary({ ...row, username: owner.username }),
+      code: row.code,
+      moderationNote: row.moderationNote,
+    }));
   },
 );
 

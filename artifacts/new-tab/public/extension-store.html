@@ -263,6 +263,7 @@
       try { state.user = (await request('/auth/me')).user; }
       catch (error) { state.user = null; }
       updateAccountState();
+      renderPublic();
       await Promise.all([loadOwned(), loadDeveloperAuth()]);
       if (!state.user) setStatus(state.public.length ? 'Browse approved extensions. Sign in from Study Desk to create or manage your extensions.' : 'Online store is ready. Sign in from Study Desk to create an extension.', false);
     }
@@ -345,6 +346,48 @@
         head.append(text('strong', 'card-title', item.name), text('span', 'badge', 'PUBLIC'));
         card.append(head, text('p', '', item.description), text('p', 'muted', 'By ' + item.publisherUsername + ' · ' + item.version));
         card.appendChild(button('Review source', function () { reviewPublic(item); }));
+        if (!state.user || state.user.username !== item.publisherUsername) {
+          var reportToggle = button('Report listing', function () {
+            if (!state.user) {
+              askForAccount('login');
+              return;
+            }
+            reportForm.classList.toggle('hidden');
+            if (!reportForm.classList.contains('hidden')) reason.focus();
+          });
+          var reportForm = text('form', 'hidden');
+          var reasonLabel = text('label', '', 'Why should this listing be reviewed?');
+          var reason = text('textarea');
+          reason.id = 'report-reason-' + item.id;
+          reason.maxLength = 500;
+          reason.minLength = 3;
+          reason.required = true;
+          reason.rows = 3;
+          reason.setAttribute('aria-label', 'Reason for reporting ' + item.name);
+          reasonLabel.htmlFor = reason.id;
+          var feedback = text('p', 'status');
+          feedback.setAttribute('aria-live', 'polite');
+          var submit = button('Send report', function () {
+            if (!reason.reportValidity()) return;
+            submit.disabled = true;
+            request('/store/extensions/' + encodeURIComponent(item.id) + '/reports', {
+              method: 'POST',
+              body: { reason: reason.value.trim() },
+            }).then(function () {
+              reportForm.classList.add('hidden');
+              reason.value = '';
+              feedback.textContent = 'Report sent to the review team.';
+              reportToggle.disabled = true;
+              reportToggle.textContent = 'Reported';
+            }).catch(function (error) {
+              feedback.textContent = error.message;
+              feedback.classList.add('error');
+            }).finally(function () { submit.disabled = false; });
+          }, 'primary');
+          reportForm.addEventListener('submit', function (event) { event.preventDefault(); submit.click(); });
+          reportForm.append(reasonLabel, reason, submit, feedback);
+          card.append(reportToggle, reportForm);
+        }
         host.appendChild(card);
       });
       if (!state.public.length) host.appendChild(text('p', 'status', 'No public community extensions yet.'));

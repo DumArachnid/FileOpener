@@ -849,9 +849,15 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div><h5>Submissions awaiting approval</h5></div>
 <div class="online-store-status" id="moderationQueueStatus" role="status"></div>
 <div class="community-list" id="moderationQueue" aria-label="Extensions awaiting approval"></div>
+<div class="row-between"><h5>Community reports</h5><button class="btn sm" id="refreshExtensionReportsBtn" type="button">Refresh reports</button></div>
+<div class="online-store-status" id="extensionReportsStatus" role="status"></div>
+<div class="community-list" id="extensionReportsList" aria-label="Reported community extensions"></div>
 <div><h5>Published extensions</h5><p>Take an extension out of the public store without deleting the creator’s saved code.</p></div>
 <div class="online-store-status" id="moderationPublishedStatus" role="status"></div>
 <div class="community-list" id="moderationPublishedExtensions" aria-label="Published extensions available for moderation"></div>
+<div><h5>Hidden extensions</h5><p>Restore a previously removed listing without changing the creator’s saved draft.</p></div>
+<div class="online-store-status" id="removedExtensionsStatus" role="status"></div>
+<div class="community-list" id="removedModerationExtensions" aria-label="Hidden extensions available for restoration"></div>
 <div><h5>Manage an account</h5></div>
 <form class="moderation-search" id="moderationUserSearchForm">
 <label for="moderationUsernameSearch">Find an account by exact username</label>
@@ -4041,6 +4047,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   var accountUser = null;
   var pendingModerationExtensions = [];
   var publishedModerationExtensions = [];
+  var communityExtensionReports = [];
+  var removedModerationExtensions = [];
   var adminListsLoaded = false;
   var adminListsLoading = false;
   var moderatedUser = null;
@@ -4261,12 +4269,18 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     if (!isModerator) {
       pendingModerationExtensions = [];
       publishedModerationExtensions = [];
+      communityExtensionReports = [];
+      removedModerationExtensions = [];
       moderatedUser = null;
       $('moderationQueue').replaceChildren();
       $('moderationPublishedExtensions').replaceChildren();
+      $('extensionReportsList').replaceChildren();
+      $('removedModerationExtensions').replaceChildren();
       $('moderationUserResult').replaceChildren();
       $('moderationQueueStatus').textContent = '';
       $('moderationPublishedStatus').textContent = '';
+      $('extensionReportsStatus').textContent = '';
+      $('removedExtensionsStatus').textContent = '';
       $('moderationHistoryResult').replaceChildren();
       $('moderationTabsResult').replaceChildren();
       $('moderationHistoryStatus').textContent = 'Search for an account to view its ban and admin-action history.';
@@ -4551,11 +4565,19 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       adminListsLoading = true;
       $('moderationQueueStatus').textContent = 'Loading submissions…';
       $('moderationPublishedStatus').textContent = 'Loading published extensions…';
-      Promise.all([loadModerationQueue(), loadPublishedModerationExtensions()])
+      $('extensionReportsStatus').textContent = 'Loading reports…';
+      $('removedExtensionsStatus').textContent = 'Loading hidden extensions…';
+      Promise.all([
+        loadModerationQueue(),
+        loadPublishedModerationExtensions(),
+        loadCommunityExtensionReports(),
+        loadRemovedModerationExtensions(),
+      ])
         .then(function (results) { adminListsLoaded = results.every(Boolean); })
         .finally(function () { adminListsLoading = false; });
     }
   });
+  $('refreshExtensionReportsBtn').addEventListener('click', loadCommunityExtensionReports);
   $('adminCloseBtn').addEventListener('click', function () { adminDialog.close(); });
   adminDialog.addEventListener('click', function (event) {
     if (event.target === adminDialog) adminDialog.close();
@@ -4714,6 +4736,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
             body: { reason: note },
           });
           await loadPublishedModerationExtensions();
+          await loadRemovedModerationExtensions();
           await loadPublicExtensions();
           await loadMyExtensions();
           NT.toast('Extension removed from the public store.');
@@ -4724,6 +4747,179 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       row.append(content, actions);
       container.appendChild(row);
     });
+  }
+
+  function renderCommunityExtensionReports() {
+    var container = $('extensionReportsList');
+    container.replaceChildren();
+    if (!communityExtensionReports.length) {
+      var empty = document.createElement('p');
+      empty.className = 'small muted';
+      empty.textContent = 'No open community reports.';
+      container.appendChild(empty);
+      return;
+    }
+    communityExtensionReports.forEach(function (item) {
+      var row = document.createElement('article');
+      row.className = 'community-row';
+      var content = document.createElement('div');
+      content.style.flex = '1 1 300px';
+      var name = document.createElement('strong');
+      name.textContent = item.name + ' · by ' + item.publisherUsername;
+      var reportReason = document.createElement('p');
+      reportReason.textContent = 'Reported by ' + item.reporterUsername + ': ' + item.reportReason;
+      reportReason.style.margin = '4px 0';
+      var description = document.createElement('p');
+      description.textContent = item.description;
+      description.style.margin = '4px 0';
+      var details = document.createElement('details');
+      var summary = document.createElement('summary');
+      summary.textContent = 'Review reported JavaScript';
+      var source = document.createElement('pre');
+      source.className = 'moderation-source';
+      source.textContent = item.code;
+      details.append(summary, source);
+      var noteLabel = document.createElement('label');
+      noteLabel.textContent = 'Optional note shown to the creator';
+      var note = document.createElement('input');
+      note.maxLength = 500;
+      note.setAttribute('aria-label', 'Optional note for ' + item.name + ' creator');
+      content.append(name, reportReason, description, details, noteLabel, note);
+      var actions = document.createElement('div');
+      actions.className = 'community-row-actions';
+      var hideButton = makeButton('Hide extension', 'btn sm danger-ghost', function () {
+        reviewCommunityExtensionReport(item, 'hide', note.value);
+      });
+      if (accountUser && accountUser.username === item.publisherUsername) {
+        hideButton.disabled = true;
+        hideButton.title = 'A moderator cannot review a report about their own extension.';
+      }
+      actions.appendChild(hideButton);
+      actions.appendChild(makeButton('Dismiss report', 'btn sm', function () {
+        reviewCommunityExtensionReport(item, 'dismiss', '');
+      }));
+      row.append(content, actions);
+      container.appendChild(row);
+    });
+  }
+
+  function renderRemovedModerationExtensions() {
+    var container = $('removedModerationExtensions');
+    container.replaceChildren();
+    if (!removedModerationExtensions.length) {
+      var empty = document.createElement('p');
+      empty.className = 'small muted';
+      empty.textContent = 'No hidden extensions.';
+      container.appendChild(empty);
+      return;
+    }
+    removedModerationExtensions.forEach(function (item) {
+      var row = document.createElement('article');
+      row.className = 'community-row';
+      var content = document.createElement('div');
+      content.style.flex = '1 1 300px';
+      var name = document.createElement('strong');
+      name.textContent = item.name + ' · by ' + item.publisherUsername;
+      var note = document.createElement('p');
+      note.textContent = item.moderationNote || 'No removal note.';
+      note.style.margin = '4px 0';
+      var details = document.createElement('details');
+      var summary = document.createElement('summary');
+      summary.textContent = 'Review hidden JavaScript';
+      var source = document.createElement('pre');
+      source.className = 'moderation-source';
+      source.textContent = item.code;
+      details.append(summary, source);
+      content.append(name, note, details);
+      var actions = document.createElement('div');
+      actions.className = 'community-row-actions';
+      actions.appendChild(makeButton('Restore to store', 'btn sm primary', function () {
+        restoreCommunityExtension(item);
+      }));
+      row.append(content, actions);
+      container.appendChild(row);
+    });
+  }
+
+  async function loadCommunityExtensionReports() {
+    if (!hasModeratorAccess(accountUser)) return false;
+    $('extensionReportsStatus').textContent = 'Loading reports…';
+    try {
+      communityExtensionReports = await api('/moderation/extension-reports');
+      $('extensionReportsStatus').textContent = communityExtensionReports.length
+        ? communityExtensionReports.length + ' open report' + (communityExtensionReports.length === 1 ? '' : 's') + '.'
+        : 'The report queue is clear.';
+      renderCommunityExtensionReports();
+      return true;
+    } catch (error) {
+      communityExtensionReports = [];
+      $('extensionReportsStatus').textContent = 'Could not load community reports: ' + readError(error);
+      renderCommunityExtensionReports();
+      return false;
+    }
+  }
+
+  async function loadRemovedModerationExtensions() {
+    if (!hasModeratorAccess(accountUser)) return false;
+    $('removedExtensionsStatus').textContent = 'Loading hidden extensions…';
+    try {
+      removedModerationExtensions = await api('/moderation/extensions/removed');
+      $('removedExtensionsStatus').textContent = removedModerationExtensions.length
+        ? removedModerationExtensions.length + ' hidden extension' + (removedModerationExtensions.length === 1 ? '' : 's') + '.'
+        : 'No hidden extensions.';
+      renderRemovedModerationExtensions();
+      return true;
+    } catch (error) {
+      removedModerationExtensions = [];
+      $('removedExtensionsStatus').textContent = 'Could not load hidden extensions: ' + readError(error);
+      renderRemovedModerationExtensions();
+      return false;
+    }
+  }
+
+  async function reviewCommunityExtensionReport(item, action, note) {
+    if (action === 'hide' && !(await NT.confirmDialog(
+      'Hide this extension?',
+      'It will no longer be listed or installable. The creator’s saved code will not be deleted.',
+      'Hide extension',
+      true,
+    ))) return;
+    try {
+      await api('/moderation/extension-reports/' + encodeURIComponent(String(item.id)) + '/review', {
+        method: 'POST',
+        body: { action: action, note: note || '' },
+      });
+      await Promise.all([
+        loadCommunityExtensionReports(),
+        loadRemovedModerationExtensions(),
+        loadPublishedModerationExtensions(),
+        loadPublicExtensions(),
+        loadMyExtensions(),
+      ]);
+      NT.toast(action === 'hide' ? 'Extension hidden from the public store.' : 'Report dismissed.');
+    } catch (error) {
+      NT.toast(readError(error), 'error');
+    }
+  }
+
+  async function restoreCommunityExtension(item) {
+    if (!(await NT.confirmDialog(
+      'Restore this extension?',
+      'It will be listed publicly again. The creator’s saved code remains unchanged.',
+      'Restore extension',
+    ))) return;
+    try {
+      await api('/moderation/extensions/' + encodeURIComponent(item.id) + '/restore', { method: 'POST' });
+      await Promise.all([
+        loadRemovedModerationExtensions(),
+        loadPublishedModerationExtensions(),
+        loadPublicExtensions(),
+        loadMyExtensions(),
+      ]);
+      NT.toast('Extension restored to the public store.');
+    } catch (error) {
+      NT.toast(readError(error), 'error');
+    }
   }
 
   async function loadModerationQueue() {
@@ -4780,6 +4976,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       });
       await loadModerationQueue();
       await loadPublishedModerationExtensions();
+          await loadRemovedModerationExtensions();
       await loadPublicExtensions();
       await loadMyExtensions();
       NT.toast(decision === 'approve' ? 'Extension approved and listed publicly.' : 'Extension rejected; the creator can see your note.');
@@ -4910,6 +5107,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
           'extension.approved': 'Extension approved',
           'extension.rejected': 'Extension rejected',
           'extension.removed': 'Extension removed from public store',
+          'extension.restored': 'Extension restored to public store',
         };
         title.textContent = actionLabels[entry.action] || entry.action;
         var detail = document.createElement('div');

@@ -164,6 +164,73 @@ export interface ExtensionTakedownInput {
   reason: string;
 }
 
+export interface ExtensionReportInput {
+  /**
+     * @minLength 3
+     * @maxLength 500
+     */
+  reason: string;
+}
+
+export type ExtensionReportCreatedStatus = typeof ExtensionReportCreatedStatus[keyof typeof ExtensionReportCreatedStatus];
+
+
+export const ExtensionReportCreatedStatus = {
+  open: 'open',
+  dismissed: 'dismissed',
+  actioned: 'actioned',
+} as const;
+
+export interface ExtensionReportCreated {
+  id: number;
+  extensionId: string;
+  reason: string;
+  status: ExtensionReportCreatedStatus;
+  createdAt: string;
+}
+
+export type ExtensionReportReviewInputAction = typeof ExtensionReportReviewInputAction[keyof typeof ExtensionReportReviewInputAction];
+
+
+export const ExtensionReportReviewInputAction = {
+  dismiss: 'dismiss',
+  hide: 'hide',
+} as const;
+
+export interface ExtensionReportReviewInput {
+  action: ExtensionReportReviewInputAction;
+  /** @maxLength 500 */
+  note?: string;
+}
+
+export type ExtensionReportItemApprovalStatus = typeof ExtensionReportItemApprovalStatus[keyof typeof ExtensionReportItemApprovalStatus];
+
+
+export const ExtensionReportItemApprovalStatus = {
+  draft: 'draft',
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+  removed: 'removed',
+} as const;
+
+export interface ExtensionReportItem {
+  id: number;
+  extensionId: string;
+  name: string;
+  description: string;
+  code: string;
+  version: string;
+  publisherUsername: string;
+  published: boolean;
+  approvalStatus: ExtensionReportItemApprovalStatus;
+  reportReason: string;
+  reporterUsername: string;
+  reportedAt: string;
+}
+
+export type ExtensionReportList = ExtensionReportItem[];
+
 export type ModerationUserRole = typeof ModerationUserRole[keyof typeof ModerationUserRole];
 
 

@@ -206,6 +206,36 @@ paths:
                 $ref: "#/components/schemas/CommunityExtension"
         "401":
           description: Sign in required
+  /store/extensions/{id}/reports:
+    post:
+      operationId: reportCommunityExtension
+      tags: [extensions]
+      summary: Report a published extension
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExtensionReportInput"
+      responses:
+        "201":
+          description: Report saved for moderator review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtensionReportCreated"
+        "401":
+          description: Sign in required
+        "404":
+          description: Published extension not found
+        "409":
+          description: This account has already reported the extension
   /store/extensions/{id}:
     get:
       operationId: getPublicExtension
@@ -334,6 +364,87 @@ paths:
                 $ref: "#/components/schemas/ModerationExtensionList"
         "403":
           description: Moderator access required
+  /moderation/extensions/removed:
+    get:
+      operationId: listRemovedModerationExtensions
+      tags: [moderation]
+      summary: List extensions hidden from the public store
+      responses:
+        "200":
+          description: Hidden extensions with source code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModerationExtensionList"
+        "403":
+          description: Moderator access required
+  /moderation/extension-reports:
+    get:
+      operationId: listCommunityExtensionReports
+      tags: [moderation]
+      summary: List open community extension reports
+      responses:
+        "200":
+          description: Open reports with extension source and reporter details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtensionReportList"
+        "403":
+          description: Moderator access required
+  /moderation/extension-reports/{id}/review:
+    post:
+      operationId: reviewCommunityExtensionReport
+      tags: [moderation]
+      summary: Dismiss a report or hide its extension
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExtensionReportReviewInput"
+      responses:
+        "200":
+          description: Report reviewed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtensionReportCreated"
+        "403":
+          description: Moderator access required
+        "404":
+          description: Open report not found
+        "409":
+          description: A moderator cannot hide their own extension
+  /moderation/extensions/{id}/restore:
+    post:
+      operationId: restoreCommunityExtension
+      tags: [moderation]
+      summary: Restore a hidden extension to the public store
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Extension restored to public listings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunityExtension"
+        "403":
+          description: Moderator access required
+        "404":
+          description: Hidden extension not found
   /moderation/extensions/{id}/review:
     post:
       operationId: reviewCommunityExtension
@@ -876,6 +987,74 @@ components:
           type: string
           minLength: 1
           maxLength: 500
+    ExtensionReportInput:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 500
+    ExtensionReportCreated:
+      type: object
+      required: [id, extensionId, reason, status, createdAt]
+      properties:
+        id:
+          type: integer
+        extensionId:
+          type: string
+        reason:
+          type: string
+        status:
+          type: string
+          enum: [open, dismissed, actioned]
+        createdAt:
+          type: string
+          format: date-time
+    ExtensionReportReviewInput:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [dismiss, hide]
+        note:
+          type: string
+          maxLength: 500
+    ExtensionReportItem:
+      type: object
+      required: [id, extensionId, name, description, code, version, publisherUsername, published, approvalStatus, reportReason, reporterUsername, reportedAt]
+      properties:
+        id:
+          type: integer
+        extensionId:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        code:
+          type: string
+        version:
+          type: string
+        publisherUsername:
+          type: string
+        published:
+          type: boolean
+        approvalStatus:
+          type: string
+          enum: [draft, pending, approved, rejected, removed]
+        reportReason:
+          type: string
+        reporterUsername:
+          type: string
+        reportedAt:
+          type: string
+          format: date-time
+    ExtensionReportList:
+      type: array
+      items:
+        $ref: "#/components/schemas/ExtensionReportItem"
     ModerationUser:
       type: object
       required: [username, role, banned, createdAt, banReason]

@@ -11,11 +11,14 @@ import {
   ListPublicExtensionsResponse,
   PublishCommunityExtensionParams,
   PublishCommunityExtensionResponse,
+  ReportCommunityExtensionBody,
+  ReportCommunityExtensionParams,
+  ReportCommunityExtensionResponse,
   UpdateCommunityExtensionBody,
   UpdateCommunityExtensionParams,
   UpdateCommunityExtensionResponse,
 } from "@workspace/api-zod";
-import { communityExtensionsTable, db, studyUsersTable } from "@workspace/db";
+import { communityExtensionReportsTable, communityExtensionsTable, db, studyUsersTable } from "@workspace/db";
 import { authRateLimit } from "../middlewares/authRateLimit";
 import { requireAccount } from "../middlewares/accountSession";
 
@@ -121,6 +124,59 @@ router.get("/store/extensions/:id", async (req, res): Promise<void> => {
     }),
   );
 });
+
+router.post(
+  "/store/extensions/:id/reports",
+  authRateLimit,
+  requireAccount,
+  async (req, res): Promise<void> => {
+    const params = ReportCommunityExtensionParams.safeParse(req.params);
+    const parsed = ReportCommunityExtensionBody.safeParse(req.body);
+    const reason = parsed.success ? parsed.data.reason.trim() : "";
+    if (!params.success || !parsed.success || reason.length < 3) {
+      res.status(400).json({ error: "Enter a short reason of at least 3 characters." });
+      return;
+    }
+
+    const [extension] = await db
+      .select({
+        id: communityExtensionsTable.id,
+        ownerId: communityExtensionsTable.ownerId,
+      })
+      .from(communityExtensionsTable)
+      .where(
+        and(
+          eq(communityExtensionsTable.id, params.data.id),
+          eq(communityExtensionsTable.published, true),
+          eq(communityExtensionsTable.approvalStatus, "approved"),
+        ),
+      )
+      .limit(1);
+    if (!extension) {
+      res.status(404).json({ error: "Published extension not found." });
+      return;
+    }
+    if (extension.ownerId === req.studyDeskUser!.id) {
+      res.status(409).json({ error: "You cannot report your own extension." });
+      return;
+    }
+
+    const [report] = await db
+      .insert(communityExtensionReportsTable)
+      .values({
+        extensionId: extension.id,
+        reporterId: req.studyDeskUser!.id,
+        reason,
+      })
+      .onConflictDoNothing()
+      .returning();
+    if (!report) {
+      res.status(409).json({ error: "You have already reported this extension." });
+      return;
+    }
+    res.status(201).json(ReportCommunityExtensionResponse.parse(report));
+  },
+);
 
 router.get("/store/mine", requireAccount, async (req, res): Promise<void> => {
   const rows = await db

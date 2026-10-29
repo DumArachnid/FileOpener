@@ -35,6 +35,10 @@ import type {
   DeveloperRoleInput,
   ExtensionInput,
   ExtensionList,
+  ExtensionReportCreated,
+  ExtensionReportInput,
+  ExtensionReportList,
+  ExtensionReportReviewInput,
   ExtensionTakedownInput,
   FindDeveloperManagedAccountParams,
   FindModerationUserParams,
@@ -1053,6 +1057,95 @@ export const useCreateCommunityExtension = <TError = ErrorType<void>,
       return useMutation(getCreateCommunityExtensionMutationOptions(options));
     }
 
+export const getReportCommunityExtensionUrl = (id: string,) => {
+
+
+
+
+  return `/api/store/extensions/${id}/reports`
+}
+
+/**
+ * @summary Report a published extension
+ */
+export const reportCommunityExtension = async (id: string,
+    extensionReportInput: ExtensionReportInput, options?: Parameters<typeof customFetch>[1]): Promise<ExtensionReportCreated> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ExtensionReportCreated>(getReportCommunityExtensionUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(extensionReportInput)
+  }
+);}
+
+
+
+
+
+export const getReportCommunityExtensionMutationKey = () => ['reportCommunityExtension'] as const;
+
+export const getReportCommunityExtensionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportCommunityExtension>>, TError,ReportCommunityExtensionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reportCommunityExtension>>, TError,ReportCommunityExtensionMutationVariables, TContext> => {
+
+const mutationKey = getReportCommunityExtensionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reportCommunityExtension>>, ReportCommunityExtensionMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  reportCommunityExtension(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReportCommunityExtensionMutationResult = NonNullable<Awaited<ReturnType<typeof reportCommunityExtension>>>
+    export type ReportCommunityExtensionMutationBody = BodyType<ExtensionReportInput>
+    export type ReportCommunityExtensionMutationError = ErrorType<void>
+    export type ReportCommunityExtensionMutationVariables = {id: string;data: BodyType<ExtensionReportInput>}
+
+    /**
+ * @summary Report a published extension
+ */
+export const useReportCommunityExtension = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reportCommunityExtension>>, TError,ReportCommunityExtensionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reportCommunityExtension>>,
+        TError,
+        ReportCommunityExtensionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReportCommunityExtensionMutationOptions(options));
+    }
+
 export const getGetPublicExtensionUrl = (id: string,) => {
 
 
@@ -1597,6 +1690,323 @@ export function useListPublishedModerationExtensions<TData = Awaited<ReturnType<
 
 
 
+
+export const getListRemovedModerationExtensionsUrl = () => {
+
+
+
+
+  return `/api/moderation/extensions/removed`
+}
+
+/**
+ * @summary List extensions hidden from the public store
+ */
+export const listRemovedModerationExtensions = async ( options?: Parameters<typeof customFetch>[1]): Promise<ModerationExtensionList> => {
+
+  return customFetch<ModerationExtensionList>(getListRemovedModerationExtensionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListRemovedModerationExtensionsQueryKey = () => {
+    return [
+    `/api/moderation/extensions/removed`
+    ] as const;
+    }
+
+
+export const getListRemovedModerationExtensionsQueryOptions = <TData = Awaited<ReturnType<typeof listRemovedModerationExtensions>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRemovedModerationExtensions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRemovedModerationExtensionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRemovedModerationExtensions>>> = ({ signal }) => listRemovedModerationExtensions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRemovedModerationExtensions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListRemovedModerationExtensionsQueryResult = NonNullable<Awaited<ReturnType<typeof listRemovedModerationExtensions>>>
+export type ListRemovedModerationExtensionsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List extensions hidden from the public store
+ */
+
+export function useListRemovedModerationExtensions<TData = Awaited<ReturnType<typeof listRemovedModerationExtensions>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRemovedModerationExtensions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListRemovedModerationExtensionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListCommunityExtensionReportsUrl = () => {
+
+
+
+
+  return `/api/moderation/extension-reports`
+}
+
+/**
+ * @summary List open community extension reports
+ */
+export const listCommunityExtensionReports = async ( options?: Parameters<typeof customFetch>[1]): Promise<ExtensionReportList> => {
+
+  return customFetch<ExtensionReportList>(getListCommunityExtensionReportsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCommunityExtensionReportsQueryKey = () => {
+    return [
+    `/api/moderation/extension-reports`
+    ] as const;
+    }
+
+
+export const getListCommunityExtensionReportsQueryOptions = <TData = Awaited<ReturnType<typeof listCommunityExtensionReports>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCommunityExtensionReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCommunityExtensionReportsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCommunityExtensionReports>>> = ({ signal }) => listCommunityExtensionReports({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCommunityExtensionReports>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCommunityExtensionReportsQueryResult = NonNullable<Awaited<ReturnType<typeof listCommunityExtensionReports>>>
+export type ListCommunityExtensionReportsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List open community extension reports
+ */
+
+export function useListCommunityExtensionReports<TData = Awaited<ReturnType<typeof listCommunityExtensionReports>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCommunityExtensionReports>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCommunityExtensionReportsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getReviewCommunityExtensionReportUrl = (id: number,) => {
+
+
+
+
+  return `/api/moderation/extension-reports/${id}/review`
+}
+
+/**
+ * @summary Dismiss a report or hide its extension
+ */
+export const reviewCommunityExtensionReport = async (id: number,
+    extensionReportReviewInput: ExtensionReportReviewInput, options?: Parameters<typeof customFetch>[1]): Promise<ExtensionReportCreated> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ExtensionReportCreated>(getReviewCommunityExtensionReportUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(extensionReportReviewInput)
+  }
+);}
+
+
+
+
+
+export const getReviewCommunityExtensionReportMutationKey = () => ['reviewCommunityExtensionReport'] as const;
+
+export const getReviewCommunityExtensionReportMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewCommunityExtensionReport>>, TError,ReviewCommunityExtensionReportMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewCommunityExtensionReport>>, TError,ReviewCommunityExtensionReportMutationVariables, TContext> => {
+
+const mutationKey = getReviewCommunityExtensionReportMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewCommunityExtensionReport>>, ReviewCommunityExtensionReportMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  reviewCommunityExtensionReport(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviewCommunityExtensionReportMutationResult = NonNullable<Awaited<ReturnType<typeof reviewCommunityExtensionReport>>>
+    export type ReviewCommunityExtensionReportMutationBody = BodyType<ExtensionReportReviewInput>
+    export type ReviewCommunityExtensionReportMutationError = ErrorType<void>
+    export type ReviewCommunityExtensionReportMutationVariables = {id: number;data: BodyType<ExtensionReportReviewInput>}
+
+    /**
+ * @summary Dismiss a report or hide its extension
+ */
+export const useReviewCommunityExtensionReport = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewCommunityExtensionReport>>, TError,ReviewCommunityExtensionReportMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reviewCommunityExtensionReport>>,
+        TError,
+        ReviewCommunityExtensionReportMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReviewCommunityExtensionReportMutationOptions(options));
+    }
+
+export const getRestoreCommunityExtensionUrl = (id: string,) => {
+
+
+
+
+  return `/api/moderation/extensions/${id}/restore`
+}
+
+/**
+ * @summary Restore a hidden extension to the public store
+ */
+export const restoreCommunityExtension = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<CommunityExtension> => {
+
+  return customFetch<CommunityExtension>(getRestoreCommunityExtensionUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRestoreCommunityExtensionMutationKey = () => ['restoreCommunityExtension'] as const;
+
+export const getRestoreCommunityExtensionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreCommunityExtension>>, TError,RestoreCommunityExtensionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof restoreCommunityExtension>>, TError,RestoreCommunityExtensionMutationVariables, TContext> => {
+
+const mutationKey = getRestoreCommunityExtensionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof restoreCommunityExtension>>, RestoreCommunityExtensionMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  restoreCommunityExtension(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RestoreCommunityExtensionMutationResult = NonNullable<Awaited<ReturnType<typeof restoreCommunityExtension>>>
+
+    export type RestoreCommunityExtensionMutationError = ErrorType<void>
+    export type RestoreCommunityExtensionMutationVariables = {id: string}
+
+    /**
+ * @summary Restore a hidden extension to the public store
+ */
+export const useRestoreCommunityExtension = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreCommunityExtension>>, TError,RestoreCommunityExtensionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof restoreCommunityExtension>>,
+        TError,
+        RestoreCommunityExtensionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRestoreCommunityExtensionMutationOptions(options));
+    }
 
 export const getReviewCommunityExtensionUrl = (id: string,) => {
 
