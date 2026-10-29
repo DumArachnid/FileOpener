@@ -263,13 +263,118 @@ export interface ModerationUser {
   createdAt: string;
   /** @nullable */
   banReason: string | null;
+  /** @nullable */
+  banExpiresAt: string | null;
 }
 
 export interface ModerationBanInput {
   banned: boolean;
   /** @maxLength 500 */
   reason?: string;
+  /**
+     * Null or omitted means a permanent suspension.
+     * @minimum 1
+     * @maximum 8760
+     * @nullable
+     */
+  durationHours?: number | null;
 }
+
+/**
+ * @nullable
+ */
+export type SuspensionContextAppealStatus = typeof SuspensionContextAppealStatus[keyof typeof SuspensionContextAppealStatus] | null;
+
+
+export const SuspensionContextAppealStatus = {
+  pending: 'pending',
+  upheld: 'upheld',
+  lifted: 'lifted',
+} as const;
+
+export interface SuspensionContext {
+  username: string;
+  /** @nullable */
+  reason: string | null;
+  /** @nullable */
+  endsAt: string | null;
+  /** @nullable */
+  appealStatus: SuspensionContextAppealStatus;
+  /** @nullable */
+  appealDecisionReason: string | null;
+}
+
+export interface SuspensionAccessDenied {
+  error: string;
+  suspension: SuspensionContext;
+}
+
+export interface SuspensionAppealInput {
+  /**
+     * @minLength 10
+     * @maxLength 1500
+     */
+  statement: string;
+}
+
+export type SuspensionAppealSubmissionStatus = typeof SuspensionAppealSubmissionStatus[keyof typeof SuspensionAppealSubmissionStatus];
+
+
+export const SuspensionAppealSubmissionStatus = {
+  pending: 'pending',
+} as const;
+
+export interface SuspensionAppealSubmission {
+  id: number;
+  status: SuspensionAppealSubmissionStatus;
+  submittedAt: string;
+  /** @nullable */
+  decisionReason: string | null;
+}
+
+export type SuspensionAppealDecisionInputDecision = typeof SuspensionAppealDecisionInputDecision[keyof typeof SuspensionAppealDecisionInputDecision];
+
+
+export const SuspensionAppealDecisionInputDecision = {
+  uphold: 'uphold',
+  lift: 'lift',
+} as const;
+
+export interface SuspensionAppealDecisionInput {
+  decision: SuspensionAppealDecisionInputDecision;
+  /** @maxLength 500 */
+  reason?: string;
+}
+
+export type SuspensionAppealStatus = typeof SuspensionAppealStatus[keyof typeof SuspensionAppealStatus];
+
+
+export const SuspensionAppealStatus = {
+  pending: 'pending',
+  upheld: 'upheld',
+  lifted: 'lifted',
+} as const;
+
+export interface SuspensionAppeal {
+  id: number;
+  username: string;
+  statement: string;
+  /** @nullable */
+  suspensionReason: string | null;
+  suspensionStartedAt: string;
+  /** @nullable */
+  suspensionEndsAt: string | null;
+  status: SuspensionAppealStatus;
+  submittedAt: string;
+  /** @nullable */
+  decisionReason: string | null;
+  /** @nullable */
+  reviewerUsername: string | null;
+  /** @nullable */
+  decidedAt: string | null;
+}
+
+export type SuspensionAppealList = SuspensionAppeal[];
 
 export type AdminRewardInputCurrency = typeof AdminRewardInputCurrency[keyof typeof AdminRewardInputCurrency];
 

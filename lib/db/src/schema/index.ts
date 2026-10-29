@@ -18,6 +18,7 @@
 //   export type Post = typeof postsTable.$inferSelect;
 
 export * from "./study-users";
+export * from "./suspension-appeals";
 export * from "./study-sessions";
 export * from "./study-presence";
 export * from "./workspace-sync";

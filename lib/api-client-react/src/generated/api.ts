@@ -62,6 +62,12 @@ import type {
   RecoveryInput,
   ReviewExtensionInput,
   SignUpInput,
+  SuspensionAccessDenied,
+  SuspensionAppeal,
+  SuspensionAppealDecisionInput,
+  SuspensionAppealInput,
+  SuspensionAppealList,
+  SuspensionAppealSubmission,
   WorkspaceSync,
   WorkspaceSyncUpdate
 } from './api.schemas';
@@ -617,7 +623,7 @@ return customFetch<AuthResult>(getLogInUrl(),
 
 export const getLogInMutationKey = () => ['logIn'] as const;
 
-export const getLogInMutationOptions = <TError = ErrorType<void>,
+export const getLogInMutationOptions = <TError = ErrorType<void | SuspensionAccessDenied>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logIn>>, TError,LogInMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof logIn>>, TError,LogInMutationVariables, TContext> => {
 
@@ -646,13 +652,13 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type LogInMutationResult = NonNullable<Awaited<ReturnType<typeof logIn>>>
     export type LogInMutationBody = BodyType<LoginInput>
-    export type LogInMutationError = ErrorType<void>
+    export type LogInMutationError = ErrorType<void | SuspensionAccessDenied>
     export type LogInMutationVariables = {data: BodyType<LoginInput>}
 
     /**
  * @summary Sign in to an account
  */
-export const useLogIn = <TError = ErrorType<void>,
+export const useLogIn = <TError = ErrorType<void | SuspensionAccessDenied>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logIn>>, TError,LogInMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof logIn>>,
@@ -661,6 +667,94 @@ export const useLogIn = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getLogInMutationOptions(options));
+    }
+
+export const getSubmitSuspensionAppealUrl = () => {
+
+
+
+
+  return `/api/auth/suspension-appeals`
+}
+
+/**
+ * @summary Submit an appeal for an active suspension
+ */
+export const submitSuspensionAppeal = async (suspensionAppealInput: SuspensionAppealInput, options?: Parameters<typeof customFetch>[1]): Promise<SuspensionAppealSubmission> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<SuspensionAppealSubmission>(getSubmitSuspensionAppealUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(suspensionAppealInput)
+  }
+);}
+
+
+
+
+
+export const getSubmitSuspensionAppealMutationKey = () => ['submitSuspensionAppeal'] as const;
+
+export const getSubmitSuspensionAppealMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitSuspensionAppeal>>, TError,SubmitSuspensionAppealMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitSuspensionAppeal>>, TError,SubmitSuspensionAppealMutationVariables, TContext> => {
+
+const mutationKey = getSubmitSuspensionAppealMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitSuspensionAppeal>>, SubmitSuspensionAppealMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  submitSuspensionAppeal(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitSuspensionAppealMutationResult = NonNullable<Awaited<ReturnType<typeof submitSuspensionAppeal>>>
+    export type SubmitSuspensionAppealMutationBody = BodyType<SuspensionAppealInput>
+    export type SubmitSuspensionAppealMutationError = ErrorType<void>
+    export type SubmitSuspensionAppealMutationVariables = {data: BodyType<SuspensionAppealInput>}
+
+    /**
+ * @summary Submit an appeal for an active suspension
+ */
+export const useSubmitSuspensionAppeal = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitSuspensionAppeal>>, TError,SubmitSuspensionAppealMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitSuspensionAppeal>>,
+        TError,
+        SubmitSuspensionAppealMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSubmitSuspensionAppealMutationOptions(options));
     }
 
 export const getOpenOfflineAccountHandoffUrl = (params: OpenOfflineAccountHandoffParams,) => {
@@ -2771,6 +2865,172 @@ export function useFindModerationUser<TData = Awaited<ReturnType<typeof findMode
 
 
 
+
+export const getListSuspensionAppealsUrl = () => {
+
+
+
+
+  return `/api/moderation/suspension-appeals`
+}
+
+/**
+ * @summary List account suspension appeals
+ */
+export const listSuspensionAppeals = async ( options?: Parameters<typeof customFetch>[1]): Promise<SuspensionAppealList> => {
+
+  return customFetch<SuspensionAppealList>(getListSuspensionAppealsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSuspensionAppealsQueryKey = () => {
+    return [
+    `/api/moderation/suspension-appeals`
+    ] as const;
+    }
+
+
+export const getListSuspensionAppealsQueryOptions = <TData = Awaited<ReturnType<typeof listSuspensionAppeals>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSuspensionAppeals>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSuspensionAppealsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSuspensionAppeals>>> = ({ signal }) => listSuspensionAppeals({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSuspensionAppeals>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSuspensionAppealsQueryResult = NonNullable<Awaited<ReturnType<typeof listSuspensionAppeals>>>
+export type ListSuspensionAppealsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List account suspension appeals
+ */
+
+export function useListSuspensionAppeals<TData = Awaited<ReturnType<typeof listSuspensionAppeals>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSuspensionAppeals>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSuspensionAppealsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getReviewSuspensionAppealUrl = (id: number,) => {
+
+
+
+
+  return `/api/moderation/suspension-appeals/${id}/decision`
+}
+
+/**
+ * @summary Decide a suspension appeal
+ */
+export const reviewSuspensionAppeal = async (id: number,
+    suspensionAppealDecisionInput: SuspensionAppealDecisionInput, options?: Parameters<typeof customFetch>[1]): Promise<SuspensionAppeal> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<SuspensionAppeal>(getReviewSuspensionAppealUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(suspensionAppealDecisionInput)
+  }
+);}
+
+
+
+
+
+export const getReviewSuspensionAppealMutationKey = () => ['reviewSuspensionAppeal'] as const;
+
+export const getReviewSuspensionAppealMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewSuspensionAppeal>>, TError,ReviewSuspensionAppealMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewSuspensionAppeal>>, TError,ReviewSuspensionAppealMutationVariables, TContext> => {
+
+const mutationKey = getReviewSuspensionAppealMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewSuspensionAppeal>>, ReviewSuspensionAppealMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  reviewSuspensionAppeal(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviewSuspensionAppealMutationResult = NonNullable<Awaited<ReturnType<typeof reviewSuspensionAppeal>>>
+    export type ReviewSuspensionAppealMutationBody = BodyType<SuspensionAppealDecisionInput>
+    export type ReviewSuspensionAppealMutationError = ErrorType<void>
+    export type ReviewSuspensionAppealMutationVariables = {id: number;data: BodyType<SuspensionAppealDecisionInput>}
+
+    /**
+ * @summary Decide a suspension appeal
+ */
+export const useReviewSuspensionAppeal = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewSuspensionAppeal>>, TError,ReviewSuspensionAppealMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reviewSuspensionAppeal>>,
+        TError,
+        ReviewSuspensionAppealMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReviewSuspensionAppealMutationOptions(options));
+    }
 
 export const getUpdateModerationUserBanUrl = (username: string,) => {
 

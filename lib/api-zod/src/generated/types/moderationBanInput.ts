@@ -10,4 +10,11 @@ export interface ModerationBanInput {
   banned: boolean;
   /** @maxLength 500 */
   reason?: string;
+  /**
+     * Null or omitted means a permanent suspension.
+     * @minimum 1
+     * @maximum 8760
+     * @nullable
+     */
+  durationHours?: number | null;
 }

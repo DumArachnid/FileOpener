@@ -136,6 +136,36 @@ paths:
                 $ref: "#/components/schemas/AuthResult"
         "401":
           description: Username or password is incorrect
+        "403":
+          description: Account is suspended
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuspensionAccessDenied"
+  /auth/suspension-appeals:
+    post:
+      operationId: submitSuspensionAppeal
+      tags: [auth]
+      summary: Submit an appeal for an active suspension
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SuspensionAppealInput"
+      responses:
+        "201":
+          description: Appeal submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuspensionAppealSubmission"
+        "400":
+          description: Appeal details are invalid
+        "401":
+          description: The appeal verification has expired
+        "409":
+          description: No active suspension or an appeal already exists
   /auth/offline-handoff:
     get:
       operationId: openOfflineAccountHandoff
@@ -634,6 +664,51 @@ paths:
           description: Moderator access required
         "404":
           description: Account not found
+  /moderation/suspension-appeals:
+    get:
+      operationId: listSuspensionAppeals
+      tags: [moderation]
+      summary: List account suspension appeals
+      responses:
+        "200":
+          description: Suspension appeal review queue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuspensionAppealList"
+        "403":
+          description: Moderator access required
+  /moderation/suspension-appeals/{id}/decision:
+    post:
+      operationId: reviewSuspensionAppeal
+      tags: [moderation]
+      summary: Decide a suspension appeal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SuspensionAppealDecisionInput"
+      responses:
+        "200":
+          description: Appeal decision recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuspensionAppeal"
+        "403":
+          description: Moderator access required
+        "404":
+          description: Appeal not found
+        "409":
+          description: Appeal has already been decided
   /moderation/users/{username}/ban:
     patch:
       operationId: updateModerationUserBan
@@ -1316,7 +1391,7 @@ components:
         $ref: "#/components/schemas/ExtensionReportItem"
     ModerationUser:
       type: object
-      required: [username, role, banned, createdAt, banReason]
+      required: [username, role, banned, createdAt, banReason, banExpiresAt]
       properties:
         username:
           type: string
@@ -1330,6 +1405,9 @@ components:
           format: date-time
         banReason:
           type: ["string", "null"]
+        banExpiresAt:
+          type: ["string", "null"]
+          format: date-time
     ModerationBanInput:
       type: object
       required: [banned]
@@ -1339,6 +1417,102 @@ components:
         reason:
           type: string
           maxLength: 500
+        durationHours:
+          description: Null or omitted means a permanent suspension.
+          type: ["integer", "null"]
+          minimum: 1
+          maximum: 8760
+    SuspensionAccessDenied:
+      type: object
+      required: [error, suspension]
+      properties:
+        error:
+          type: string
+        suspension:
+          $ref: "#/components/schemas/SuspensionContext"
+    SuspensionContext:
+      type: object
+      required: [username, reason, endsAt, appealStatus, appealDecisionReason]
+      properties:
+        username:
+          type: string
+        reason:
+          type: ["string", "null"]
+        endsAt:
+          type: ["string", "null"]
+          format: date-time
+        appealStatus:
+          type: ["string", "null"]
+          enum: [pending, upheld, lifted, null]
+        appealDecisionReason:
+          type: ["string", "null"]
+    SuspensionAppealInput:
+      type: object
+      required: [statement]
+      properties:
+        statement:
+          type: string
+          minLength: 10
+          maxLength: 1500
+    SuspensionAppealSubmission:
+      type: object
+      required: [id, status, submittedAt, decisionReason]
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+          enum: [pending]
+        submittedAt:
+          type: string
+          format: date-time
+        decisionReason:
+          type: ["string", "null"]
+    SuspensionAppealDecisionInput:
+      type: object
+      required: [decision]
+      properties:
+        decision:
+          type: string
+          enum: [uphold, lift]
+        reason:
+          type: string
+          maxLength: 500
+    SuspensionAppeal:
+      type: object
+      required: [id, username, statement, suspensionReason, suspensionStartedAt, suspensionEndsAt, status, submittedAt, decisionReason, reviewerUsername, decidedAt]
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        statement:
+          type: string
+        suspensionReason:
+          type: ["string", "null"]
+        suspensionStartedAt:
+          type: string
+          format: date-time
+        suspensionEndsAt:
+          type: ["string", "null"]
+          format: date-time
+        status:
+          type: string
+          enum: [pending, upheld, lifted]
+        submittedAt:
+          type: string
+          format: date-time
+        decisionReason:
+          type: ["string", "null"]
+        reviewerUsername:
+          type: ["string", "null"]
+        decidedAt:
+          type: ["string", "null"]
+          format: date-time
+    SuspensionAppealList:
+      type: array
+      items:
+        $ref: "#/components/schemas/SuspensionAppeal"
     AdminRewardInput:
       type: object
       required: [currency, amount, reason]

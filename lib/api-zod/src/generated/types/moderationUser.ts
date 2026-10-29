@@ -14,4 +14,6 @@ export interface ModerationUser {
   createdAt: Date;
   /** @nullable */
   banReason: string | null;
+  /** @nullable */
+  banExpiresAt: Date | null;
 }

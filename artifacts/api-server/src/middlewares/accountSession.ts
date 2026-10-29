@@ -2,6 +2,7 @@ import { and, eq, gt } from "drizzle-orm";
 import type { RequestHandler } from "express";
 import { db, studySessionsTable, studyUsersTable } from "@workspace/db";
 import { hashOpaqueValue, sessionCookieName } from "../lib/accountSecurity";
+import { expireSuspensionForUser, isSuspensionActive } from "../lib/suspensions";
 
 export const resolveAccountSession: RequestHandler = async (req, _res, next) => {
   try {
@@ -18,6 +19,7 @@ export const resolveAccountSession: RequestHandler = async (req, _res, next) => 
         username: studyUsersTable.username,
         role: studyUsersTable.role,
         bannedAt: studyUsersTable.bannedAt,
+        bannedUntil: studyUsersTable.bannedUntil,
       })
       .from(studySessionsTable)
       .innerJoin(studyUsersTable, eq(studySessionsTable.userId, studyUsersTable.id))
@@ -30,8 +32,13 @@ export const resolveAccountSession: RequestHandler = async (req, _res, next) => 
       .limit(1);
 
     if (session) {
+      const expired = session.bannedUntil && session.bannedUntil <= new Date()
+        ? await expireSuspensionForUser(session.id)
+        : false;
       req.studyDeskUser = {
         ...session,
+        bannedAt: expired ? null : session.bannedAt,
+        bannedUntil: expired ? null : session.bannedUntil,
         role: session.role === "moderator" || session.role === "dev" ? session.role : "user",
       };
       req.studyDeskSessionHash = tokenHash;
@@ -47,7 +54,7 @@ export const requireAccount: RequestHandler = (req, res, next) => {
     res.status(401).json({ error: "Sign in to continue." });
     return;
   }
-  if (req.studyDeskUser.bannedAt) {
+  if (isSuspensionActive(req.studyDeskUser.bannedAt, req.studyDeskUser.bannedUntil)) {
     res.status(403).json({ error: "This account is suspended." });
     return;
   }
@@ -59,7 +66,7 @@ export const requireModerator: RequestHandler = (req, res, next) => {
     res.status(401).json({ error: "Sign in to continue." });
     return;
   }
-  if (req.studyDeskUser.bannedAt || !["moderator", "dev"].includes(req.studyDeskUser.role)) {
+  if (isSuspensionActive(req.studyDeskUser.bannedAt, req.studyDeskUser.bannedUntil) || !["moderator", "dev"].includes(req.studyDeskUser.role)) {
     res.status(403).json({ error: "Moderator access required." });
     return;
   }
@@ -71,7 +78,7 @@ export const requireDeveloperRank: RequestHandler = (req, res, next) => {
     res.status(401).json({ error: "Sign in to continue." });
     return;
   }
-  if (req.studyDeskUser.bannedAt || req.studyDeskUser.role !== "dev") {
+  if (isSuspensionActive(req.studyDeskUser.bannedAt, req.studyDeskUser.bannedUntil) || req.studyDeskUser.role !== "dev") {
     res.status(403).json({ error: "Developer rank required." });
     return;
   }

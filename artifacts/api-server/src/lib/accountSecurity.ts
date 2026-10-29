@@ -7,6 +7,8 @@ if (!sessionSecret) {
 
 const SESSION_COOKIE = "study_desk_session";
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const SUSPENSION_APPEAL_COOKIE = "study_desk_suspension_appeal";
+const SUSPENSION_APPEAL_TTL_MS = 15 * 60 * 1000;
 const PASSWORD_OPTIONS = {
   N: 1 << 15,
   r: 8,
@@ -75,5 +77,69 @@ export function clearSessionCookie(res: { setHeader(name: string, value: string)
   );
 }
 
+export function setSuspensionAppealCookie(
+  res: { append(name: string, value: string): unknown },
+  userId: number,
+  suspensionStartedAt: Date,
+): void {
+  const expiresAt = Date.now() + SUSPENSION_APPEAL_TTL_MS;
+  const payload = Buffer.from(`${userId}:${suspensionStartedAt.getTime()}:${expiresAt}`).toString("base64url");
+  const signature = createHmac("sha256", sessionSecret as string).update(payload).digest("base64url");
+  const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
+  res.append(
+    "Set-Cookie",
+    `${SUSPENSION_APPEAL_COOKIE}=${payload}.${signature}; Path=/api/auth/suspension-appeals; HttpOnly; SameSite=Strict; Max-Age=${Math.floor(SUSPENSION_APPEAL_TTL_MS / 1000)}${secure}`,
+  );
+}
+
+export function verifySuspensionAppealCookie(
+  token: unknown,
+): { userId: number; suspensionStartedAt: Date } | null {
+  if (typeof token !== "string" || token.length > 256) return null;
+  const [payload, signature, extra] = token.split(".");
+  if (!payload || !signature || extra !== undefined) return null;
+  const expected = createHmac("sha256", sessionSecret as string).update(payload).digest();
+  let decodedSignature: Buffer;
+  try {
+    decodedSignature = Buffer.from(signature, "base64url");
+  } catch {
+    return null;
+  }
+  if (decodedSignature.length !== expected.length || !timingSafeEqual(decodedSignature, expected)) return null;
+
+  let decoded: string;
+  try {
+    decoded = Buffer.from(payload, "base64url").toString("utf8");
+  } catch {
+    return null;
+  }
+  const match = /^(\d+):(\d+):(\d+)$/.exec(decoded);
+  if (!match) return null;
+  const userId = Number(match[1]);
+  const startedAtMs = Number(match[2]);
+  const expiresAtMs = Number(match[3]);
+  if (
+    !Number.isSafeInteger(userId) ||
+    userId < 1 ||
+    !Number.isSafeInteger(startedAtMs) ||
+    !Number.isSafeInteger(expiresAtMs) ||
+    expiresAtMs <= Date.now()
+  ) {
+    return null;
+  }
+  return { userId, suspensionStartedAt: new Date(startedAtMs) };
+}
+
+export function clearSuspensionAppealCookie(
+  res: { append(name: string, value: string): unknown },
+): void {
+  const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
+  res.append(
+    "Set-Cookie",
+    `${SUSPENSION_APPEAL_COOKIE}=; Path=/api/auth/suspension-appeals; HttpOnly; SameSite=Strict; Max-Age=0${secure}`,
+  );
+}
+
 export const sessionCookieName = SESSION_COOKIE;
 export const sessionTtlMs = SESSION_TTL_MS;
+export const suspensionAppealCookieName = SUSPENSION_APPEAL_COOKIE;

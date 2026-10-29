@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { expireDueSuspensions } from "./lib/suspensions";
 
 const rawPort = process.env["PORT"];
 
@@ -14,6 +15,16 @@ const port = Number(rawPort);
 if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
+
+const runSuspensionExpiry = (): void => {
+  void expireDueSuspensions().catch((err) => {
+    logger.error({ err }, "Could not expire timed suspensions");
+  });
+};
+
+runSuspensionExpiry();
+const suspensionExpiryTimer = setInterval(runSuspensionExpiry, 60_000);
+suspensionExpiryTimer.unref();
 
 app.listen(port, (err) => {
   if (err) {

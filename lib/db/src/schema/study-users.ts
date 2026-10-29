@@ -11,6 +11,7 @@ export const studyUsersTable = pgTable(
     recoveryCodeHash: text("recovery_code_hash").notNull(),
     role: text("role").notNull().default("user"),
     bannedAt: timestamp("banned_at", { withTimezone: true }),
+    bannedUntil: timestamp("banned_until", { withTimezone: true }),
     banReason: text("ban_reason"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },

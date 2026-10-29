@@ -6,6 +6,7 @@ declare global {
         username: string;
         role: "user" | "moderator" | "dev";
         bannedAt: Date | null;
+        bannedUntil: Date | null;
       };
       studyDeskSessionHash?: string;
       replitDeveloper?: {

@@ -119,6 +119,26 @@ export const LogInResponse = zod.object({
 
 
 /**
+ * @summary Submit an appeal for an active suspension
+ */
+export const submitSuspensionAppealBodyStatementMin = 10;
+export const submitSuspensionAppealBodyStatementMax = 1500;
+
+
+
+export const SubmitSuspensionAppealBody = zod.object({
+  "statement": zod.string().min(submitSuspensionAppealBodyStatementMin).max(submitSuspensionAppealBodyStatementMax)
+})
+
+export const SubmitSuspensionAppealResponse = zod.object({
+  "id": zod.number().int(),
+  "status": zod.enum(['pending']),
+  "submittedAt": zod.coerce.date(),
+  "decisionReason": zod.string().nullable()
+})
+
+
+/**
  * @summary Open the secure sign-in page for a downloaded copy
  */
 export const openOfflineAccountHandoffQueryStateRegExp = new RegExp('^[A-Fa-f0-9]{64}$');
@@ -634,7 +654,61 @@ export const FindModerationUserResponse = zod.object({
   "role": zod.enum(['user', 'moderator', 'dev']),
   "banned": zod.boolean(),
   "createdAt": zod.coerce.date(),
-  "banReason": zod.string().nullable()
+  "banReason": zod.string().nullable(),
+  "banExpiresAt": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary List account suspension appeals
+ */
+export const ListSuspensionAppealsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "username": zod.string(),
+  "statement": zod.string(),
+  "suspensionReason": zod.string().nullable(),
+  "suspensionStartedAt": zod.coerce.date(),
+  "suspensionEndsAt": zod.coerce.date().nullable(),
+  "status": zod.enum(['pending', 'upheld', 'lifted']),
+  "submittedAt": zod.coerce.date(),
+  "decisionReason": zod.string().nullable(),
+  "reviewerUsername": zod.string().nullable(),
+  "decidedAt": zod.coerce.date().nullable()
+})
+export const ListSuspensionAppealsResponse = zod.array(ListSuspensionAppealsResponseItem)
+
+
+/**
+ * @summary Decide a suspension appeal
+ */
+
+
+
+export const ReviewSuspensionAppealParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const reviewSuspensionAppealBodyReasonMax = 500;
+
+
+
+export const ReviewSuspensionAppealBody = zod.object({
+  "decision": zod.enum(['uphold', 'lift']),
+  "reason": zod.string().max(reviewSuspensionAppealBodyReasonMax).optional()
+})
+
+export const ReviewSuspensionAppealResponse = zod.object({
+  "id": zod.number().int(),
+  "username": zod.string(),
+  "statement": zod.string(),
+  "suspensionReason": zod.string().nullable(),
+  "suspensionStartedAt": zod.coerce.date(),
+  "suspensionEndsAt": zod.coerce.date().nullable(),
+  "status": zod.enum(['pending', 'upheld', 'lifted']),
+  "submittedAt": zod.coerce.date(),
+  "decisionReason": zod.string().nullable(),
+  "reviewerUsername": zod.string().nullable(),
+  "decidedAt": zod.coerce.date().nullable()
 })
 
 
@@ -652,11 +726,14 @@ export const UpdateModerationUserBanParams = zod.object({
 
 export const updateModerationUserBanBodyReasonMax = 500;
 
+export const updateModerationUserBanBodyDurationHoursMax = 8760;
+
 
 
 export const UpdateModerationUserBanBody = zod.object({
   "banned": zod.boolean(),
-  "reason": zod.string().max(updateModerationUserBanBodyReasonMax).optional()
+  "reason": zod.string().max(updateModerationUserBanBodyReasonMax).optional(),
+  "durationHours": zod.number().int().min(1).max(updateModerationUserBanBodyDurationHoursMax).nullish().describe('Null or omitted means a permanent suspension.')
 })
 
 export const UpdateModerationUserBanResponse = zod.object({
@@ -664,7 +741,8 @@ export const UpdateModerationUserBanResponse = zod.object({
   "role": zod.enum(['user', 'moderator', 'dev']),
   "banned": zod.boolean(),
   "createdAt": zod.coerce.date(),
-  "banReason": zod.string().nullable()
+  "banReason": zod.string().nullable(),
+  "banExpiresAt": zod.coerce.date().nullable()
 })
 
 
@@ -685,7 +763,8 @@ export const PromoteModerationUserResponse = zod.object({
   "role": zod.enum(['user', 'moderator', 'dev']),
   "banned": zod.boolean(),
   "createdAt": zod.coerce.date(),
-  "banReason": zod.string().nullable()
+  "banReason": zod.string().nullable(),
+  "banExpiresAt": zod.coerce.date().nullable()
 })
 
 
@@ -1015,7 +1094,8 @@ export const FindDeveloperManagedAccountResponse = zod.object({
   "role": zod.enum(['user', 'moderator', 'dev']),
   "banned": zod.boolean(),
   "createdAt": zod.coerce.date(),
-  "banReason": zod.string().nullable()
+  "banReason": zod.string().nullable(),
+  "banExpiresAt": zod.coerce.date().nullable()
 })
 
 
@@ -1040,7 +1120,8 @@ export const SetDeveloperManagedAccountRoleResponse = zod.object({
   "role": zod.enum(['user', 'moderator', 'dev']),
   "banned": zod.boolean(),
   "createdAt": zod.coerce.date(),
-  "banReason": zod.string().nullable()
+  "banReason": zod.string().nullable(),
+  "banExpiresAt": zod.coerce.date().nullable()
 })
 
 

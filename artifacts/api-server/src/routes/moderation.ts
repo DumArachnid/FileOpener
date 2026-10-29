@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, isNotNull, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { Router, type IRouter } from "express";
 import {
@@ -7,18 +7,27 @@ import {
   communityExtensionsTable,
   db,
   studySessionsTable,
+  suspensionAppealsTable,
   studyUsersTable,
 } from "@workspace/db";
 import {
+  FindModerationUserResponse,
   ListCommunityExtensionReportsResponse,
   ListRemovedModerationExtensionsResponse,
+  ListSuspensionAppealsResponse,
   RestoreCommunityExtensionParams,
   RestoreCommunityExtensionResponse,
   ReviewCommunityExtensionReportBody,
   ReviewCommunityExtensionReportParams,
   ReviewCommunityExtensionReportResponse,
+  ReviewSuspensionAppealBody,
+  ReviewSuspensionAppealParams,
+  ReviewSuspensionAppealResponse,
+  UpdateModerationUserBanBody,
+  UpdateModerationUserBanResponse,
 } from "@workspace/api-zod";
 import { requireModerator } from "../middlewares/accountSession";
+import { expireSuspensionForUser, isSuspensionActive } from "../lib/suspensions";
 
 const router: IRouter = Router();
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -34,15 +43,6 @@ function parseReviewBody(value: unknown): { decision: "approve" | "reject"; note
   return {
     decision: value.decision,
     ...(typeof value.note === "string" ? { note: value.note } : {}),
-  };
-}
-
-function parseBanBody(value: unknown): { banned: boolean; reason?: string } | null {
-  if (!isRecord(value) || typeof value.banned !== "boolean") return null;
-  if (value.reason !== undefined && (typeof value.reason !== "string" || value.reason.length > 500)) return null;
-  return {
-    banned: value.banned,
-    ...(typeof value.reason === "string" ? { reason: value.reason } : {}),
   };
 }
 
@@ -80,15 +80,17 @@ function userSummary(row: {
   username: string;
   role: string;
   bannedAt: Date | null;
+  bannedUntil: Date | null;
   banReason: string | null;
   createdAt: Date;
 }) {
   return {
     username: row.username,
     role: row.role === "moderator" || row.role === "dev" ? row.role : "user",
-    banned: row.bannedAt !== null,
+    banned: isSuspensionActive(row.bannedAt, row.bannedUntil),
     createdAt: row.createdAt,
     banReason: row.banReason,
+    banExpiresAt: row.bannedUntil,
   };
 }
 
@@ -521,9 +523,11 @@ router.get(
     }
     const [row] = await db
       .select({
+        id: studyUsersTable.id,
         username: studyUsersTable.username,
         role: studyUsersTable.role,
         bannedAt: studyUsersTable.bannedAt,
+        bannedUntil: studyUsersTable.bannedUntil,
         banReason: studyUsersTable.banReason,
         createdAt: studyUsersTable.createdAt,
       })
@@ -534,7 +538,13 @@ router.get(
       res.status(404).json({ error: "No account found with that username." });
       return;
     }
-    res.json(userSummary(row));
+    const expired = row.bannedUntil && row.bannedUntil <= new Date()
+      ? await expireSuspensionForUser(row.id)
+      : false;
+    const summaryRow = expired
+      ? { ...row, bannedAt: null, bannedUntil: null, banReason: null }
+      : row;
+    res.json(FindModerationUserResponse.parse(userSummary(summaryRow)));
   },
 );
 
@@ -543,7 +553,8 @@ router.patch(
   requireModerator,
   async (req, res): Promise<void> => {
     const username = req.params.username;
-    const body = parseBanBody(req.body);
+    const parsedBody = UpdateModerationUserBanBody.safeParse(req.body);
+    const body = parsedBody.success ? parsedBody.data : null;
     if (typeof username !== "string" || !USERNAME_RE.test(username) || !body) {
       res.status(400).json({ error: "Check the username and ban details." });
       return;
@@ -572,6 +583,9 @@ router.patch(
         .update(studyUsersTable)
         .set({
           bannedAt: body.banned ? now : null,
+          bannedUntil: body.banned && body.durationHours
+            ? new Date(now.getTime() + body.durationHours * 60 * 60 * 1000)
+            : null,
           banReason: body.banned ? body.reason?.trim() || null : null,
         })
         .where(eq(studyUsersTable.id, target.id))
@@ -579,6 +593,7 @@ router.patch(
           username: studyUsersTable.username,
           role: studyUsersTable.role,
           bannedAt: studyUsersTable.bannedAt,
+          bannedUntil: studyUsersTable.bannedUntil,
           banReason: studyUsersTable.banReason,
           createdAt: studyUsersTable.createdAt,
         });
@@ -590,7 +605,12 @@ router.patch(
         targetUsername: normalizedUsername,
         action: body.banned ? "user.banned" : "user.restored",
         reason: body.banned ? body.reason?.trim() || null : null,
-        details: {},
+        details: {
+          durationHours: body.banned ? body.durationHours ?? null : null,
+          expiresAt: body.banned && body.durationHours
+            ? new Date(now.getTime() + body.durationHours * 60 * 60 * 1000).toISOString()
+            : null,
+        },
       });
       return updated;
     });
@@ -598,7 +618,7 @@ router.patch(
       res.status(404).json({ error: "No account found with that username." });
       return;
     }
-    res.json(userSummary(updatedUser));
+    res.json(UpdateModerationUserBanResponse.parse(userSummary(updatedUser)));
   },
 );
 
