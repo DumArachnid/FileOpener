@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
 import { createRequire } from "node:module";
@@ -53,7 +54,9 @@ async function request(route, { method = "GET", cookie, body } = {}) {
   });
   const text = response.status === 204 ? "" : await response.text();
   let data = null;
-  if (text) data = JSON.parse(text);
+  if (text) {
+    try { data = JSON.parse(text); } catch { data = text; }
+  }
   const sessionCookie = (response.headers.getSetCookie?.() ?? [])
     .map((value) => value.match(/(?:^|,\s*)study_desk_session=([^;]*)/))
     .find(Boolean)?.[1];
@@ -184,6 +187,54 @@ test("signup, login, logout, and recovery codes behave as one-time credentials",
     body: { username: account.username, password: "replacement-password-456" },
   });
   assert.equal(newPasswordLogin.status, 200);
+});
+
+test("offline account handoff verifies credentials without issuing a session", async () => {
+  const account = await signUp();
+  const state = "a".repeat(64);
+  const page = await request(`/auth/offline-handoff?state=${state}`);
+  assert.equal(page.status, 200);
+  assert.match(page.data, /name="state"/);
+  assert.match(page.data, /action="\/api\/auth\/offline-handoff"/);
+  assert.match(page.data, /Verify your Study Desk account/);
+
+  const rejected = await request("/auth/offline-handoff", {
+    method: "POST",
+    body: { state, username: account.username, password: "wrong-password" },
+  });
+  assert.equal(rejected.status, 401);
+  assert.match(rejected.data, /Username or password is incorrect/);
+  assert.equal(rejected.cookie, undefined);
+
+  const verified = await request("/auth/offline-handoff", {
+    method: "POST",
+    body: { state, username: account.username, password: "fixture-password-123" },
+  });
+  assert.equal(verified.status, 200);
+  assert.match(verified.data, /study-desk-offline-account-verified/);
+  assert.match(verified.data, new RegExp(`"state":"${state}"`));
+  assert.match(verified.data, new RegExp(`"username":"${account.username}"`));
+  assert.doesNotMatch(verified.data, /fixture-password-123/);
+  assert.equal(verified.cookie, undefined, "offline verification must not issue a reusable session");
+
+  const invalidState = await request("/auth/offline-handoff?state=not-a-secure-state");
+  assert.equal(invalidState.status, 400);
+});
+
+test("downloaded copy validates the server handoff and explains unavailable-server timeouts", async () => {
+  const workspaceHtml = await readFile(
+    path.resolve(apiDirectory, "../new-tab/public/workspace.html"),
+    "utf8",
+  );
+  assert.match(workspaceHtml, /window\.location\.protocol === 'file:'/);
+  assert.match(workspaceHtml, /dum-arachnid-tools\.replit\.app\/api\/auth\/offline-handoff/);
+  assert.match(
+    workspaceHtml,
+    /event\.source !== offlineAuthPopup \|\| event\.origin !== ACCOUNT_HUB_ORIGIN/,
+  );
+  assert.match(workspaceHtml, /message\.state !== offlineAuthState/);
+  assert.match(workspaceHtml, /Study Desk did not respond in time/);
+  assert.match(workspaceHtml, /Workspace sync is unavailable in a downloaded copy/);
 });
 
 test("signup and password recovery require at least 10 characters", async () => {

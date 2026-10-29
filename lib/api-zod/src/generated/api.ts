@@ -119,6 +119,41 @@ export const LogInResponse = zod.object({
 
 
 /**
+ * @summary Open the secure sign-in page for a downloaded copy
+ */
+export const openOfflineAccountHandoffQueryStateRegExp = new RegExp('^[A-Fa-f0-9]{64}$');
+
+
+export const OpenOfflineAccountHandoffQueryParams = zod.object({
+  "state": zod.coerce.string().regex(openOfflineAccountHandoffQueryStateRegExp)
+})
+
+export const OpenOfflineAccountHandoffResponse = zod.unknown()
+
+
+/**
+ * @summary Verify an existing account for a downloaded copy
+ */
+export const verifyOfflineAccountHandoffBodyStateRegExp = new RegExp('^[A-Fa-f0-9]{64}$');
+export const verifyOfflineAccountHandoffBodyUsernameMin = 3;
+export const verifyOfflineAccountHandoffBodyUsernameMax = 24;
+
+
+export const verifyOfflineAccountHandoffBodyUsernameRegExp = new RegExp('^[A-Za-z0-9_]+$');
+export const verifyOfflineAccountHandoffBodyPasswordMax = 128;
+
+
+
+export const VerifyOfflineAccountHandoffBody = zod.object({
+  "state": zod.string().regex(verifyOfflineAccountHandoffBodyStateRegExp),
+  "username": zod.string().min(verifyOfflineAccountHandoffBodyUsernameMin).max(verifyOfflineAccountHandoffBodyUsernameMax).regex(verifyOfflineAccountHandoffBodyUsernameRegExp),
+  "password": zod.string().min(1).max(verifyOfflineAccountHandoffBodyPasswordMax)
+})
+
+export const VerifyOfflineAccountHandoffResponse = zod.unknown()
+
+
+/**
  * @summary Sign out
  */
 export const LogOutResponse = zod.void()

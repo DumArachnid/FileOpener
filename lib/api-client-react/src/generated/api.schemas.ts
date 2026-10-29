@@ -36,6 +36,22 @@ export interface LoginInput {
   password: string;
 }
 
+export interface OfflineHandoffInput {
+  /** @pattern ^[A-Fa-f0-9]{64}$ */
+  state: string;
+  /**
+     * @minLength 3
+     * @maxLength 24
+     * @pattern ^[A-Za-z0-9_]+$
+     */
+  username: string;
+  /**
+     * @minLength 1
+     * @maxLength 128
+     */
+  password: string;
+}
+
 export interface RecoveryInput {
   /**
      * @minLength 3
@@ -392,6 +408,13 @@ export interface Announcement {
 export interface ActiveAnnouncementState {
   announcement: Announcement | null;
 }
+
+export type OpenOfflineAccountHandoffParams = {
+/**
+ * @pattern ^[A-Fa-f0-9]{64}$
+ */
+state: string;
+};
 
 export type FindModerationUserParams = {
 /**

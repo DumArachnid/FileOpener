@@ -134,6 +134,53 @@ paths:
                 $ref: "#/components/schemas/AuthResult"
         "401":
           description: Username or password is incorrect
+  /auth/offline-handoff:
+    get:
+      operationId: openOfflineAccountHandoff
+      tags: [auth]
+      summary: Open the secure sign-in page for a downloaded copy
+      parameters:
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: "^[A-Fa-f0-9]{64}$"
+      responses:
+        "200":
+          description: Account verification sign-in page
+          content:
+            text/html:
+              schema:
+                type: string
+        "400":
+          description: Invalid handoff request
+    post:
+      operationId: verifyOfflineAccountHandoff
+      tags: [auth]
+      summary: Verify an existing account for a downloaded copy
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/OfflineHandoffInput"
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OfflineHandoffInput"
+      responses:
+        "200":
+          description: User-approved account verification page
+          content:
+            text/html:
+              schema:
+                type: string
+        "400":
+          description: Invalid request
+        "401":
+          description: Username or password is incorrect
+        "403":
+          description: Account is suspended
   /auth/logout:
     post:
       operationId: logOut
@@ -911,6 +958,22 @@ components:
           type: string
           minLength: 3
           maxLength: 24
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+    OfflineHandoffInput:
+      type: object
+      required: [state, username, password]
+      properties:
+        state:
+          type: string
+          pattern: "^[A-Fa-f0-9]{64}$"
+        username:
+          type: string
+          minLength: 3
+          maxLength: 24
+          pattern: "^[A-Za-z0-9_]+$"
         password:
           type: string
           minLength: 1

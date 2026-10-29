@@ -312,6 +312,8 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .account-recovery-link { justify-self: center; margin-top: -7px; font-size: 12px; font-weight: 600; }
 .account-optional-note { display: flex; align-items: flex-start; gap: 9px; margin: 5px 0 0 !important; padding: 12px 13px; border: 1px solid var(--border); border-radius: 11px; background: color-mix(in srgb, var(--input-bg) 78%, transparent); color: var(--muted); font-size: 11px; line-height: 1.45; }
 .account-optional-note span { flex: none; color: var(--accent-ink); font-weight: 700; }
+.offline-account-actions { margin-top: 12px; }
+.offline-handoff-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .account-error { min-height: 0; color: var(--danger); font-size: 12px; line-height: 1.45; }
 .account-error:not(:empty) { padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border)); border-radius: 10px; background: color-mix(in srgb, var(--danger) 7%, var(--panel)); }
 .recovery-code-box { padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--input-bg); }
@@ -1011,10 +1013,23 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </div>
 <p class="small muted account-sync-status" id="accountSyncStatus" role="status" aria-live="polite"></p>
 <div class="recovery-code-box account-signed-in hidden" id="accountSignedInPanel">
-<strong>Signed in as <span id="accountUsername"></span></strong>
-<p>Your preferences, notes, and bookmarks sync to your account.</p>
+<strong><span id="accountStatusLabel">Signed in as</span> <span id="accountUsername"></span></strong>
+<p id="accountSignedInDescription">Your preferences, notes, and bookmarks sync to your account.</p>
 <label class="share-tabs-setting"><input id="shareTabsToggle" type="checkbox"><span>Share open web-tab titles and site names with admins. This shares no page contents, local file names, or full URLs. You can turn it off at any time.</span></label>
 <button class="btn sm" id="accountSignoutBtn" type="button">Sign out</button>
+</div>
+<div class="recovery-code-box hidden" id="offlineAccountPanel">
+<strong>Using a downloaded copy?</strong>
+<p>Verify your existing account in a Study Desk sign-in window. You’ll need internet access to reach the account server. Workspace sync is not available from a downloaded copy.</p>
+<div class="account-actions offline-account-actions"><button class="btn primary" id="offlineAccountVerifyBtn" type="button">Verify account online</button></div>
+</div>
+<div class="recovery-code-box hidden" id="offlineHandoffConfirmPanel">
+<strong>Send account verification?</strong>
+<p id="offlineHandoffConfirmText"></p>
+<div class="offline-handoff-actions">
+<button class="btn primary" id="offlineHandoffConfirmBtn" type="button">Send verification</button>
+<button class="btn" id="offlineHandoffCancelBtn" type="button">Cancel</button>
+</div>
 </div>
 <form class="account-form" id="accountLoginForm">
 <div class="account-field"><label for="loginUsername">Username</label><input id="loginUsername" name="username" type="text" autocomplete="username" minlength="3" maxlength="24" placeholder="Your username" required></div>
@@ -1022,7 +1037,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div class="account-actions"><button class="btn primary" type="submit">Sign in</button></div>
 <div class="account-form-footer"><span>New to Study Desk?</span><button class="account-link" id="showSignupBtn" type="button">Create an account</button></div>
 <button class="account-link account-recovery-link" id="showRecoveryBtn" type="button">Use a recovery code</button>
-<p class="account-optional-note"><span aria-hidden="true">i</span>Account creation is optional. You can keep using Study Desk without signing in.</p>
+<p class="account-optional-note" id="accountOptionalNote"><span aria-hidden="true">i</span>Account creation is optional. You can keep using Study Desk without signing in.</p>
 </form>
 <form class="account-form hidden" id="accountSignupForm">
 <div class="account-field"><label for="signupUsername">Username</label><input id="signupUsername" name="username" type="text" autocomplete="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="Choose a username" required></div>
@@ -4350,7 +4365,16 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   var accountDialog = $('accountDialog');
   var adminDialog = $('adminDialog');
   var accountError = $('accountError');
+  var isOfflineCopy = window.location.protocol === 'file:';
+  var ACCOUNT_HUB_URL = 'https://dum-arachnid-tools.replit.app/api/auth/offline-handoff';
+  var ACCOUNT_HUB_ORIGIN = new URL(ACCOUNT_HUB_URL).origin;
+  var requestedHandoffState = new URLSearchParams(window.location.search).get('studyDeskHandoff');
+  var hostedHandoffState = /^[a-f0-9]{64}$/i.test(requestedHandoffState || '') ? requestedHandoffState : null;
   var accountUser = null;
+  var pendingHandoffUser = null;
+  var offlineAuthPopup = null;
+  var offlineAuthState = null;
+  var offlineAuthWatcher = null;
   var pendingModerationExtensions = [];
   var publishedModerationExtensions = [];
   var communityExtensionReports = [];
@@ -4570,11 +4594,14 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
   function updateTabShareControl() {
     var toggle = $('shareTabsToggle');
-    toggle.checked = !!accountUser && localStorage.getItem('disguise_admin_tab_sharing') === 'true';
-    toggle.disabled = !accountUser;
+    var sharingEnabled = false;
+    try { sharingEnabled = localStorage.getItem('disguise_admin_tab_sharing') === 'true'; } catch (error) {}
+    toggle.checked = !isOfflineCopy && !!accountUser && sharingEnabled;
+    toggle.disabled = isOfflineCopy || !accountUser;
+    toggle.closest('.share-tabs-setting').classList.toggle('hidden', isOfflineCopy);
   }
   function refreshSharedTabSnapshot() {
-    if (!accountUser) return;
+    if (isOfflineCopy || !accountUser) return;
     if (localStorage.getItem('disguise_admin_tab_sharing') !== 'true') {
       localStorage.removeItem('disguise_shared_tabs');
       return;
@@ -4583,7 +4610,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     localStorage.setItem('disguise_shared_tabs', JSON.stringify(tabs));
   }
   NT.onTabSnapshotChange = refreshSharedTabSnapshot;
-  setInterval(refreshSharedTabSnapshot, 5000);
+  if (!isOfflineCopy) setInterval(refreshSharedTabSnapshot, 5000);
   var accountNudgeHideTimer = null;
   function hideAccountNudge() {
     var nudge = $('accountNudge');
@@ -4642,6 +4669,14 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
   }
   function updatePresenceTracking() {
+    if (isOfflineCopy) {
+      if (presenceHeartbeatTimer) clearInterval(presenceHeartbeatTimer);
+      if (developerOnlineCountTimer) clearInterval(developerOnlineCountTimer);
+      presenceHeartbeatTimer = null;
+      developerOnlineCountTimer = null;
+      $('devOnlineBtn').classList.add('hidden');
+      return;
+    }
     if (!accountUser) {
       if (presenceHeartbeatTimer) clearInterval(presenceHeartbeatTimer);
       presenceHeartbeatTimer = null;
@@ -4670,12 +4705,12 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
   $('devOnlineBtn').addEventListener('click', refreshDeveloperOnlineCount);
   function setAccountUser(user) {
-    var previousModerator = hasModeratorAccess(accountUser);
+    var previousModerator = !isOfflineCopy && hasModeratorAccess(accountUser);
     var previousUsername = accountUser && accountUser.username;
     accountUser = user || null;
     $('accountDialogTitle').textContent = accountUser ? 'Your account' : 'Welcome back';
     $('accountDialogEyebrow').textContent = accountUser ? 'PROFILE' : 'ACCOUNT';
-    var isModerator = hasModeratorAccess(accountUser);
+    var isModerator = !isOfflineCopy && hasModeratorAccess(accountUser);
     updatePresenceTracking();
     if (accountUser) {
       try { localStorage.setItem('study_desk_account_created', 'true'); } catch (error) {}
@@ -4687,8 +4722,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
     $('moderatorTools').classList.toggle('hidden', !isModerator);
     $('adminPanelBtn').classList.toggle('hidden', !isModerator);
-    var isDev = !!accountUser && accountUser.role === 'dev';
-    $('developerAnnouncementNotice').classList.toggle('hidden', !accountUser || accountUser.role !== 'moderator');
+    var isDev = !isOfflineCopy && !!accountUser && accountUser.role === 'dev';
+    $('developerAnnouncementNotice').classList.toggle('hidden', isOfflineCopy || !accountUser || accountUser.role !== 'moderator');
     $('developerAnnouncementTools').classList.toggle('hidden', !isDev);
     if (isDev) updateAnnouncementAdminState(currentAnnouncement);
     if (!isModerator && adminDialog.open) adminDialog.close();
@@ -4715,22 +4750,37 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       $('adminRewardForm').classList.add('hidden');
     }
     $('accountBtnText').textContent = accountUser ? accountUser.username : 'Account';
-    $('accountBtn').title = accountUser ? 'Signed in as ' + accountUser.username : 'Sign in to sync your workspace';
+    $('accountBtn').title = accountUser
+      ? (isOfflineCopy ? 'Account verified online for this session' : 'Signed in as ' + accountUser.username)
+      : (isOfflineCopy ? 'Verify an account online' : 'Sign in to sync your workspace');
     $('accountSignedInPanel').classList.toggle('hidden', !accountUser);
-    $('accountLoginForm').classList.toggle('hidden', !!accountUser);
+    $('accountLoginForm').classList.toggle('hidden', !!accountUser || isOfflineCopy);
     $('accountSignupForm').classList.add('hidden');
     $('accountRecoveryForm').classList.add('hidden');
+    $('offlineAccountPanel').classList.toggle('hidden', !isOfflineCopy || !!accountUser);
+    $('offlineHandoffConfirmPanel').classList.add('hidden');
     $('accountUsername').textContent = accountUser ? accountUser.username : '';
+    $('accountStatusLabel').textContent = isOfflineCopy ? 'Verified account:' : 'Signed in as';
+    $('accountSignedInDescription').textContent = isOfflineCopy
+      ? 'Your account was verified by the Study Desk server for this session. This downloaded copy does not sync workspace data.'
+      : 'Your preferences, notes, and bookmarks sync to your account.';
     $('accountDialogIntro').textContent = accountUser
-      ? (accountUser.role === 'dev'
+      ? (isOfflineCopy
+        ? 'Your account was verified online for this session. Reopen verification the next time you launch this downloaded copy.'
+        : accountUser.role === 'dev'
         ? 'Developer rank is active. The online count shows signed-in accounts active in the last 90 seconds; existing Admin tools are also available.'
         : accountUser.role === 'moderator'
         ? 'Use the Admin button beside the Extension Store to review submissions, manage accounts, and grant rewards.'
         : 'Your preferences, notes, and bookmarks are connected to this account.')
-      : 'Create an account to sync preferences, notes, and bookmarks across your devices.';
+      : isOfflineCopy
+        ? 'Verify your existing account through the Study Desk server. Internet access is required.'
+        : 'Create an account to sync preferences, notes, and bookmarks across your devices.';
     if (!accountUser) $('recoveryCodePanel').classList.add('hidden');
+    $('accountSignoutBtn').textContent = isOfflineCopy ? 'Forget verification' : 'Sign out';
     setCloudStatus(accountUser
-      ? 'Signed in as ' + accountUser.username + ' · workspace sync is on.'
+      ? (isOfflineCopy
+        ? 'Account verified online for this session. Workspace sync is unavailable in a downloaded copy.'
+        : 'Signed in as ' + accountUser.username + ' · workspace sync is on.')
       : '', false);
   }
   function accountMode(mode) {
@@ -4742,11 +4792,20 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         ? 'Reset your password'
         : 'Welcome back';
     $('accountSignedInPanel').classList.add('hidden');
-    $('accountLoginForm').classList.toggle('hidden', mode !== 'login');
-    $('accountSignupForm').classList.toggle('hidden', mode !== 'signup');
-    $('accountRecoveryForm').classList.toggle('hidden', mode !== 'recovery');
+    $('accountLoginForm').classList.toggle('hidden', mode !== 'login' || isOfflineCopy);
+    $('accountSignupForm').classList.toggle('hidden', mode !== 'signup' || isOfflineCopy || !!hostedHandoffState);
+    $('accountRecoveryForm').classList.toggle('hidden', mode !== 'recovery' || isOfflineCopy || !!hostedHandoffState);
+    $('offlineAccountPanel').classList.toggle('hidden', !isOfflineCopy || !!accountUser);
+    $('offlineHandoffConfirmPanel').classList.add('hidden');
+    $('showSignupBtn').classList.toggle('hidden', !!hostedHandoffState);
+    $('showRecoveryBtn').classList.toggle('hidden', !!hostedHandoffState);
+    $('accountOptionalNote').classList.toggle('hidden', !!hostedHandoffState);
     $('recoveryCodePanel').classList.add('hidden');
-    $('accountDialogIntro').textContent = mode === 'signup'
+    $('accountDialogIntro').textContent = isOfflineCopy
+      ? 'Verify your existing account through the Study Desk server. Internet access is required.'
+      : hostedHandoffState
+      ? 'Sign in to verify an existing account for the downloaded Study Desk copy that opened this window.'
+      : mode === 'signup'
       ? 'Create an account to sync your notes, bookmarks, and preferences across devices.'
       : mode === 'recovery'
         ? 'Enter your username and recovery code, then choose a new password.'
@@ -4758,7 +4817,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       $('accountLoginForm').classList.add('hidden');
       $('accountSignupForm').classList.add('hidden');
       $('accountRecoveryForm').classList.add('hidden');
-      $('accountDialogIntro').textContent = accountUser.role === 'dev'
+      $('accountDialogIntro').textContent = isOfflineCopy
+        ? 'Your account was verified online for this session. Reopen verification the next time you launch this downloaded copy.'
+        : accountUser.role === 'dev'
         ? 'Developer rank is active. The online count shows signed-in accounts active in the last 90 seconds; existing Admin tools are also available.'
         : accountUser.role === 'moderator'
         ? 'Use the Admin button beside the Extension Store to review submissions, manage accounts, and grant rewards.'
@@ -4768,14 +4829,20 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   function openAccount(mode) {
     accountMode(accountUser ? 'login' : (mode || 'login'));
     if (!accountDialog.open) accountDialog.showModal();
-    var first = accountUser ? $('accountSignoutBtn') : mode === 'signup' ? $('signupUsername') : $('loginUsername');
+    var first = accountUser
+      ? $('accountSignoutBtn')
+      : isOfflineCopy
+        ? $('offlineAccountVerifyBtn')
+        : mode === 'signup' ? $('signupUsername') : $('loginUsername');
     if (first) first.focus();
   }
   NT.openAccount = openAccount;
   NT.requireCloudAccount = function () {
-    if (accountUser) return true;
+    if (accountUser && !isOfflineCopy) return true;
     openAccount('login');
-    accountError.textContent = 'Sign in or create an account before adding an extension.';
+    accountError.textContent = isOfflineCopy
+      ? 'Account verification does not enable online-store actions in a downloaded copy.'
+      : 'Sign in or create an account before adding an extension.';
     return false;
   };
   NT.updateAccountRole = function (updatedUser) {
@@ -4790,8 +4857,115 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
   function readError(error) { return error && error.message || 'Something went wrong. Try again.'; }
 
+  function clearOfflineAuthWatcher() {
+    if (offlineAuthWatcher) clearInterval(offlineAuthWatcher);
+    offlineAuthWatcher = null;
+  }
+  function startOfflineAccountVerification() {
+    accountError.textContent = '';
+    if (!window.crypto || typeof window.crypto.getRandomValues !== 'function') {
+      accountError.textContent = 'This browser cannot create a secure verification request. Try a current version of Chrome.';
+      return;
+    }
+    var bytes = new Uint8Array(32);
+    window.crypto.getRandomValues(bytes);
+    var state = Array.from(bytes, function (byte) { return byte.toString(16).padStart(2, '0'); }).join('');
+    var hubUrl = new URL(ACCOUNT_HUB_URL);
+    hubUrl.searchParams.set('state', state);
+    var popup = window.open(hubUrl.href, 'studyDeskAccountVerification', 'popup,width=520,height=760,resizable=yes,scrollbars=yes');
+    if (!popup) {
+      accountError.textContent = 'The sign-in window was blocked. Allow pop-ups for this downloaded copy, then try again.';
+      return;
+    }
+    offlineAuthPopup = popup;
+    offlineAuthState = state;
+    accountError.textContent = 'Sign in and approve the verification in the Study Desk window. This copy never receives your password.';
+    var startedAt = Date.now();
+    offlineAuthWatcher = setInterval(function () {
+      if (offlineAuthPopup !== popup || offlineAuthState !== state) {
+        clearOfflineAuthWatcher();
+        return;
+      }
+      if (popup.closed) {
+        clearOfflineAuthWatcher();
+        offlineAuthPopup = null;
+        offlineAuthState = null;
+        accountError.textContent = 'The sign-in window closed before verification was approved.';
+      } else if (Date.now() - startedAt > 120000) {
+        clearOfflineAuthWatcher();
+        offlineAuthPopup = null;
+        offlineAuthState = null;
+        try { popup.close(); } catch (error) {}
+        accountError.textContent = 'Study Desk did not respond in time. Check your internet connection and whether the account server is reachable, then try again.';
+      }
+    }, 500);
+  }
+  function showHostedHandoffConfirmation(user) {
+    pendingHandoffUser = user;
+    $('accountDialogTitle').textContent = 'Confirm account verification';
+    $('accountDialogEyebrow').textContent = 'ACCOUNT CHECK';
+    $('accountDialogIntro').textContent = 'The downloaded Study Desk copy asked to verify an existing account.';
+    $('accountSignedInPanel').classList.add('hidden');
+    $('accountLoginForm').classList.add('hidden');
+    $('accountSignupForm').classList.add('hidden');
+    $('accountRecoveryForm').classList.add('hidden');
+    $('offlineAccountPanel').classList.add('hidden');
+    $('offlineHandoffConfirmText').textContent =
+      'Send the username “' + user.username + '” and account rank “' + user.role +
+      '” to that copy? Your password and sign-in session will not be sent.';
+    $('offlineHandoffConfirmPanel').classList.remove('hidden');
+    accountError.textContent = '';
+    if (!accountDialog.open) accountDialog.showModal();
+    $('offlineHandoffConfirmBtn').focus();
+  }
+  function finishHostedHandoff() {
+    if (!pendingHandoffUser || !hostedHandoffState) return;
+    if (!window.opener || window.opener.closed) {
+      accountError.textContent = 'The downloaded copy is no longer open. Close this window and start verification again.';
+      return;
+    }
+    window.opener.postMessage({
+      type: 'study-desk-offline-account-verified',
+      state: hostedHandoffState,
+      user: {
+        username: pendingHandoffUser.username,
+        role: pendingHandoffUser.role
+      }
+    }, '*');
+    $('offlineHandoffConfirmBtn').disabled = true;
+    accountError.textContent = 'Verification sent. This window will close shortly.';
+    window.setTimeout(function () { window.close(); }, 700);
+  }
+  $('offlineAccountVerifyBtn').addEventListener('click', startOfflineAccountVerification);
+  $('offlineHandoffConfirmBtn').addEventListener('click', finishHostedHandoff);
+  $('offlineHandoffCancelBtn').addEventListener('click', function () {
+    pendingHandoffUser = null;
+    accountDialog.close();
+  });
+  window.addEventListener('message', function (event) {
+    if (!isOfflineCopy || event.source !== offlineAuthPopup || event.origin !== ACCOUNT_HUB_ORIGIN) return;
+    var message = event.data;
+    if (!message || message.type !== 'study-desk-offline-account-verified' || message.state !== offlineAuthState) return;
+    var user = message.user;
+    if (
+      !user ||
+      typeof user.username !== 'string' ||
+      !/^[a-z0-9_]{3,24}$/i.test(user.username) ||
+      !['user', 'moderator', 'dev'].includes(user.role)
+    ) {
+      accountError.textContent = 'The server response could not be verified. Please try again.';
+      return;
+    }
+    clearOfflineAuthWatcher();
+    offlineAuthPopup = null;
+    offlineAuthState = null;
+    setAccountUser({ username: user.username, role: user.role });
+    accountError.textContent = 'Account verified online for this session. Your password was not shared with this copy.';
+    NT.toast('Account verified for this session.');
+  });
+
   async function saveLocalChanges() {
-    if (!accountUser || !lastLocalSnapshot || syncBusy) return;
+    if (isOfflineCopy || !accountUser || !lastLocalSnapshot || syncBusy) return;
     var current = localSnapshot();
     var updates = {};
     syncKeys.forEach(function (key) {
@@ -4812,7 +4986,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
 
   async function syncAccountData(isFirstLoad) {
-    if (!accountUser || syncBusy) return;
+    if (isOfflineCopy || !accountUser || syncBusy) return;
     syncBusy = true;
     try {
       var local = localSnapshot();
@@ -4867,7 +5041,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 
   var adminGrantsBusy = false;
   async function applyAdminRewardGrants() {
-    if (!accountUser || typeof NT.applyAdminRewardGrant !== 'function' || adminGrantsBusy) return;
+    if (isOfflineCopy || !accountUser || typeof NT.applyAdminRewardGrant !== 'function' || adminGrantsBusy) return;
     var username = accountUser.username;
     adminGrantsBusy = true;
     try {
@@ -4931,6 +5105,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         body: { username: $('loginUsername').value.trim(), password: $('loginPassword').value }
       });
       $('loginPassword').value = '';
+      if (hostedHandoffState) {
+        showHostedHandoffConfirmation(result.user);
+        return;
+      }
       await finishSignIn(result.user, false);
       NT.toast('Signed in. Your workspace is syncing.');
     } catch (error) { accountError.textContent = readError(error); }
@@ -4973,8 +5151,16 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     } catch (error) { accountError.textContent = readError(error); }
     finally { setBusy(form, false); }
   });
-  $('showSignupBtn').addEventListener('click', function () { accountMode('signup'); $('signupUsername').focus(); });
-  $('showRecoveryBtn').addEventListener('click', function () { accountMode('recovery'); $('recoveryUsername').focus(); });
+  $('showSignupBtn').addEventListener('click', function () {
+    if (hostedHandoffState) return;
+    accountMode('signup');
+    $('signupUsername').focus();
+  });
+  $('showRecoveryBtn').addEventListener('click', function () {
+    if (hostedHandoffState) return;
+    accountMode('recovery');
+    $('recoveryUsername').focus();
+  });
   $('showLoginFromSignupBtn').addEventListener('click', function () { accountMode('login'); $('loginUsername').focus(); });
   $('showLoginFromRecoveryBtn').addEventListener('click', function () { accountMode('login'); $('loginUsername').focus(); });
   $('accountCloseBtn').addEventListener('click', function () { accountDialog.close(); });
@@ -5090,12 +5276,16 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   });
   accountDialog.addEventListener('click', function (event) { if (event.target === accountDialog) accountDialog.close(); });
   $('accountSignoutBtn').addEventListener('click', async function () {
-    try { await api('/auth/logout', { method: 'POST' }); } catch (error) {}
+    if (!isOfflineCopy) {
+      try { await api('/auth/logout', { method: 'POST' }); } catch (error) {}
+    }
     setAccountUser(null);
     lastLocalSnapshot = null;
-    await loadMyExtensions();
+    if (!isOfflineCopy) await loadMyExtensions();
     accountDialog.close();
-    NT.toast('Signed out. This browser’s local data remains here.');
+    NT.toast(isOfflineCopy
+      ? 'Account verification cleared from this copy. Your website session is unchanged.'
+      : 'Signed out. This browser’s local data remains here.');
   });
   $('copyRecoveryCodeBtn').addEventListener('click', async function () {
     try {
@@ -5696,50 +5886,64 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   });
 
   async function restoreSession() {
+    if (isOfflineCopy) {
+      setAccountUser(null);
+      setCloudStatus('Downloaded copy. Account verification is available while the Study Desk server can be reached.', false);
+      return;
+    }
     try {
       var result = await api('/auth/me');
+      if (hostedHandoffState) {
+        showHostedHandoffConfirmation(result.user);
+        return;
+      }
       await finishSignIn(result.user, true);
     } catch (error) {
       if (!accountUser) {
         setAccountUser(null);
+        if (hostedHandoffState) {
+          openAccount('login');
+          return;
+        }
         loadPublicExtensions();
         maybeShowAccountNudge();
       }
     }
   }
   restoreSession();
-  setInterval(saveLocalChanges, 2500);
-  setInterval(async function () {
-    if (!accountUser || syncBusy) return;
-    try {
-      await saveLocalChanges();
-      var result = await api('/sync');
-      if (result.revision !== revision) {
-        revision = result.revision;
-        var current = localSnapshot();
-        var changed = [];
-        Object.keys(result.data || {}).forEach(function (key) {
-          if (syncKeys.indexOf(key) === -1) return;
-          if (localStorage.getItem(key) !== result.data[key]) {
-            localStorage.setItem(key, result.data[key]);
-            changed.push(key);
-          }
-        });
-        lastLocalSnapshot = localSnapshot();
-        dispatchCloudChange(changed);
-        setCloudStatus('Signed in as ' + accountUser.username + ' · synced just now.', false);
-      }
-    } catch (error) { setCloudStatus('Sync paused: ' + readError(error), true); }
-  }, 15000);
-  setInterval(function () {
-    if (accountUser) applyAdminRewardGrants();
-  }, 30000);
+  if (!isOfflineCopy) {
+    setInterval(saveLocalChanges, 2500);
+    setInterval(async function () {
+      if (!accountUser || syncBusy) return;
+      try {
+        await saveLocalChanges();
+        var result = await api('/sync');
+        if (result.revision !== revision) {
+          revision = result.revision;
+          var current = localSnapshot();
+          var changed = [];
+          Object.keys(result.data || {}).forEach(function (key) {
+            if (syncKeys.indexOf(key) === -1) return;
+            if (localStorage.getItem(key) !== result.data[key]) {
+              localStorage.setItem(key, result.data[key]);
+              changed.push(key);
+            }
+          });
+          lastLocalSnapshot = localSnapshot();
+          dispatchCloudChange(changed);
+          setCloudStatus('Signed in as ' + accountUser.username + ' · synced just now.', false);
+        }
+      } catch (error) { setCloudStatus('Sync paused: ' + readError(error), true); }
+    }, 15000);
+    setInterval(function () {
+      if (accountUser) applyAdminRewardGrants();
+    }, 30000);
+  }
   document.addEventListener('visibilitychange', function () {
-    if (!document.hidden && accountUser) {
-      loadPublicExtensions();
-      sendPresenceHeartbeat();
-      if (accountUser.role === 'dev') refreshDeveloperOnlineCount();
-    }
+    if (isOfflineCopy || document.hidden || !accountUser) return;
+    loadPublicExtensions();
+    sendPresenceHeartbeat();
+    if (accountUser.role === 'dev') refreshDeveloperOnlineCount();
   });
 })();
 </script>

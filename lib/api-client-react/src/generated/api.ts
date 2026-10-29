@@ -52,6 +52,8 @@ import type {
   ModerationExtensionList,
   ModerationSharedTabs,
   ModerationUser,
+  OfflineHandoffInput,
+  OpenOfflineAccountHandoffParams,
   RecoveryInput,
   ReviewExtensionInput,
   SignUpInput,
@@ -654,6 +656,182 @@ export const useLogIn = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getLogInMutationOptions(options));
+    }
+
+export const getOpenOfflineAccountHandoffUrl = (params: OpenOfflineAccountHandoffParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/auth/offline-handoff?${stringifiedParams}` : `/api/auth/offline-handoff`
+}
+
+/**
+ * @summary Open the secure sign-in page for a downloaded copy
+ */
+export const openOfflineAccountHandoff = async (params: OpenOfflineAccountHandoffParams, options?: Parameters<typeof customFetch>[1]): Promise<string> => {
+
+  return customFetch<string>(getOpenOfflineAccountHandoffUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getOpenOfflineAccountHandoffQueryKey = (params?: OpenOfflineAccountHandoffParams,) => {
+    return [
+    `/api/auth/offline-handoff`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getOpenOfflineAccountHandoffQueryOptions = <TData = Awaited<ReturnType<typeof openOfflineAccountHandoff>>, TError = ErrorType<void>>(params: OpenOfflineAccountHandoffParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof openOfflineAccountHandoff>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getOpenOfflineAccountHandoffQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof openOfflineAccountHandoff>>> = ({ signal }) => openOfflineAccountHandoff(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof openOfflineAccountHandoff>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type OpenOfflineAccountHandoffQueryResult = NonNullable<Awaited<ReturnType<typeof openOfflineAccountHandoff>>>
+export type OpenOfflineAccountHandoffQueryError = ErrorType<void>
+
+
+/**
+ * @summary Open the secure sign-in page for a downloaded copy
+ */
+
+export function useOpenOfflineAccountHandoff<TData = Awaited<ReturnType<typeof openOfflineAccountHandoff>>, TError = ErrorType<void>>(
+ params: OpenOfflineAccountHandoffParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof openOfflineAccountHandoff>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getOpenOfflineAccountHandoffQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getVerifyOfflineAccountHandoffUrl = () => {
+
+
+
+
+  return `/api/auth/offline-handoff`
+}
+
+/**
+ * @summary Verify an existing account for a downloaded copy
+ */
+export const verifyOfflineAccountHandoff = async (offlineHandoffInput: OfflineHandoffInput, options?: Parameters<typeof customFetch>[1]): Promise<string> => {
+    const formUrlEncoded = new URLSearchParams();
+formUrlEncoded.append(`state`, offlineHandoffInput.state);
+formUrlEncoded.append(`username`, offlineHandoffInput.username);
+formUrlEncoded.append(`password`, offlineHandoffInput.password);
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<string>(getVerifyOfflineAccountHandoffUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...getHeaders(options?.headers) },
+    body: formUrlEncoded
+  }
+);}
+
+
+
+
+
+export const getVerifyOfflineAccountHandoffMutationKey = () => ['verifyOfflineAccountHandoff'] as const;
+
+export const getVerifyOfflineAccountHandoffMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyOfflineAccountHandoff>>, TError,VerifyOfflineAccountHandoffMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyOfflineAccountHandoff>>, TError,VerifyOfflineAccountHandoffMutationVariables, TContext> => {
+
+const mutationKey = getVerifyOfflineAccountHandoffMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyOfflineAccountHandoff>>, VerifyOfflineAccountHandoffMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  verifyOfflineAccountHandoff(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyOfflineAccountHandoffMutationResult = NonNullable<Awaited<ReturnType<typeof verifyOfflineAccountHandoff>>>
+    export type VerifyOfflineAccountHandoffMutationBody = BodyType<OfflineHandoffInput>
+    export type VerifyOfflineAccountHandoffMutationError = ErrorType<void>
+    export type VerifyOfflineAccountHandoffMutationVariables = {data: BodyType<OfflineHandoffInput>}
+
+    /**
+ * @summary Verify an existing account for a downloaded copy
+ */
+export const useVerifyOfflineAccountHandoff = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyOfflineAccountHandoff>>, TError,VerifyOfflineAccountHandoffMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof verifyOfflineAccountHandoff>>,
+        TError,
+        VerifyOfflineAccountHandoffMutationVariables,
+        TContext
+      > => {
+      return useMutation(getVerifyOfflineAccountHandoffMutationOptions(options));
     }
 
 export const getLogOutUrl = () => {

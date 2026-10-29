@@ -51,6 +51,8 @@ export * from './moderationSharedTab';
 export * from './moderationSharedTabs';
 export * from './moderationUser';
 export * from './moderationUserRole';
+export * from './offlineHandoffInput';
+export * from './openOfflineAccountHandoffParams';
 export * from './recoveryInput';
 export * from './reviewExtensionInput';
 export * from './reviewExtensionInputDecision';
