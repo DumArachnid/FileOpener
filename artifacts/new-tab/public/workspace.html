@@ -3953,12 +3953,20 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   var cornerTimer;
   var compatibilitySeen = false;
   var educationalUseSeen = false;
+  var currentHost = (window.location.hostname || '').toLowerCase();
+  var localPreview = window.location.protocol === 'file:' ||
+    currentHost === 'localhost' ||
+    currentHost.endsWith('.localhost') ||
+    /^127(?:\.\d{1,3}){3}$/.test(currentHost) ||
+    currentHost === '::1' ||
+    currentHost === '[::1]' ||
+    currentHost.endsWith('.replit.dev');
   try {
     compatibilitySeen = localStorage.getItem('disguise_compatibility_seen') === '1';
     educationalUseSeen = localStorage.getItem('disguise_educational_use_seen') === '1';
   } catch (e) {}
   function showCornerNotice() {
-    if (compatibilitySeen) return;
+    if (localPreview || compatibilitySeen) return;
     cornerNotice.hidden = false;
     cornerTimer = setTimeout(hideCornerNotice, 10000);
   }
@@ -3984,7 +3992,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     educationalNotice.close();
     showCornerNotice();
   });
-  if (!educationalUseSeen) educationalNotice.showModal();
+  if (!localPreview && !educationalUseSeen) educationalNotice.showModal();
   else showCornerNotice();
 })();
 </script>
