@@ -262,7 +262,7 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .extension-input-panel textarea { width: 100%; min-height: 180px; max-height: 55vh; resize: vertical; font-family: var(--main-font); line-height: 1.5; }
 .extension-input-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 .account-dialog { width: min(520px, calc(100% - 28px)); max-width: 520px; max-height: min(90dvh, 760px); padding: 0; overflow: auto; overscroll-behavior: contain; border: 1px solid var(--border-strong); border-radius: 18px; background: var(--panel); color: var(--text); box-shadow: 0 24px 72px color-mix(in srgb, var(--text) 24%, transparent), 0 4px 0 var(--ink-shadow); animation: account-dialog-enter .2s var(--ease) both; }
-.admin-dialog { width: min(900px, calc(100% - 28px)); max-width: 900px; max-height: 90vh; padding: 0; overflow: auto; border: 1.5px solid var(--border-strong); border-radius: 14px; background: var(--panel); color: var(--text); box-shadow: 5px 5px 0 var(--ink-shadow); }
+.admin-dialog { width: min(1060px, calc(100% - 28px)); max-width: 1060px; max-height: 90vh; padding: 0; overflow: auto; border: 1.5px solid var(--border-strong); border-radius: 14px; background: var(--panel); color: var(--text); box-shadow: 5px 5px 0 var(--ink-shadow); }
 .account-dialog::backdrop { background: color-mix(in srgb, var(--text) 48%, transparent); backdrop-filter: blur(5px) saturate(.8); }
 .admin-dialog::backdrop { background: color-mix(in srgb, var(--text) 45%, transparent); backdrop-filter: blur(3px); }
 .account-panel { display: flex; flex-direction: column; padding: clamp(22px, 5vw, 32px); }
@@ -282,6 +282,78 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .admin-panel h2 { margin: 0; font-size: 20px; }
 .admin-panel > p { margin: 0; color: var(--muted); line-height: 1.5; }
 .admin-panel .moderator-tools { border-top: 0; padding-top: 0; }
+.admin-account-management { display: grid; gap: 14px; padding: 16px !important; border: 1px solid var(--border); border-radius: 14px; background: color-mix(in srgb, var(--bg) 45%, var(--panel)); }
+.admin-account-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; }
+.admin-account-heading h4 { margin: 6px 0 4px; color: var(--text); font-size: 18px; letter-spacing: -.025em; }
+.admin-account-heading p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.admin-account-eyebrow { color: var(--muted); font: 600 9px var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+.admin-account-audit { display: flex; align-items: center; gap: 7px; flex: none; color: var(--muted); font: 10px var(--mono); }
+.admin-account-audit .ic { color: var(--accent); }
+.admin-account-privacy { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border)); border-radius: 9px; background: color-mix(in srgb, var(--accent-soft) 65%, var(--panel)); }
+.admin-account-privacy .ic { flex: none; color: var(--accent-ink); }
+.admin-account-privacy p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.admin-account-privacy strong { color: var(--text); }
+.admin-account-layout { display: grid; grid-template-columns: minmax(0, 1.13fr) minmax(300px, .87fr); gap: 12px; align-items: stretch; }
+.admin-account-primary, .admin-account-review { min-width: 0; border: 1px solid var(--border); border-radius: 11px; background: var(--panel); box-shadow: 0 3px 12px color-mix(in srgb, var(--text) 4%, transparent); }
+.admin-account-primary { padding: 16px; }
+.admin-account-search { display: grid; gap: 7px; }
+.admin-account-search label, .admin-account-field label { color: var(--text); font-size: 11px; font-weight: 700; }
+.admin-account-search-row { display: flex; align-items: stretch; gap: 8px; }
+.admin-account-search-row input { flex: 1; min-width: 0; height: 40px; font-family: var(--mono); }
+.admin-account-search-row .btn { min-width: 88px; }
+.admin-account-search-foot { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font: 9px var(--mono); }
+.admin-account-empty { display: grid; justify-items: center; padding: 36px 20px 24px; text-align: center; }
+.admin-account-empty[hidden], .admin-account-profile[hidden], .admin-account-action-fields[hidden], .admin-account-fields[hidden] { display: none !important; }
+.admin-account-empty-mark { display: grid; width: 42px; height: 42px; place-items: center; margin-bottom: 10px; border-radius: 13px; background: var(--accent-soft); color: var(--accent-ink); }
+.admin-account-empty strong { color: var(--text); font-size: 13px; }
+.admin-account-empty p { max-width: 290px; margin: 5px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.admin-account-profile { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+.admin-account-profile-head { display: flex; align-items: center; gap: 11px; }
+.admin-account-avatar { display: grid; width: 38px; height: 38px; flex: none; place-items: center; border-radius: 11px 11px 11px 4px; background: var(--accent-soft); color: var(--accent-ink); font: 700 11px var(--mono); }
+.admin-account-identity { flex: 1; min-width: 0; }
+.admin-account-name-line { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.admin-account-name-line strong { overflow-wrap: anywhere; color: var(--text); font: 700 14px var(--mono); }
+.admin-account-role { margin-top: 4px; color: var(--muted); font-size: 10px; }
+.admin-account-status { display: inline-flex; align-items: center; gap: 5px; padding: 4px 7px; border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border)); border-radius: 99px; background: color-mix(in srgb, var(--accent-soft) 70%, var(--panel)); color: var(--accent-ink); font-size: 9px; font-weight: 700; }
+.admin-account-status::before { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); content: ""; }
+.admin-account-status.is-suspended { border-color: color-mix(in srgb, var(--danger) 30%, var(--border)); background: color-mix(in srgb, var(--danger) 9%, var(--panel)); color: var(--danger); }
+.admin-account-status.is-suspended::before { background: var(--danger); }
+.admin-account-action-fields { display: grid; gap: 10px; margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--border); }
+.admin-account-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(145px, .58fr); gap: 9px; }
+.admin-account-field { display: grid; gap: 6px; min-width: 0; }
+.admin-account-field input, .admin-account-field select { width: 100%; min-width: 0; min-height: 36px; }
+.admin-account-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+.admin-account-safeguard { display: flex; align-items: flex-start; gap: 7px; margin-top: 2px; padding-top: 10px; border-top: 1px solid var(--border); color: var(--muted); font-size: 9px; line-height: 1.5; }
+.admin-account-safeguard .ic { flex: none; color: var(--accent-ink); }
+.admin-account-review { display: flex; flex-direction: column; overflow: hidden; }
+.admin-account-review-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 16px 12px; }
+.admin-account-review-head h5 { margin: 5px 0 0; color: var(--text); font-size: 15px; }
+.admin-account-review-count { color: var(--muted); font: 10px var(--mono); }
+.admin-account-review-tabs { display: flex; gap: 17px; padding: 0 16px; border-bottom: 1px solid var(--border); }
+.admin-account-review-tabs button { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 0 0 9px; border: 0; background: transparent; color: var(--muted); font-size: 10px; cursor: pointer; }
+.admin-account-review-tabs button[aria-selected="true"] { color: var(--accent-ink); }
+.admin-account-review-tabs button[aria-selected="true"]::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; background: var(--accent); content: ""; }
+.admin-account-review-tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.admin-account-review-section { display: grid; align-content: start; gap: 8px; flex: 1; padding: 12px 16px; }
+.admin-account-review-section[hidden] { display: none !important; }
+.admin-account-review-caption { display: flex; justify-content: space-between; color: var(--muted); font: 9px var(--mono); letter-spacing: .045em; }
+.admin-account-review .community-row { background: var(--input-bg); }
+.admin-account-review-footer { display: flex; align-items: center; gap: 7px; padding: 10px 16px; border-top: 1px solid var(--border); color: var(--muted); font-size: 9px; line-height: 1.4; }
+.admin-account-review-footer .ic { flex: none; }
+.admin-account-reward { margin-top: 12px; padding: 13px; border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border)); border-radius: 9px; background: color-mix(in srgb, var(--accent-soft) 55%, var(--panel)); }
+.admin-account-reward h5 { margin: 0 0 2px; }
+.admin-account-reward .moderation-search { margin-top: 10px; }
+@media (max-width: 760px) {
+  .admin-account-layout { grid-template-columns: 1fr; }
+  .admin-account-heading { align-items: flex-start; }
+  .admin-account-audit { display: none; }
+}
+@media (max-width: 480px) {
+  .admin-account-management { padding: 12px !important; }
+  .admin-account-fields { grid-template-columns: 1fr; }
+  .admin-account-search-row { flex-wrap: wrap; }
+  .admin-account-search-row .btn { width: 100%; }
+}
 .developer-rank-notice { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: color-mix(in srgb, var(--accent) 7%, var(--panel)); }
 .developer-rank-notice h4, .developer-rank-notice p { margin: 0; }
 .developer-rank-notice p { color: var(--muted); font-size: 12px; line-height: 1.5; }
@@ -1001,20 +1073,35 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div><h5>Hidden extensions</h5><p>Restore a previously removed listing without changing the creator’s saved draft.</p></div>
 <div class="online-store-status" id="removedExtensionsStatus" role="status"></div>
 <div class="community-list" id="removedModerationExtensions" aria-label="Hidden extensions available for restoration"></div>
-<div><h5>Manage an account</h5></div>
-<form class="moderation-search" id="moderationUserSearchForm">
-<label for="moderationUsernameSearch">Find an account by exact username</label>
-<div class="moderation-search-row"><input id="moderationUsernameSearch" minlength="3" maxlength="24" required><button class="btn sm" type="submit">Search</button></div>
-<label for="moderationBanReason">Ban reason (optional)</label><input id="moderationBanReason" maxlength="500" placeholder="Briefly explain the reason">
-<label for="moderationBanDuration">Suspension duration</label><select id="moderationBanDuration"><option value="1">1 hour</option><option value="24" selected>24 hours</option><option value="72">72 hours</option><option value="168">7 days</option><option value="720">30 days</option><option value="permanent">Permanent</option></select>
+<section class="moderator-tools admin-account-management" aria-labelledby="manageAccountTitle">
+<header class="admin-account-heading">
+<div><span class="admin-account-eyebrow">Account oversight</span><h4 id="manageAccountTitle">Manage an account</h4><p>Look up an account to review access, rewards, and recent activity.</p></div>
+<div class="admin-account-audit"><i data-ic="lock"></i><span>Every admin action is recorded</span></div>
+</header>
+<div class="admin-account-privacy"><i data-ic="shield"></i><p><strong>Privacy stays with the learner.</strong> Shared tab details appear only after a student opts in. Only page titles and site names are shown—not page contents, files, or full URLs.</p></div>
+<div class="admin-account-layout">
+<section class="admin-account-primary" aria-label="Account access and actions">
+<form class="admin-account-search" id="moderationUserSearchForm">
+<label for="moderationUsernameSearch">Find by exact username</label>
+<div class="admin-account-search-row"><input id="moderationUsernameSearch" minlength="3" maxlength="24" autocomplete="off" required placeholder="Enter username"><button class="btn sm" type="submit"><i data-ic="search"></i> Search</button></div>
+<div class="admin-account-search-foot"><span>Exact match only</span><span>3–24 characters</span></div>
 </form>
-<div class="community-list" id="moderationUserResult" role="status" aria-live="polite"></div>
-<section class="moderator-tools" aria-labelledby="suspensionAppealsTitle">
-<div class="row-between"><h5 id="suspensionAppealsTitle">Suspension appeals</h5><button class="btn sm" id="refreshSuspensionAppealsBtn" type="button">Refresh queue</button></div>
-<div class="online-store-status" id="suspensionAppealsStatus" role="status" aria-live="polite">Appeals awaiting review will appear here.</div>
-<div class="community-list" id="suspensionAppealsQueue" aria-label="Suspension appeals awaiting review"></div>
-</section>
-<form class="moderation-search hidden" id="adminRewardForm">
+<div class="online-store-status" id="moderationUserSearchStatus" role="status" aria-live="polite"></div>
+<div class="admin-account-empty" id="moderationUserEmpty">
+<span class="admin-account-empty-mark"><i data-ic="user"></i></span>
+<strong>Search for an account</strong>
+<p>Enter the username exactly as it appears. Account details and available actions will show here.</p>
+</div>
+<div class="admin-account-profile" id="moderationUserResult" hidden></div>
+<div class="admin-account-action-fields" id="moderationActionFields" hidden>
+<div class="admin-account-fields" id="moderationSuspensionFields">
+<div class="admin-account-field"><label for="moderationBanReason">Suspension reason <span class="muted">(optional)</span></label><input id="moderationBanReason" maxlength="500" placeholder="Add a brief explanation"></div>
+<div class="admin-account-field"><label for="moderationBanDuration">Duration</label><select id="moderationBanDuration"><option value="1">1 hour</option><option value="24" selected>24 hours</option><option value="72">72 hours</option><option value="168">7 days</option><option value="720">30 days</option><option value="permanent">Permanent</option></select></div>
+</div>
+<div class="admin-account-actions" id="moderationUserActions"></div>
+<div class="admin-account-safeguard"><i data-ic="lock"></i><span>Suspensions apply only to other regular accounts. Promotion is limited to eligible, active regular users. Rewards and feature unlocks apply to other accounts.</span></div>
+</div>
+<form class="moderation-search hidden admin-account-reward" id="adminRewardForm">
 <h5>Give a reward to <span id="adminRewardUsername"></span></h5>
 <label for="adminRewardCurrency">Reward</label><select id="adminRewardCurrency"><option value="points">Points</option><option value="shards">Shards</option></select>
 <label for="adminRewardAmount">Amount</label><input id="adminRewardAmount" type="number" min="1" max="10000" step="1" required>
@@ -1022,15 +1109,31 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <button class="btn sm primary" type="submit">Grant reward</button>
 <div class="online-store-status" id="adminRewardStatus" role="status"></div>
 </form>
-<section class="moderator-tools" id="adminHistorySection" aria-labelledby="adminHistoryTitle">
-<h5 id="adminHistoryTitle">Account history</h5>
-<div class="online-store-status" id="moderationHistoryStatus" role="status">Search for an account to view its ban and admin-action history.</div>
+</section>
+<aside class="admin-account-review" aria-labelledby="adminHistoryTitle">
+<header class="admin-account-review-head"><div><span class="admin-account-eyebrow">Account details</span><h5 id="adminHistoryTitle">Review &amp; activity</h5></div><span class="admin-account-review-count">02</span></header>
+<div class="admin-account-review-tabs" id="adminAccountReviewTabs" role="tablist" aria-label="Account review sections">
+<button type="button" id="adminHistoryTab" role="tab" aria-selected="true" aria-controls="adminHistorySection" tabindex="0"><i data-ic="history"></i> History</button>
+<button type="button" id="adminTabsTab" role="tab" aria-selected="false" aria-controls="adminTabsSection" tabindex="-1"><i data-ic="globe"></i> Shared tabs</button>
+</div>
+<section class="admin-account-review-section" id="adminHistorySection" role="tabpanel" aria-labelledby="adminHistoryTab" tabindex="0">
+<div class="admin-account-review-caption"><span>RECENT ACCOUNT ACTIONS</span><span>Up to 100</span></div>
+<div class="online-store-status" id="moderationHistoryStatus" role="status" aria-live="polite">Search for an account to view its ban and admin-action history.</div>
 <div class="community-list" id="moderationHistoryResult" aria-live="polite"></div>
 </section>
-<section class="moderator-tools" id="adminTabsSection" aria-labelledby="adminTabsTitle">
-<h5 id="adminTabsTitle">Shared tabs</h5>
-<div class="online-store-status" id="moderationTabsStatus" role="status">Tab details are only available when that user opts in.</div>
+<section class="admin-account-review-section" id="adminTabsSection" role="tabpanel" aria-labelledby="adminTabsTab" tabindex="0" hidden>
+<h5 id="adminTabsTitle" class="hidden">Shared tabs</h5>
+<div class="online-store-status" id="moderationTabsStatus" role="status" aria-live="polite">Tab details are only available when that user opts in.</div>
 <div class="community-list" id="moderationTabsResult" aria-live="polite"></div>
+</section>
+<div class="admin-account-review-footer" id="adminAccountReviewFooter"><i data-ic="lock"></i><span>Admin actions are retained for accountability.</span></div>
+</aside>
+</div>
+</section>
+<section class="moderator-tools" aria-labelledby="suspensionAppealsTitle">
+<div class="row-between"><h5 id="suspensionAppealsTitle">Suspension appeals</h5><button class="btn sm" id="refreshSuspensionAppealsBtn" type="button">Refresh queue</button></div>
+<div class="online-store-status" id="suspensionAppealsStatus" role="status" aria-live="polite">Appeals awaiting review will appear here.</div>
+<div class="community-list" id="suspensionAppealsQueue" aria-label="Suspension appeals awaiting review"></div>
 </section>
 </section>
 </div>
@@ -4843,6 +4946,16 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       $('extensionReportsList').replaceChildren();
       $('removedModerationExtensions').replaceChildren();
       $('moderationUserResult').replaceChildren();
+      $('moderationUserResult').hidden = true;
+      $('moderationUserActions').replaceChildren();
+      $('moderationActionFields').hidden = true;
+      $('moderationSuspensionFields').hidden = false;
+      $('moderationUserEmpty').hidden = false;
+      $('moderationUserSearchStatus').textContent = '';
+      $('moderationUsernameSearch').value = '';
+      $('moderationBanReason').value = '';
+      $('moderationBanDuration').value = '24';
+      $('adminRewardForm').classList.add('hidden');
       $('moderationQueueStatus').textContent = '';
       $('moderationPublishedStatus').textContent = '';
       $('extensionReportsStatus').textContent = '';
@@ -6143,7 +6256,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
             var updated = await api('/moderation/users?username=' + encodeURIComponent(username));
             renderModeratedUser(updated);
           } catch (refreshError) {
-            $('moderationUserResult').textContent = 'Decision saved; account details could not be refreshed: ' + readError(refreshError);
+            $('moderationUserSearchStatus').textContent = 'Decision saved; account details could not be refreshed: ' + readError(refreshError);
           }
         }
         await loadAdminHistory(username);
@@ -6161,23 +6274,45 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     moderatedUser = user;
     var container = $('moderationUserResult');
     container.replaceChildren();
-    var row = document.createElement('div');
-    row.className = 'community-row';
-    var label = document.createElement('div');
+    container.hidden = false;
+    $('moderationUserEmpty').hidden = true;
+    $('moderationActionFields').hidden = false;
+    $('moderationUserSearchStatus').textContent = 'Exact match found.';
+    $('moderationSuspensionFields').hidden = hasModeratorAccess(user) || user.username === accountUser.username || user.banned;
+
+    var profile = document.createElement('div');
+    profile.className = 'admin-account-profile-head';
+    var avatar = document.createElement('div');
+    avatar.className = 'admin-account-avatar';
+    avatar.setAttribute('aria-hidden', 'true');
+    avatar.textContent = String(user.username || '?').slice(0, 2).toUpperCase();
+    var identity = document.createElement('div');
+    identity.className = 'admin-account-identity';
+    var nameLine = document.createElement('div');
+    nameLine.className = 'admin-account-name-line';
     var title = document.createElement('strong');
-    title.textContent = user.username + (user.role === 'dev' ? ' · dev' : user.role === 'moderator' ? ' · admin' : '');
+    title.textContent = user.username;
+    var statusBadge = document.createElement('span');
+    statusBadge.className = 'admin-account-status' + (user.banned ? ' is-suspended' : '');
+    statusBadge.textContent = user.banned ? 'Suspended' : 'Active';
+    nameLine.append(title, statusBadge);
     var detail = document.createElement('div');
-    detail.className = 'small muted';
-      var suspensionEndsAt = user.banExpiresAt || user.banEndsAt || user.bannedUntil || user.suspensionEndsAt || user.endsAt || null;
-    detail.textContent = user.banned
-      ? 'Suspended · ' + formatSuspensionEnd(suspensionEndsAt) + (user.banReason ? ' · ' + user.banReason : '')
-      : 'Account is active';
-    if (user.username === accountUser.username) detail.textContent += ' · You cannot moderate your own account.';
-    else if (hasModeratorAccess(user)) detail.textContent += ' · Only regular user accounts can be moderated here.';
-    label.append(title, detail);
-    row.appendChild(label);
-    var actions = document.createElement('div');
-    actions.className = 'community-row-actions';
+    detail.className = 'admin-account-role';
+    var roleLabel = user.role === 'dev' ? 'Developer' : user.role === 'moderator' ? 'Admin' : 'Regular user';
+    detail.textContent = roleLabel;
+    var suspensionEndsAt = user.banExpiresAt || user.banEndsAt || user.bannedUntil || user.suspensionEndsAt || user.endsAt || null;
+    if (user.banned) {
+      detail.textContent += ' · Ends ' + formatSuspensionEnd(suspensionEndsAt);
+      if (user.banReason) detail.textContent += ' · ' + user.banReason;
+    }
+    identity.append(nameLine, detail);
+    profile.append(avatar, identity);
+
+    var actions = $('moderationUserActions');
+    actions.replaceChildren();
+    $('adminRewardForm').classList.add('hidden');
+    $('moderationBanReason').value = '';
+    $('moderationBanDuration').value = '24';
     if (!hasModeratorAccess(user) && user.username !== accountUser.username) {
       actions.appendChild(makeButton(user.banned ? 'Restore account' : 'Ban account',
         user.banned ? 'btn sm' : 'btn sm danger-ghost',
@@ -6258,14 +6393,12 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         $('adminRewardAmount').focus();
       }));
     }
-    actions.appendChild(makeButton('Ban / admin history', 'btn sm', function () {
-      loadAdminHistory(user.username);
-    }));
-    actions.appendChild(makeButton('View shared tabs', 'btn sm', function () {
-      loadAdminSharedTabs(user.username);
-    }));
-    row.appendChild(actions);
-    container.appendChild(row);
+    container.appendChild(profile);
+    $('moderationUserSearchStatus').textContent = user.username === accountUser.username
+      ? 'Exact match found. Your own account cannot be moderated.'
+      : hasModeratorAccess(user)
+      ? 'Exact match found. Privileged accounts cannot be suspended or promoted here.'
+      : 'Exact match found.';
   }
 
   async function loadAdminHistory(username) {
@@ -6348,6 +6481,39 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
   }
 
+  function setAdminAccountReviewTab(section) {
+    var historySelected = section === 'history';
+    var historyTab = $('adminHistoryTab');
+    var tabsTab = $('adminTabsTab');
+    historyTab.setAttribute('aria-selected', historySelected ? 'true' : 'false');
+    tabsTab.setAttribute('aria-selected', historySelected ? 'false' : 'true');
+    historyTab.tabIndex = historySelected ? 0 : -1;
+    tabsTab.tabIndex = historySelected ? -1 : 0;
+    $('adminHistorySection').hidden = !historySelected;
+    $('adminTabsSection').hidden = historySelected;
+    $('adminAccountReviewFooter').lastElementChild.textContent = historySelected
+      ? 'Admin actions are retained for accountability.'
+      : 'Tab sharing is controlled by the learner and can be turned off anytime.';
+    if (!moderatedUser) return;
+    if (historySelected) loadAdminHistory(moderatedUser.username);
+    else loadAdminSharedTabs(moderatedUser.username);
+  }
+
+  $('adminHistoryTab').addEventListener('click', function () {
+    setAdminAccountReviewTab('history');
+  });
+  $('adminTabsTab').addEventListener('click', function () {
+    setAdminAccountReviewTab('tabs');
+  });
+  $('adminAccountReviewTabs').addEventListener('keydown', function (event) {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    var nextTab = event.key === 'Home' || event.key === 'ArrowLeft' ? 'history' : 'tabs';
+    var nextButton = nextTab === 'history' ? $('adminHistoryTab') : $('adminTabsTab');
+    nextButton.focus();
+    setAdminAccountReviewTab(nextTab);
+  });
+
   $('adminRewardForm').addEventListener('submit', async function (event) {
     event.preventDefault();
     if (!hasModeratorAccess(accountUser) || !moderatedUser) return;
@@ -6380,16 +6546,21 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     var container = $('moderationUserResult');
     moderatedUser = null;
     $('adminRewardForm').classList.add('hidden');
+    $('moderationActionFields').hidden = true;
+    $('moderationUserEmpty').hidden = true;
+    container.hidden = true;
+    $('moderationUserSearchStatus').textContent = 'Searching…';
     $('moderationHistoryResult').replaceChildren();
     $('moderationTabsResult').replaceChildren();
     $('moderationHistoryStatus').textContent = 'Search for an account to view its ban and admin-action history.';
     $('moderationTabsStatus').textContent = 'Tab details are only available when that user opts in.';
-    container.textContent = 'Searching…';
+    setAdminAccountReviewTab('history');
     try {
       var user = await api('/moderation/users?username=' + encodeURIComponent(username));
       renderModeratedUser(user);
+      setAdminAccountReviewTab('history');
     } catch (error) {
-      container.textContent = readError(error);
+      $('moderationUserSearchStatus').textContent = readError(error);
     }
   });
 
