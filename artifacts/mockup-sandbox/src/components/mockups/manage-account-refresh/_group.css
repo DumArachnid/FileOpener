@@ -1,0 +1,210 @@
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=JetBrains+Mono:wght@400;500;700&display=swap");
+
+:root {
+  --bg: #ffffff;
+  --panel: #ebebeb;
+  --text: #000000;
+  --accent: #333333;
+  --on-accent: #000000;
+  --accent-ink: #000000;
+  --accent-hover: color-mix(in srgb, var(--accent) 84%, #000);
+  --accent-soft: color-mix(in srgb, var(--accent) 12%, var(--panel));
+  --border: color-mix(in srgb, var(--text) 15%, var(--bg));
+  --border-strong: color-mix(in srgb, var(--text) 32%, var(--bg));
+  --muted: color-mix(in srgb, var(--text) 56%, var(--bg));
+  --input-bg: color-mix(in srgb, var(--panel) 55%, var(--bg));
+  --ink-shadow: color-mix(in srgb, var(--text) 82%, transparent);
+  --danger: #b3261e;
+  --danger-hover: #8f1d17;
+  --main-font: "Bricolage Grotesque", system-ui, -apple-system, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000;
+    --panel: #333333;
+    --text: #ffffff;
+    --accent: #000000;
+    --on-accent: #ffffff;
+    --accent-ink: #ffffff;
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  min-height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--main-font);
+}
+
+button, input { font: inherit; }
+
+.manage-preview {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  background: var(--bg);
+}
+
+.current-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(900px, 100%);
+  max-height: calc(100dvh - 44px);
+  overflow: auto;
+  padding: 22px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: 5px 5px 0 var(--ink-shadow);
+}
+
+.current-titlebar,
+.current-search-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.current-titlebar h2 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: -.01em;
+}
+
+.current-close {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--muted);
+  font-size: 20px;
+}
+
+.current-privacy,
+.current-subsection p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.current-manage {
+  display: grid;
+  gap: 10px;
+}
+
+.current-manage h3 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.current-search {
+  display: grid;
+  gap: 8px;
+}
+
+.current-search label {
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.current-search input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 11px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text);
+}
+
+.current-search-row input { flex: 1; }
+
+.current-button {
+  min-height: 32px;
+  padding: 6px 9px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.current-primary {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.current-danger {
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+  color: var(--danger);
+}
+
+.current-list {
+  display: grid;
+  gap: 8px;
+}
+
+.current-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--input-bg);
+}
+
+.current-user-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 150px;
+}
+
+.current-user-copy strong { overflow-wrap: anywhere; }
+.current-user-copy span { color: var(--muted); font-size: 12px; }
+
+.current-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.current-subsection {
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.current-subsection h4 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.history-row { background: transparent; }
+
+@media (max-width: 560px) {
+  .manage-preview { align-items: flex-start; padding: 10px; }
+  .current-dialog { max-height: none; padding: 14px; }
+  .current-search-row { align-items: stretch; flex-direction: column; }
+  .current-actions { width: 100%; }
+}
