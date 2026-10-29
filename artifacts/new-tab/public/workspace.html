@@ -310,6 +310,10 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .account-developer-login { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 10px 0 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); }
 .account-developer-login span { color: var(--muted); font-size: 12px; }
 .account-developer-login .btn { flex: 0 0 auto; }
+@media (max-width: 480px) {
+  .account-developer-login { align-items: stretch; flex-direction: column; }
+  .account-developer-login .btn { width: 100%; }
+}
 .account-link { border: 0; padding: 0; background: none; color: var(--accent-ink); cursor: pointer; font: inherit; font-weight: 700; }
 .account-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .account-recovery-link { justify-self: center; margin-top: -7px; font-size: 12px; font-weight: 600; }
