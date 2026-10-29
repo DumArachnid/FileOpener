@@ -795,14 +795,14 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <p class="small muted tight">Add JavaScript extensions and actions here.</p>
 <button type="button" class="help-trigger" data-help="extensionsHelp" aria-label="About extensions" aria-describedby="extensionsHelp" aria-expanded="false">?</button>
 </div>
-<p id="extensionsHelp" class="sr-only">Add JavaScript extensions that provide their own actions in this menu. Extensions run in an isolated sandbox and cannot read pages, files, or tabs or access the network. They can ask you to enter text and save up to 100 KB of extension-specific data in this browser. Only enable code you trust.</p>
+<p id="extensionsHelp" class="sr-only">Add JavaScript extensions that provide their own actions in this menu. Extensions run in an isolated sandbox and cannot read pages, files, or tabs or access the network. All extensions together can add up to 10 bookmarks, but cannot remove bookmarks. They can ask you to enter text and save up to 100 KB of extension-specific data in this browser. Only enable code you trust.</p>
 <div>
 <label for="extensionName">Extension name</label>
 <input id="extensionName" type="text" maxlength="60" placeholder="e.g. Word counter" />
 </div>
 <div>
 <label for="extensionCode">JavaScript source</label>
-<textarea id="extensionCode" class="extension-editor" rows="9" spellcheck="false" placeholder="NewTabExtension.registerAction('Say hello', () => NewTabExtension.log('Hello!'));"></textarea>
+<textarea id="extensionCode" class="extension-editor" rows="9" spellcheck="false" placeholder="NewTabExtension.registerAction('Add a bookmark', async () => { await NewTabExtension.addBookmark('Course site', 'https://example.edu'); });"></textarea>
 </div>
 <div class="flex">
 <button class="btn primary" id="saveExtensionBtn" type="button">Add extension</button>
@@ -811,10 +811,11 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </div>
 <details>
 <summary class="small">Extension API example</summary>
-<pre class="mono tiny" style="white-space:pre-wrap;overflow-wrap:anywhere;margin:0">NewTabExtension.registerAction('Say hello', () =&gt; {
-  NewTabExtension.log('Hello from my extension!');
+<pre class="mono tiny" style="white-space:pre-wrap;overflow-wrap:anywhere;margin:0">NewTabExtension.registerAction('Add a bookmark', async () =&gt; {
+  const result = await NewTabExtension.addBookmark('Course site', 'https://example.edu');
+  NewTabExtension.log(result.message);
 });</pre>
-<p class="small muted tight">Register action buttons and use NewTabExtension.log(message) to show output. requestInput(title, hint) asks you to enter text; getData() and saveData(value) use this extension’s local browser storage (100 KB maximum).</p>
+<p class="small muted tight">Register action buttons and use NewTabExtension.log(message) to show output. addBookmark(title, url) can add up to 10 bookmarks total across all extensions; there is no remove-bookmark API. requestInput(title, hint) asks you to enter text; getData() and saveData(value) use this extension’s local browser storage (100 KB maximum).</p>
 </details>
 <div class="small muted" id="extensionEmptyState">No extensions added yet.</div>
 <div class="extension-list" id="extensionList"></div>
@@ -2549,16 +2550,40 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   // -----------------------------------------------------
   var BM_KEY = 'disguise_bookmarks';
   var bookmarks = NT.getJSON(BM_KEY, []).filter(function (b) { return b && typeof b.url === 'string' && safeUrl(b.url); }).map(function (b) {
-    return { id: typeof b.id === 'string' && b.id ? b.id : uid(), url: safeUrl(b.url), title: typeof b.title === 'string' && b.title.trim() ? b.title.slice(0, 60) : hostOf(b.url) };
+    var bookmark = { id: typeof b.id === 'string' && b.id ? b.id : uid(), url: safeUrl(b.url), title: typeof b.title === 'string' && b.title.trim() ? b.title.slice(0, 60) : hostOf(b.url) };
+    if (typeof b.sourceExtensionId === 'string' && b.sourceExtensionId.length <= 120) bookmark.sourceExtensionId = b.sourceExtensionId;
+    return bookmark;
   });
-  function saveBookmarks() { NT.setJSON(BM_KEY, bookmarks); renderBookmarks(); updateStar(); if (NT.afterEmpty && previewArea.querySelector('.empty')) NT.afterEmpty(); }
+  function saveBookmarks() {
+    var saved = NT.setJSON(BM_KEY, bookmarks);
+    renderBookmarks();
+    updateStar();
+    if (NT.afterEmpty && previewArea.querySelector('.empty')) NT.afterEmpty();
+    return saved;
+  }
   function isBookmarked(u) { return !!u && bookmarks.some(function (b) { return b.url === u; }); }
-  function addBookmark(raw, name) {
+  function extensionBookmarkCount() {
+    return bookmarks.filter(function (bookmark) { return typeof bookmark.sourceExtensionId === 'string' && bookmark.sourceExtensionId; }).length;
+  }
+  function addBookmark(raw, name, sourceExtensionId, silent) {
     var u = safeUrl(raw);
     if (!u) { toast('Enter a valid http or https address', 'error'); return false; }
     if (isBookmarked(u)) { toast('Already bookmarked'); return false; }
-    bookmarks.unshift({ id: uid(), title: (name || '').trim().slice(0, 60) || hostOf(u), url: u });
-    saveBookmarks(); toast('Bookmarked ' + hostOf(u));
+    if (sourceExtensionId && extensionBookmarkCount() >= 10) {
+      if (!silent) toast('Extensions have reached their 10-bookmark limit', 'error');
+      return false;
+    }
+    var bookmark = { id: uid(), title: (name || '').trim().slice(0, 60) || hostOf(u), url: u };
+    if (sourceExtensionId) bookmark.sourceExtensionId = sourceExtensionId;
+    bookmarks.unshift(bookmark);
+    if (!saveBookmarks()) {
+      bookmarks.shift();
+      renderBookmarks();
+      updateStar();
+      if (NT.afterEmpty && previewArea.querySelector('.empty')) NT.afterEmpty();
+      return false;
+    }
+    if (!silent) toast('Bookmarked ' + hostOf(u));
     return true;
   }
   function removeBookmark(id) { bookmarks = bookmarks.filter(function (b) { return b.id !== id; }); saveBookmarks(); toast('Bookmark removed'); }
@@ -3868,6 +3893,30 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }, '*');
     if (!ok) statusFor(matched.id, 'Could not save extension data. Check available browser storage.', true);
   }
+  function addExtensionBookmark(matched, data) {
+    var requestId = typeof data.requestId === 'string' ? data.requestId.slice(0, 80) : '';
+    if (!requestId) return;
+    var result = { ok: false, message: 'Could not add bookmark.' };
+    var extension = extensions.find(function (item) { return item.id === matched.id && item.enabled; });
+    var title = typeof data.title === 'string' ? data.title.trim().slice(0, 60) : '';
+    var url = typeof data.url === 'string' ? safeUrl(data.url) : null;
+    if (!extension) result.message = 'This extension is not enabled.';
+    else if (!url) result.message = 'Use a valid http or https address.';
+    else if (isBookmarked(url)) result.message = 'That address is already bookmarked.';
+    else if (extensionBookmarkCount() >= 10) {
+      result.message = 'Extensions have reached their 10-bookmark limit.';
+    } else if (addBookmark(url, title, matched.id, true)) {
+      result = {
+        ok: true,
+        message: 'Added “' + (title || hostOf(url)) + '” to bookmarks.',
+        count: extensionBookmarkCount(),
+        limit: 10
+      };
+    } else result.message = 'Could not save the bookmark. Check browser storage.';
+    matched.runner.frame.contentWindow.postMessage({
+      type: 'bookmark-result', requestId: requestId, result: result
+    }, '*');
+  }
   function frameDocument(source, storage) {
     var safeSource = JSON.stringify(source)
       .replace(/</g, '\\u003c')
@@ -3880,7 +3929,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     return '<!doctype html><meta charset="utf-8"><body>' +
       '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; script-src \'unsafe-inline\'; connect-src \'none\'; img-src data: blob:; style-src \'unsafe-inline\'; object-src \'none\'; base-uri \'none\'; form-action \'none\'">' +
       '<script>(function(){' +
-      'var callbacks=Object.create(null), storageRequests=Object.create(null), inputRequests=Object.create(null), serial=0;' +
+      'var callbacks=Object.create(null), storageRequests=Object.create(null), inputRequests=Object.create(null), bookmarkRequests=Object.create(null), serial=0;' +
       'var extensionData={};try{extensionData=JSON.parse(' + safeStorage + ');}catch(e){}' +
       'function send(message){parent.postMessage(message,"*");}' +
       'window.NewTabExtension=Object.freeze({' +
@@ -3893,12 +3942,15 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       'saveData:function(value){var serialized;try{serialized=JSON.stringify(value);}catch(e){throw new TypeError("Extension data must be JSON serializable");}' +
       'if(typeof serialized!=="string"||serialized.length>100000)throw new RangeError("Extension data must be under 100 KB");' +
       'var requestId="storage-"+(++serial);return new Promise(function(resolve){storageRequests[requestId]={serialized:serialized,resolve:resolve};send({type:"storage",requestId:requestId,value:serialized});});},' +
+      'addBookmark:function(title,url){' +
+      'var requestId="bookmark-"+(++serial);return new Promise(function(resolve){bookmarkRequests[requestId]=resolve;send({type:"bookmark-add",requestId:requestId,title:String(title||"").slice(0,60),url:String(url||"").slice(0,2048)});});},' +
       'requestInput:function(title,hint,initialValue,readOnly){' +
       'var requestId="input-"+(++serial);return new Promise(function(resolve){inputRequests[requestId]=resolve;send({type:"input",requestId:requestId,title:String(title||"Extension input").slice(0,100),hint:String(hint||"").slice(0,300),initialValue:String(initialValue||"").slice(0,100000),readOnly:readOnly===true});});}' +
       '});' +
       'window.addEventListener("message",function(event){if(event.source!==parent||!event.data)return;var data=event.data;' +
       'if(data.type==="input-result"){var inputResolve=inputRequests[data.requestId];if(inputResolve){delete inputRequests[data.requestId];inputResolve(typeof data.value==="string"?data.value:null);}return;}' +
       'if(data.type==="storage-result"){var storageRequest=storageRequests[data.requestId];if(storageRequest){delete storageRequests[data.requestId];if(data.ok)extensionData=JSON.parse(storageRequest.serialized);storageRequest.resolve(data.ok===true);}return;}' +
+      'if(data.type==="bookmark-result"){var bookmarkResolve=bookmarkRequests[data.requestId];if(bookmarkResolve){delete bookmarkRequests[data.requestId];bookmarkResolve(data.result&&typeof data.result==="object"?data.result:{ok:false,message:"Could not add bookmark."});}return;}' +
       'if(data.type!=="run")return;var callback=callbacks[data.actionId];if(!callback)return;' +
       'try{Promise.resolve(callback()).catch(function(error){send({type:"error",message:String(error&&error.message||error).slice(0,500)});});}' +
       'catch(error){send({type:"error",message:String(error&&error.message||error).slice(0,500)});}' +
@@ -4099,6 +4151,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       var card = cardById.get(matched.id);
       if (extension && card) renderActions(extension, card);
     } else if (data.type === 'storage') saveExtensionData(matched, data);
+    else if (data.type === 'bookmark-add') addExtensionBookmark(matched, data);
     else if (data.type === 'input') openExtensionInput(matched, data);
     else if (data.type === 'log') statusFor(matched.id, String(data.message || '').slice(0, 500), false);
     else if (data.type === 'error') statusFor(matched.id, String(data.message || 'Extension error').slice(0, 500), true);
@@ -4478,7 +4531,15 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
             byUrl.set(bookmark.url, bookmark);
           }
         });
-        var mergedList = JSON.stringify(Array.from(byUrl.values()).slice(0, 300));
+        var extensionBookmarkCount = 0;
+        var mergedBookmarks = Array.from(byUrl.values()).filter(function (bookmark) {
+          var extensionId = bookmark && typeof bookmark.sourceExtensionId === 'string' ? bookmark.sourceExtensionId : '';
+          if (!extensionId) return true;
+          if (extensionBookmarkCount >= 10) return false;
+          extensionBookmarkCount++;
+          return true;
+        });
+        var mergedList = JSON.stringify(mergedBookmarks.slice(0, 300));
         return new Blob([mergedList]).size <= 120 * 1024 ? mergedList : null;
       } catch (error) { return remoteValue; }
     }
