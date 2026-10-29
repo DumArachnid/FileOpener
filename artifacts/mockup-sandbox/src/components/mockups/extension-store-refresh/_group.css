@@ -1,0 +1,192 @@
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&display=swap");
+
+.store-current,
+.store-current * {
+  box-sizing: border-box;
+}
+
+.store-current {
+  --paper: #ffffff;
+  --panel: #ebebeb;
+  --ink: #000000;
+  --accent: #333333;
+  --muted: color-mix(in srgb, var(--ink) 56%, var(--paper));
+  --border: color-mix(in srgb, var(--ink) 15%, var(--paper));
+  --border-strong: color-mix(in srgb, var(--ink) 32%, var(--paper));
+  --accent-soft: color-mix(in srgb, var(--accent) 12%, var(--panel));
+  --input-bg: color-mix(in srgb, var(--panel) 55%, var(--paper));
+  --shadow: color-mix(in srgb, var(--ink) 82%, transparent);
+  min-height: 100vh;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: "Bricolage Grotesque", system-ui, sans-serif;
+}
+
+.store-current button {
+  font: inherit;
+}
+
+.store-current .current-shell {
+  width: min(1080px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 24px 0 48px;
+}
+
+.store-current .current-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.store-current .current-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: auto;
+  font-weight: 800;
+}
+
+.store-current .current-mark {
+  width: 30px;
+  height: 30px;
+  border: 2px solid var(--ink);
+  border-radius: 9px 9px 9px 3px;
+  background: var(--accent-soft);
+  box-shadow: 2px 2px 0 var(--shadow);
+}
+
+.store-current .current-button {
+  min-height: 38px;
+  padding: 8px 13px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 9px;
+  background: var(--panel);
+  box-shadow: 2px 2px 0 var(--shadow);
+  font-weight: 700;
+}
+
+.store-current .current-hero,
+.store-current .current-section {
+  border: 1.5px solid var(--border-strong);
+  background: var(--panel);
+  box-shadow: 3px 3px 0 var(--shadow);
+}
+
+.store-current .current-hero {
+  padding: clamp(22px, 5vw, 42px);
+  border-radius: 16px;
+  box-shadow: 4px 4px 0 var(--shadow);
+}
+
+.store-current .current-eyebrow {
+  display: inline-block;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .1em;
+}
+
+.store-current h1 {
+  margin: 14px 0 9px;
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.08;
+  letter-spacing: -.045em;
+}
+
+.store-current h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.store-current p {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.store-current .current-hero-copy {
+  max-width: 690px;
+  margin: 0;
+}
+
+.store-current .current-note {
+  margin-top: 20px;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.store-current .current-section {
+  margin-top: 22px;
+  padding: clamp(16px, 3vw, 24px);
+  border-radius: 14px;
+}
+
+.store-current .current-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.store-current .current-section-head p {
+  margin: 6px 0 0;
+  font-size: 13px;
+}
+
+.store-current .current-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.store-current .current-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 15px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--input-bg);
+}
+
+.store-current .current-card p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.store-current .current-card .current-button {
+  margin-top: auto;
+}
+
+@media (max-width: 640px) {
+  .store-current .current-shell {
+    width: calc(100% - 20px);
+    padding-top: 12px;
+  }
+
+  .store-current .current-topbar {
+    flex-wrap: wrap;
+  }
+
+  .store-current .current-brand {
+    flex: 1 1 100%;
+  }
+
+  .store-current .current-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .store-current .current-section-head {
+    flex-direction: column;
+  }
+}
