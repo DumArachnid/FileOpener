@@ -956,6 +956,17 @@ export const GetDeveloperAuthStateResponse = zod.object({
 
 
 /**
+ * @summary Sign in to a linked Study Desk account using the authorized developer session
+ */
+export const CreateDeveloperStudyDeskSessionResponse = zod.object({
+  "user": zod.object({
+  "username": zod.string(),
+  "role": zod.enum(['user', 'moderator', 'dev'])
+})
+})
+
+
+/**
  * @summary Start Replit sign-in for developer controls
  */
 export const BeginDeveloperLoginQueryParams = zod.object({

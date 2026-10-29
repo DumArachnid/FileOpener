@@ -9,6 +9,12 @@ Developer controls that assign or remove Study Desk admin roles require a verifi
 
 **How to apply:** Keep developer identities in the `STUDY_DESK_DEVELOPER_REPLIT_EMAILS` secret. Require an explicit account selection for developer role changes; never auto-promote based on a username.
 
+An allowlisted, verified Replit identity may sign into an existing Study Desk account only through an explicit server-side email-to-username mapping. This creates a normal account session; it must not create accounts, bypass bans, or change the mapped account's role.
+
+**Why:** The user needs a password-independent recovery path for their existing developer account, while role authority must remain controlled by the account's stored role and explicit developer allowlist.
+
+**How to apply:** Keep mappings server-only, verify the OIDC email claim, require the email allowlist, and reject missing, banned, or unlinked accounts.
+
 Moderators may manage regular accounts and community extensions, but cannot ban themselves or another moderator and cannot review their own extension submissions. Removing a public extension should preserve the creator's saved code and include a reason.
 
 **Why:** Administrative actions need separation of duties, and takedowns should not erase user work.

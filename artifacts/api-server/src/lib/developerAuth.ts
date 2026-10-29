@@ -10,6 +10,7 @@ export const REPLIT_ISSUER_URL = process.env.ISSUER_URL ?? "https://replit.com/o
 export interface DeveloperIdentity {
   id: string;
   email: string;
+  emailVerified: boolean;
   firstName: string | null;
   lastName: string | null;
   profileImageUrl: string | null;
@@ -44,6 +45,23 @@ export function getAuthorizedDeveloperEmails(): Set<string> {
 
 export function isAuthorizedDeveloperEmail(email: string): boolean {
   return getAuthorizedDeveloperEmails().has(email.trim().toLowerCase());
+}
+
+export function getDeveloperAccountMappings(): Map<string, string> {
+  const mappings = new Map<string, string>();
+  for (const entry of (process.env.STUDY_DESK_DEVELOPER_ACCOUNT_MAP ?? "").split(",")) {
+    const separator = entry.lastIndexOf("=");
+    if (separator < 1) continue;
+    const email = entry.slice(0, separator).trim().toLowerCase();
+    const username = entry.slice(separator + 1).trim().toLowerCase();
+    if (
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) &&
+      /^[a-z0-9_]{3,24}$/.test(username)
+    ) {
+      mappings.set(email, username);
+    }
+  }
+  return mappings;
 }
 
 export async function createDeveloperSession(data: DeveloperSessionData): Promise<string> {
@@ -114,6 +132,7 @@ export async function upsertReplitDeveloper(claims: Record<string, unknown>): Pr
   return {
     id: user.id,
     email: user.email ?? email,
+    emailVerified: claims.email_verified === true,
     firstName: user.firstName,
     lastName: user.lastName,
     profileImageUrl: user.profileImageUrl,

@@ -307,6 +307,9 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .account-actions { display: flex; gap: 8px; margin-top: 2px; }
 .account-actions .btn { width: 100%; min-height: 48px; border-radius: 10px; }
 .account-form-footer { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px; color: var(--muted); font-size: 13px; }
+.account-developer-login { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 10px 0 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); }
+.account-developer-login span { color: var(--muted); font-size: 12px; }
+.account-developer-login .btn { flex: 0 0 auto; }
 .account-link { border: 0; padding: 0; background: none; color: var(--accent-ink); cursor: pointer; font: inherit; font-weight: 700; }
 .account-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .account-recovery-link { justify-self: center; margin-top: -7px; font-size: 12px; font-weight: 600; }
@@ -1054,6 +1057,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div class="account-field"><label for="loginUsername">Username</label><input id="loginUsername" name="username" type="text" autocomplete="username" minlength="3" maxlength="24" placeholder="Your username" required></div>
 <div class="account-field"><label for="loginPassword">Password</label><input id="loginPassword" name="password" type="password" autocomplete="current-password" placeholder="Your password" required></div>
 <div class="account-actions"><button class="btn primary" type="submit">Sign in</button></div>
+<div class="account-developer-login" id="accountDeveloperLogin">
+<span>For authorized project developers</span>
+<button class="btn sm" id="developerAccountLoginBtn" type="button">Continue with developer sign-in</button>
+</div>
 <div class="account-form-footer"><span>New to Study Desk?</span><button class="account-link" id="showSignupBtn" type="button">Create an account</button></div>
 <button class="account-link account-recovery-link" id="showRecoveryBtn" type="button">Use a recovery code</button>
 <p class="account-optional-note" id="accountOptionalNote"><span aria-hidden="true">i</span>Account creation is optional. You can keep using Study Desk without signing in.</p>
@@ -4854,6 +4861,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         : 'Welcome back';
     $('accountSignedInPanel').classList.add('hidden');
     $('accountLoginForm').classList.toggle('hidden', mode !== 'login' || isOfflineCopy);
+    $('accountDeveloperLogin').classList.toggle('hidden', mode !== 'login' || isOfflineCopy || !!hostedHandoffState);
     $('accountSignupForm').classList.toggle('hidden', mode !== 'signup' || isOfflineCopy || !!hostedHandoffState);
     $('accountRecoveryForm').classList.toggle('hidden', mode !== 'recovery' || isOfflineCopy || !!hostedHandoffState);
     $('offlineAccountPanel').classList.toggle('hidden', !isOfflineCopy || !!accountUser);
@@ -5211,6 +5219,45 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       displayRecoveryCode(result.recoveryCode);
     } catch (error) { accountError.textContent = readError(error); }
     finally { setBusy(form, false); }
+  });
+  $('developerAccountLoginBtn').addEventListener('click', function () {
+    accountError.textContent = '';
+    var returnTo = '/api/developer/auth/complete';
+    var loginUrl = '/api/developer/login?returnTo=' + encodeURIComponent(returnTo);
+    var popup = window.open(
+      loginUrl,
+      'study-desk-developer-login',
+      'popup,width=520,height=720,resizable=yes,scrollbars=yes',
+    );
+    if (!popup) {
+      accountError.textContent = 'The sign-in window was blocked. Allow popups for Study Desk and try again.';
+      return;
+    }
+    accountError.textContent = 'Complete developer sign-in in the new window…';
+  });
+  window.addEventListener('message', async function (event) {
+    if (event.origin !== window.location.origin || !event.data ||
+      event.data.type !== 'study-desk-developer-auth') return;
+    if (event.data.error) {
+      accountError.textContent = event.data.error === 'unauthorized'
+        ? 'This identity is not on the approved developer list.'
+        : 'Developer sign-in could not be completed.';
+      return;
+    }
+
+    var button = $('developerAccountLoginBtn');
+    button.disabled = true;
+    accountError.textContent = 'Signing in to the linked Study Desk account…';
+    try {
+      var result = await api('/developer/auth/study-desk-session', { method: 'POST' });
+      if (!result || !result.user) throw new Error('No linked Study Desk account was returned.');
+      await finishSignIn(result.user, false);
+      NT.toast('Signed in securely with your developer identity.');
+    } catch (error) {
+      accountError.textContent = readError(error);
+    } finally {
+      button.disabled = false;
+    }
   });
   $('showSignupBtn').addEventListener('click', function () {
     if (hostedHandoffState) return;

@@ -4,12 +4,14 @@ import {
   FindDeveloperManagedAccountQueryParams,
   FindDeveloperManagedAccountResponse,
   GetDeveloperAuthStateResponse,
+  CreateDeveloperStudyDeskSessionResponse,
   SetDeveloperManagedAccountRoleBody,
   SetDeveloperManagedAccountRoleParams,
   SetDeveloperManagedAccountRoleResponse,
 } from "@workspace/api-zod";
 import {
   db,
+  studySessionsTable,
   studyUsersTable,
 } from "@workspace/db";
 import * as oidc from "openid-client";
@@ -18,6 +20,7 @@ import {
   deleteDeveloperSession,
   DEVELOPER_SESSION_COOKIE,
   DEVELOPER_SESSION_TTL_MS,
+  getDeveloperAccountMappings,
   getAuthorizedDeveloperEmails,
   getDeveloperOidcConfig,
   isAuthorizedDeveloperEmail,
@@ -25,6 +28,12 @@ import {
   upsertReplitDeveloper,
 } from "../lib/developerAuth";
 import { requireAuthorizedDeveloper } from "../middlewares/developerAuth";
+import {
+  hashOpaqueValue,
+  newSessionToken,
+  sessionTtlMs,
+  setSessionCookie,
+} from "../lib/accountSecurity";
 
 const router: IRouter = Router();
 const OIDC_COOKIE_TTL_MS = 10 * 60 * 1000;
@@ -103,6 +112,55 @@ router.get("/developer/auth/user", (req, res): void => {
     }),
   );
 });
+
+router.post(
+  "/developer/auth/study-desk-session",
+  requireAuthorizedDeveloper,
+  async (req, res): Promise<void> => {
+    const developer = req.replitDeveloper;
+    if (!developer || developer.emailVerified !== true) {
+      res.status(403).json({ error: "Sign in again with a verified developer email." });
+      return;
+    }
+
+    const username = getDeveloperAccountMappings().get(developer.email.trim().toLowerCase());
+    if (!username) {
+      res.status(403).json({ error: "This authorized developer identity is not linked to a Study Desk account." });
+      return;
+    }
+
+    const [user] = await db
+      .select({
+        id: studyUsersTable.id,
+        username: studyUsersTable.username,
+        role: studyUsersTable.role,
+        bannedAt: studyUsersTable.bannedAt,
+      })
+      .from(studyUsersTable)
+      .where(eq(studyUsersTable.username, username))
+      .limit(1);
+
+    if (!user) {
+      res.status(404).json({ error: "The linked Study Desk account was not found." });
+      return;
+    }
+    if (user.bannedAt) {
+      res.status(403).json({ error: "The linked Study Desk account is suspended." });
+      return;
+    }
+
+    const token = newSessionToken();
+    await db.insert(studySessionsTable).values({
+      tokenHash: hashOpaqueValue(token),
+      userId: user.id,
+      expiresAt: new Date(Date.now() + sessionTtlMs),
+    });
+    setSessionCookie(res, token);
+    res.json(CreateDeveloperStudyDeskSessionResponse.parse({
+      user: { username: user.username, role: user.role },
+    }));
+  },
+);
 
 router.get("/developer/login", async (req, res): Promise<void> => {
   if (!getAuthorizedDeveloperEmails().size) {

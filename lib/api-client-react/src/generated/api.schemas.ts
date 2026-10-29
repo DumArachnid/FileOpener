@@ -463,6 +463,10 @@ export type FindModerationUserParams = {
 username: string;
 };
 
+export type CreateDeveloperStudyDeskSession200 = {
+  user: UserSummary;
+};
+
 export type BeginDeveloperLoginParams = {
 returnTo?: string;
 };

@@ -942,6 +942,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DeveloperAuthState"
+  /developer/auth/study-desk-session:
+    post:
+      operationId: createDeveloperStudyDeskSession
+      tags: [developer]
+      summary: Sign in to a linked Study Desk account using the authorized developer session
+      responses:
+        "200":
+          description: A Study Desk account session was created without changing the account role
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [user]
+                properties:
+                  user:
+                    $ref: "#/components/schemas/UserSummary"
+        "401":
+          description: A developer sign-in is required
+        "403":
+          description: Developer email is unverified, unauthorized, unlinked, or the account is suspended
+        "404":
+          description: The mapped Study Desk account does not exist
   /developer/login:
     get:
       operationId: beginDeveloperLogin

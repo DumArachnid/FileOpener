@@ -21,6 +21,7 @@ export * from './announcementInput';
 export * from './authResult';
 export * from './beginDeveloperLoginParams';
 export * from './communityExtension';
+export * from './createDeveloperStudyDeskSession200';
 export * from './curatedRandomLink';
 export * from './curatedRandomLinkInput';
 export * from './curatedRandomLinkList';

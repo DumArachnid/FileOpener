@@ -32,6 +32,7 @@ import type {
   AuthResult,
   BeginDeveloperLoginParams,
   CommunityExtension,
+  CreateDeveloperStudyDeskSession200,
   CuratedRandomLink,
   CuratedRandomLinkInput,
   CuratedRandomLinkList,
@@ -3824,6 +3825,80 @@ export function useGetDeveloperAuthState<TData = Awaited<ReturnType<typeof getDe
 
 
 
+
+export const getCreateDeveloperStudyDeskSessionUrl = () => {
+
+
+
+
+  return `/api/developer/auth/study-desk-session`
+}
+
+/**
+ * @summary Sign in to a linked Study Desk account using the authorized developer session
+ */
+export const createDeveloperStudyDeskSession = async ( options?: Parameters<typeof customFetch>[1]): Promise<CreateDeveloperStudyDeskSession200> => {
+
+  return customFetch<CreateDeveloperStudyDeskSession200>(getCreateDeveloperStudyDeskSessionUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCreateDeveloperStudyDeskSessionMutationKey = () => ['createDeveloperStudyDeskSession'] as const;
+
+export const getCreateDeveloperStudyDeskSessionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDeveloperStudyDeskSession>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createDeveloperStudyDeskSession>>, TError,void, TContext> => {
+
+const mutationKey = getCreateDeveloperStudyDeskSessionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDeveloperStudyDeskSession>>, void> = () => {
+
+
+          return  createDeveloperStudyDeskSession(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateDeveloperStudyDeskSessionMutationResult = NonNullable<Awaited<ReturnType<typeof createDeveloperStudyDeskSession>>>
+
+    export type CreateDeveloperStudyDeskSessionMutationError = ErrorType<void>
+
+
+    /**
+ * @summary Sign in to a linked Study Desk account using the authorized developer session
+ */
+export const useCreateDeveloperStudyDeskSession = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDeveloperStudyDeskSession>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createDeveloperStudyDeskSession>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getCreateDeveloperStudyDeskSessionMutationOptions(options));
+    }
 
 export const getBeginDeveloperLoginUrl = (params?: BeginDeveloperLoginParams,) => {
   const normalizedParams = new URLSearchParams();

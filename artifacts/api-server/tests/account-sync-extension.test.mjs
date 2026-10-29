@@ -16,6 +16,13 @@ const { Pool } = requireDatabasePackage("pg");
 const cleanupPool = new Pool({ connectionString: process.env.DATABASE_URL });
 const fixtureUsernames = [];
 const fixtureRandomLinkIds = [];
+const fixtureDeveloperSessionIds = [];
+const developerTestEmail = `developer-${randomUUID()}@example.test`;
+const unverifiedDeveloperEmail = `unverified-${randomUUID()}@example.test`;
+const missingAccountDeveloperEmail = `missing-${randomUUID()}@example.test`;
+const developerTargetUsername = `replit_${randomUUID().replaceAll("-", "").slice(0, 16)}`;
+const missingMappedUsername = `missing_${randomUUID().replaceAll("-", "").slice(0, 16)}`;
+fixtureUsernames.push(developerTargetUsername);
 
 let apiProcess;
 let apiBaseUrl;
@@ -78,6 +85,28 @@ async function signUp(username = uniqueUsername()) {
   return { username, cookie: response.cookie, recoveryCode: response.data.recoveryCode };
 }
 
+async function createDeveloperTestSession(email, emailVerified = true) {
+  const sid = randomUUID().replaceAll("-", "");
+  fixtureDeveloperSessionIds.push(sid);
+  const session = {
+    user: {
+      id: `replit-${randomUUID()}`,
+      email,
+      emailVerified,
+      firstName: null,
+      lastName: null,
+      profileImageUrl: null,
+    },
+    access_token: "test-session-only",
+    expires_at: Math.floor(Date.now() / 1000) + 60 * 60,
+  };
+  await cleanupPool.query(
+    "INSERT INTO study_desk_replit_sessions (sid, sess, expire) VALUES ($1, $2::jsonb, $3)",
+    [sid, JSON.stringify(session), new Date(Date.now() + 60 * 60 * 1000)],
+  );
+  return `study_desk_developer_session=${sid}`;
+}
+
 before(async () => {
   assert.ok(process.env.DATABASE_URL, "DATABASE_URL is required to run API integration tests");
   assert.ok(process.env.SESSION_SECRET, "SESSION_SECRET is required to run API integration tests");
@@ -86,7 +115,21 @@ before(async () => {
   apiBaseUrl = `http://127.0.0.1:${port}`;
   apiProcess = spawn(process.execPath, ["--enable-source-maps", "dist/index.mjs"], {
     cwd: apiDirectory,
-    env: { ...process.env, NODE_ENV: "test", PORT: String(port) },
+    env: {
+      ...process.env,
+      NODE_ENV: "test",
+      PORT: String(port),
+      STUDY_DESK_DEVELOPER_REPLIT_EMAILS: [
+        developerTestEmail,
+        unverifiedDeveloperEmail,
+        missingAccountDeveloperEmail,
+      ].join(","),
+      STUDY_DESK_DEVELOPER_ACCOUNT_MAP: [
+        `${developerTestEmail}=${developerTargetUsername}`,
+        `${unverifiedDeveloperEmail}=${developerTargetUsername}`,
+        `${missingAccountDeveloperEmail}=${missingMappedUsername}`,
+      ].join(","),
+    },
     stdio: "ignore",
   });
 
@@ -110,6 +153,11 @@ before(async () => {
 after(async () => {
   if (apiProcess && apiProcess.exitCode === null) {
     apiProcess.kill("SIGTERM");
+  }
+  if (fixtureDeveloperSessionIds.length) {
+    await cleanupPool.query("DELETE FROM study_desk_replit_sessions WHERE sid = ANY($1)", [
+      fixtureDeveloperSessionIds,
+    ]);
   }
   if (fixtureUsernames.length) {
     await cleanupPool.query("DELETE FROM study_desk_users WHERE username = ANY($1)", [
@@ -193,6 +241,55 @@ test("signup, login, logout, and recovery codes behave as one-time credentials",
     body: { username: account.username, password: "replacement-password-456" },
   });
   assert.equal(newPasswordLogin.status, 200);
+});
+
+test("an allowlisted verified developer signs in to an explicitly linked existing account", async () => {
+  assert.equal(
+    (await request("/developer/auth/study-desk-session", { method: "POST" })).status,
+    401,
+  );
+
+  const targetAccount = await signUp(developerTargetUsername);
+  const developerCookie = await createDeveloperTestSession(developerTestEmail);
+  const result = await request("/developer/auth/study-desk-session", {
+    method: "POST",
+    cookie: developerCookie,
+  });
+  assert.equal(result.status, 200);
+  assert.equal(result.data.user.username, developerTargetUsername);
+  assert.equal(result.data.user.role, "user", "Replit sign-in must not promote account roles");
+  assert.ok(result.cookie, "linked sign-in should establish a regular Study Desk session");
+
+  const currentAccount = await request("/auth/me", { cookie: result.cookie });
+  assert.equal(currentAccount.status, 200);
+  assert.equal(currentAccount.data.user.username, targetAccount.username);
+
+  const unverifiedCookie = await createDeveloperTestSession(unverifiedDeveloperEmail, false);
+  assert.equal(
+    (await request("/developer/auth/study-desk-session", {
+      method: "POST",
+      cookie: unverifiedCookie,
+    })).status,
+    403,
+  );
+
+  const missingAccountCookie = await createDeveloperTestSession(missingAccountDeveloperEmail);
+  assert.equal(
+    (await request("/developer/auth/study-desk-session", {
+      method: "POST",
+      cookie: missingAccountCookie,
+    })).status,
+    404,
+  );
+
+  const unauthorizedCookie = await createDeveloperTestSession("not-allowlisted@example.test");
+  assert.equal(
+    (await request("/developer/auth/study-desk-session", {
+      method: "POST",
+      cookie: unauthorizedCookie,
+    })).status,
+    403,
+  );
 });
 
 test("offline account handoff verifies credentials without issuing a session", async () => {
