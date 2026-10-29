@@ -26,6 +26,19 @@ import {
 const router: IRouter = Router();
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,24}$/;
 
+function hasErrorCode(error: unknown, code: string): boolean {
+  const seen = new Set<object>();
+  let current = error;
+  while (typeof current === "object" && current !== null && !seen.has(current)) {
+    seen.add(current);
+    if ("code" in current && current.code === code) {
+      return true;
+    }
+    current = "cause" in current ? current.cause : undefined;
+  }
+  return false;
+}
+
 async function createSession(userId: number, res: Response): Promise<void> {
   const token = newSessionToken();
   await db.insert(studySessionsTable).values({
@@ -65,12 +78,7 @@ router.post("/auth/signup", authRateLimit, async (req, res): Promise<void> => {
     });
     res.status(201).json(response);
   } catch (error) {
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error &&
-      error.code === "23505"
-    ) {
+    if (hasErrorCode(error, "23505")) {
       res.status(409).json({ error: "That username is already taken." });
       return;
     }
