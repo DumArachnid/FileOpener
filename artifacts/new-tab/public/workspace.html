@@ -271,6 +271,17 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .admin-panel h2 { margin: 0; font-size: 20px; }
 .admin-panel > p { margin: 0; color: var(--muted); line-height: 1.5; }
 .admin-panel .moderator-tools { border-top: 0; padding-top: 0; }
+.site-announcement-banner { position: fixed; top: 8px; left: 50%; z-index: 1200; display: flex; align-items: center; gap: 12px; width: min(900px, calc(100vw - 32px)); max-height: min(180px, calc(100dvh - 20px)); overflow: auto; padding: 13px 18px; transform: translateX(-50%); border: 1.5px solid var(--accent-hover); border-radius: 12px; background: var(--accent); color: var(--on-accent); box-shadow: 4px 4px 0 var(--ink-shadow); }
+.site-announcement-banner[hidden] { display: none !important; }
+.site-announcement-label { flex: none; font-size: 10px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
+.site-announcement-message { min-width: 0; overflow-wrap: anywhere; font-size: 13px; line-height: 1.45; }
+.app.has-announcement { padding-top: calc(var(--gap) + var(--announcement-offset, 64px)); }
+.app.has-announcement .sidebar, .app.has-announcement .center { height: calc(100dvh - var(--gap) * 2 - var(--announcement-offset, 64px)); }
+.app.has-announcement.focus-mode { padding: var(--announcement-offset, 64px) 0 0; }
+.app.has-announcement.focus-mode .center { height: calc(100dvh - var(--announcement-offset, 64px)); }
+#announcementMessage { min-height: 88px; resize: vertical; }
+#announcementDurationSeconds { max-width: 220px; }
+#announcementClearBtn[hidden] { display: none !important; }
 .share-tabs-setting { display: flex; align-items: flex-start; gap: 9px; margin: 15px 0; color: var(--text); font-size: 12px; line-height: 1.5; }
 .share-tabs-setting input { flex: none; margin: 2px 0 0; accent-color: var(--accent); }
 .account-form { display: grid; gap: 16px; }
@@ -402,6 +413,11 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 /* responsive */
 @media (max-width: 920px) {
   .app { grid-template-columns: 1fr !important; padding: 8px; gap: 0; }
+  .app.has-announcement { padding-top: calc(8px + var(--announcement-offset, 64px)); }
+  .app.has-announcement .center { height: calc(100dvh - 16px - var(--announcement-offset, 64px)); }
+  .app.has-announcement .sidebar { top: calc(8px + var(--announcement-offset, 64px)); bottom: 8px; height: auto; }
+  .app.has-announcement.focus-mode { padding: var(--announcement-offset, 64px) 0 0; }
+  .app.has-announcement.focus-mode .center { height: calc(100dvh - var(--announcement-offset, 64px)); }
   .mobile-only { display: inline-grid !important; }
   .desk-only { display: none !important; }
   .center { height: calc(100dvh - 16px); }
@@ -425,6 +441,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   .account-intro { margin: 22px 0 20px; }
   .account-form { gap: 14px; }
   .account-form-footer { font-size: 12px; }
+  .site-announcement-banner { align-items: flex-start; flex-direction: column; gap: 4px; padding: 10px 13px; }
 }
 
 .compatibility-toast {
@@ -463,6 +480,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </style>
 </head>
 <body>
+<div id="siteAnnouncementBanner" class="site-announcement-banner" role="status" aria-live="polite" aria-atomic="true" hidden>
+  <span class="site-announcement-label">Study Desk announcement</span>
+  <span id="siteAnnouncementMessage" class="site-announcement-message"></span>
+</div>
 <div class="app" id="app">
 <div class="scrim" id="scrim"></div>
 
@@ -887,6 +908,20 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <p>Admin actions are recorded. Tab details appear only when an account has opted in; only page titles and site names are shared.</p>
 <section class="moderator-tools hidden" id="moderatorTools" aria-labelledby="moderatorToolsTitle">
 <div><h4 id="moderatorToolsTitle">Administration</h4><p>Review extensions, manage accounts, grant rewards, and inspect recent account actions.</p></div>
+<section class="moderator-tools hidden" id="developerAnnouncementTools" aria-labelledby="developerAnnouncementTitle">
+<div><h4 id="developerAnnouncementTitle">Site-wide announcement</h4><p>Publish a banner for everyone. A new announcement replaces the current one and expires automatically.</p></div>
+<form class="moderation-search" id="announcementForm">
+<label for="announcementMessage">Message (up to 500 characters)</label>
+<textarea id="announcementMessage" maxlength="500" required placeholder="Write a short announcement for all Study Desk visitors."></textarea>
+<label for="announcementDurationSeconds">Visible for (seconds)</label>
+<input id="announcementDurationSeconds" type="number" min="5" max="259200" step="1" value="3600" required>
+<p class="small muted tight">Choose 5 seconds to 259,200 seconds (3 days).</p>
+<button class="btn sm primary" id="publishAnnouncementBtn" type="submit">Publish announcement</button>
+<div class="online-store-status" id="announcementEditorStatus" role="status"></div>
+</form>
+<div class="online-store-status" id="announcementAdminStatus" role="status">Checking for an active announcement…</div>
+<button class="btn sm danger-ghost" id="announcementClearBtn" type="button" hidden>End announcement now</button>
+</section>
 <div><h5>Submissions awaiting approval</h5></div>
 <div class="online-store-status" id="moderationQueueStatus" role="status"></div>
 <div class="community-list" id="moderationQueue" aria-label="Extensions awaiting approval"></div>
@@ -4172,6 +4207,113 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     });
   }
 
+  var announcementExpiryTimer = null;
+  var announcementFallbackTimer = null;
+  var currentAnnouncement = null;
+  function updateAnnouncementLayout() {
+    var banner = $('siteAnnouncementBanner');
+    var app = $('app');
+    if (!banner || !app) return;
+    if (banner.hidden) {
+      app.classList.remove('has-announcement');
+      document.documentElement.style.removeProperty('--announcement-offset');
+      return;
+    }
+    document.documentElement.style.setProperty('--announcement-offset', (banner.offsetHeight + 8) + 'px');
+    app.classList.add('has-announcement');
+  }
+  function updateAnnouncementAdminState(announcement) {
+    var status = $('announcementAdminStatus');
+    var clearButton = $('announcementClearBtn');
+    if (!status || !clearButton || !accountUser || accountUser.role !== 'dev') return;
+    if (!announcement) {
+      status.textContent = 'No active announcement.';
+      clearButton.hidden = true;
+      return;
+    }
+    var expires = new Date(announcement.expiresAt);
+    status.textContent = 'Live · posted by ' + announcement.createdByUsername +
+      ' · expires ' + expires.toLocaleString();
+    clearButton.hidden = false;
+  }
+  function showSiteAnnouncement(announcement) {
+    if (announcementExpiryTimer) clearTimeout(announcementExpiryTimer);
+    announcementExpiryTimer = null;
+    var banner = $('siteAnnouncementBanner');
+    var message = $('siteAnnouncementMessage');
+    var expiresAt = announcement && Date.parse(announcement.expiresAt);
+    if (!announcement || !Number.isFinite(expiresAt) || expiresAt <= Date.now() ||
+        typeof announcement.message !== 'string' || !announcement.message.trim()) {
+      currentAnnouncement = null;
+      banner.hidden = true;
+      message.textContent = '';
+      updateAnnouncementLayout();
+      updateAnnouncementAdminState(null);
+      return;
+    }
+    currentAnnouncement = announcement;
+    message.textContent = announcement.message;
+    banner.hidden = false;
+    updateAnnouncementLayout();
+    updateAnnouncementAdminState(announcement);
+    announcementExpiryTimer = setTimeout(function () {
+      showSiteAnnouncement(null);
+    }, expiresAt - Date.now());
+  }
+  function refreshSiteAnnouncement() {
+    return api('/announcements/active')
+      .then(function (state) { showSiteAnnouncement(state && state.announcement); })
+      .catch(function () {});
+  }
+  async function refreshDeveloperAnnouncement() {
+    if (!accountUser || accountUser.role !== 'dev') return;
+    var status = $('announcementAdminStatus');
+    status.textContent = 'Checking for an active announcement…';
+    try {
+      var state = await api('/announcements/active');
+      showSiteAnnouncement(state && state.announcement);
+    } catch (error) {
+      status.textContent = 'Could not check the active announcement: ' + readError(error);
+    }
+  }
+  function startAnnouncementUpdates() {
+    if (window.location.protocol !== 'http:' && window.location.protocol !== 'https:') return;
+    if (typeof window.EventSource === 'function') {
+      var stream;
+      try {
+        stream = new EventSource('/api/announcements/stream');
+      } catch (error) {
+        refreshSiteAnnouncement();
+        announcementFallbackTimer = setInterval(refreshSiteAnnouncement, 2500);
+        return;
+      }
+      stream.onmessage = function (event) {
+        try {
+          var update = JSON.parse(event.data);
+          showSiteAnnouncement(update && update.announcement);
+        } catch (error) {
+          console.warn('Could not read a Study Desk announcement update:', error);
+        }
+      };
+      stream.onerror = function () {
+        refreshSiteAnnouncement();
+        if (!announcementFallbackTimer) {
+          announcementFallbackTimer = setInterval(refreshSiteAnnouncement, 2500);
+        }
+      };
+      stream.onopen = function () {
+        if (announcementFallbackTimer) clearInterval(announcementFallbackTimer);
+        announcementFallbackTimer = null;
+      };
+    } else {
+      refreshSiteAnnouncement();
+      announcementFallbackTimer = setInterval(refreshSiteAnnouncement, 2500);
+    }
+  }
+  window.addEventListener('resize', updateAnnouncementLayout);
+  window.addEventListener('focus', refreshSiteAnnouncement);
+  startAnnouncementUpdates();
+
   function localSnapshot() {
     var result = {};
     syncKeys.forEach(function (key) { result[key] = localStorage.getItem(key); });
@@ -4344,6 +4486,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
     $('moderatorTools').classList.toggle('hidden', !isModerator);
     $('adminPanelBtn').classList.toggle('hidden', !isModerator);
+    var isDev = !!accountUser && accountUser.role === 'dev';
+    $('developerAnnouncementTools').classList.toggle('hidden', !isDev);
+    if (isDev) updateAnnouncementAdminState(currentAnnouncement);
     if (!isModerator && adminDialog.open) adminDialog.close();
     updateTabShareControl();
     if (!isModerator) {
@@ -4649,6 +4794,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         adminDialog.setAttribute('open', '');
       }
     }
+    if (accountUser && accountUser.role === 'dev') refreshDeveloperAnnouncement();
     if (!adminListsLoaded && !adminListsLoading) {
       adminListsLoading = true;
       $('moderationQueueStatus').textContent = 'Loading submissions…';
@@ -4669,6 +4815,53 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   $('adminCloseBtn').addEventListener('click', function () { adminDialog.close(); });
   adminDialog.addEventListener('click', function (event) {
     if (event.target === adminDialog) adminDialog.close();
+  });
+  $('announcementForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    var status = $('announcementEditorStatus');
+    var button = $('publishAnnouncementBtn');
+    if (!accountUser || accountUser.role !== 'dev') {
+      status.textContent = 'Developer rank is required to publish announcements.';
+      return;
+    }
+    var message = $('announcementMessage').value.trim();
+    var durationSeconds = Number($('announcementDurationSeconds').value);
+    if (!message || message.length > 500 || message.includes('\u0000') ||
+        !Number.isInteger(durationSeconds) || durationSeconds < 5 || durationSeconds > 259200) {
+      status.textContent = 'Enter a message and a whole-number duration from 5 to 259,200 seconds.';
+      return;
+    }
+    button.disabled = true;
+    status.textContent = 'Publishing announcement…';
+    try {
+      var announcement = await api('/announcements/active', {
+        method: 'POST',
+        body: { message: message, durationSeconds: durationSeconds }
+      });
+      showSiteAnnouncement(announcement);
+      $('announcementMessage').value = '';
+      status.textContent = 'Announcement published for everyone.';
+    } catch (error) {
+      status.textContent = readError(error);
+    } finally {
+      button.disabled = false;
+    }
+  });
+  $('announcementClearBtn').addEventListener('click', async function () {
+    if (!accountUser || accountUser.role !== 'dev') return;
+    var button = $('announcementClearBtn');
+    var status = $('announcementEditorStatus');
+    button.disabled = true;
+    status.textContent = 'Ending announcement…';
+    try {
+      await api('/announcements/active', { method: 'DELETE' });
+      showSiteAnnouncement(null);
+      status.textContent = 'Announcement ended for everyone.';
+    } catch (error) {
+      status.textContent = readError(error);
+    } finally {
+      button.disabled = false;
+    }
   });
   $('shareTabsToggle').addEventListener('change', async function () {
     if (!accountUser) {

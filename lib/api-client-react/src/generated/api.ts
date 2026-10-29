@@ -20,12 +20,15 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ActiveAnnouncementState,
   AdminHistoryList,
   AdminRewardGrantTotals,
   AdminRewardInput,
   AdminRewardTotals,
   AdminUnlockFeaturesInput,
   AdminUnlockFeaturesResult,
+  Announcement,
+  AnnouncementInput,
   AuthResult,
   BeginDeveloperLoginParams,
   CommunityExtension,
@@ -149,6 +152,322 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getHealthCheckQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetActiveAnnouncementUrl = () => {
+
+
+
+
+  return `/api/announcements/active`
+}
+
+/**
+ * @summary Get the current site-wide announcement
+ */
+export const getActiveAnnouncement = async ( options?: Parameters<typeof customFetch>[1]): Promise<ActiveAnnouncementState> => {
+
+  return customFetch<ActiveAnnouncementState>(getGetActiveAnnouncementUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetActiveAnnouncementQueryKey = () => {
+    return [
+    `/api/announcements/active`
+    ] as const;
+    }
+
+
+export const getGetActiveAnnouncementQueryOptions = <TData = Awaited<ReturnType<typeof getActiveAnnouncement>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getActiveAnnouncement>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetActiveAnnouncementQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getActiveAnnouncement>>> = ({ signal }) => getActiveAnnouncement({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getActiveAnnouncement>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetActiveAnnouncementQueryResult = NonNullable<Awaited<ReturnType<typeof getActiveAnnouncement>>>
+export type GetActiveAnnouncementQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the current site-wide announcement
+ */
+
+export function useGetActiveAnnouncement<TData = Awaited<ReturnType<typeof getActiveAnnouncement>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getActiveAnnouncement>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetActiveAnnouncementQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getPublishAnnouncementUrl = () => {
+
+
+
+
+  return `/api/announcements/active`
+}
+
+/**
+ * @summary Publish a developer announcement
+ */
+export const publishAnnouncement = async (announcementInput: AnnouncementInput, options?: Parameters<typeof customFetch>[1]): Promise<Announcement> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Announcement>(getPublishAnnouncementUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(announcementInput)
+  }
+);}
+
+
+
+
+
+export const getPublishAnnouncementMutationKey = () => ['publishAnnouncement'] as const;
+
+export const getPublishAnnouncementMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publishAnnouncement>>, TError,PublishAnnouncementMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof publishAnnouncement>>, TError,PublishAnnouncementMutationVariables, TContext> => {
+
+const mutationKey = getPublishAnnouncementMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof publishAnnouncement>>, PublishAnnouncementMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  publishAnnouncement(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PublishAnnouncementMutationResult = NonNullable<Awaited<ReturnType<typeof publishAnnouncement>>>
+    export type PublishAnnouncementMutationBody = BodyType<AnnouncementInput>
+    export type PublishAnnouncementMutationError = ErrorType<void>
+    export type PublishAnnouncementMutationVariables = {data: BodyType<AnnouncementInput>}
+
+    /**
+ * @summary Publish a developer announcement
+ */
+export const usePublishAnnouncement = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof publishAnnouncement>>, TError,PublishAnnouncementMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof publishAnnouncement>>,
+        TError,
+        PublishAnnouncementMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPublishAnnouncementMutationOptions(options));
+    }
+
+export const getClearAnnouncementUrl = () => {
+
+
+
+
+  return `/api/announcements/active`
+}
+
+/**
+ * @summary End the current site-wide announcement
+ */
+export const clearAnnouncement = async ( options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getClearAnnouncementUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getClearAnnouncementMutationKey = () => ['clearAnnouncement'] as const;
+
+export const getClearAnnouncementMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clearAnnouncement>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof clearAnnouncement>>, TError,void, TContext> => {
+
+const mutationKey = getClearAnnouncementMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof clearAnnouncement>>, void> = () => {
+
+
+          return  clearAnnouncement(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ClearAnnouncementMutationResult = NonNullable<Awaited<ReturnType<typeof clearAnnouncement>>>
+
+    export type ClearAnnouncementMutationError = ErrorType<void>
+
+
+    /**
+ * @summary End the current site-wide announcement
+ */
+export const useClearAnnouncement = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof clearAnnouncement>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof clearAnnouncement>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getClearAnnouncementMutationOptions(options));
+    }
+
+export const getStreamAnnouncementsUrl = () => {
+
+
+
+
+  return `/api/announcements/stream`
+}
+
+/**
+ * @summary Subscribe to site-wide announcement updates
+ */
+export const streamAnnouncements = async ( options?: Parameters<typeof customFetch>[1]): Promise<string> => {
+
+  return customFetch<string>(getStreamAnnouncementsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getStreamAnnouncementsQueryKey = () => {
+    return [
+    `/api/announcements/stream`
+    ] as const;
+    }
+
+
+export const getStreamAnnouncementsQueryOptions = <TData = Awaited<ReturnType<typeof streamAnnouncements>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof streamAnnouncements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getStreamAnnouncementsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof streamAnnouncements>>> = ({ signal }) => streamAnnouncements({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof streamAnnouncements>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type StreamAnnouncementsQueryResult = NonNullable<Awaited<ReturnType<typeof streamAnnouncements>>>
+export type StreamAnnouncementsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Subscribe to site-wide announcement updates
+ */
+
+export function useStreamAnnouncements<TData = Awaited<ReturnType<typeof streamAnnouncements>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof streamAnnouncements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getStreamAnnouncementsQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -18,6 +18,56 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * @summary Get the current site-wide announcement
+ */
+export const GetActiveAnnouncementResponse = zod.object({
+  "announcement": zod.union([zod.object({
+  "id": zod.literal(1),
+  "message": zod.string(),
+  "createdByUsername": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "expiresAt": zod.coerce.date()
+}),zod.null()])
+})
+
+
+/**
+ * @summary Publish a developer announcement
+ */
+export const publishAnnouncementBodyMessageMax = 500;
+
+export const publishAnnouncementBodyDurationSecondsMin = 5;
+export const publishAnnouncementBodyDurationSecondsMax = 259200;
+
+
+
+export const PublishAnnouncementBody = zod.object({
+  "message": zod.string().min(1).max(publishAnnouncementBodyMessageMax),
+  "durationSeconds": zod.number().int().min(publishAnnouncementBodyDurationSecondsMin).max(publishAnnouncementBodyDurationSecondsMax)
+})
+
+export const PublishAnnouncementResponse = zod.object({
+  "id": zod.literal(1),
+  "message": zod.string(),
+  "createdByUsername": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "expiresAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary End the current site-wide announcement
+ */
+export const ClearAnnouncementResponse = zod.void()
+
+
+/**
+ * @summary Subscribe to site-wide announcement updates
+ */
+export const StreamAnnouncementsResponse = zod.unknown()
+
+
+/**
  * @summary Create an account
  */
 export const signUpBodyUsernameMin = 3;

@@ -186,6 +186,38 @@ test("signup, login, logout, and recovery codes behave as one-time credentials",
   assert.equal(newPasswordLogin.status, 200);
 });
 
+test("announcements are public to read and only developer accounts can manage them", async () => {
+  const active = await request("/announcements/active");
+  assert.equal(active.status, 200);
+  assert.ok(Object.hasOwn(active.data, "announcement"));
+
+  const announcement = { message: "Test announcement", durationSeconds: 30 };
+  assert.equal(
+    (await request("/announcements/active", { method: "POST", body: announcement })).status,
+    401,
+    "signed-out visitors must not publish announcements",
+  );
+
+  const account = await signUp();
+  assert.equal(
+    (await request("/announcements/active", {
+      method: "POST",
+      cookie: account.cookie,
+      body: announcement,
+    })).status,
+    403,
+    "regular accounts must not publish announcements",
+  );
+  assert.equal(
+    (await request("/announcements/active", {
+      method: "DELETE",
+      cookie: account.cookie,
+    })).status,
+    403,
+    "regular accounts must not end announcements",
+  );
+});
+
 test("preferences, notes, and bookmarks sync only within their account", async () => {
   const firstAccount = await signUp();
   const secondAccount = await signUp();

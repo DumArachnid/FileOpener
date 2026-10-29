@@ -20,6 +20,8 @@ tags:
     description: Moderator controls for extensions and accounts
   - name: developer
     description: Replit-authenticated developer controls
+  - name: announcements
+    description: Public Study Desk announcements managed by developers
 paths:
   /healthz:
     get:
@@ -34,6 +36,64 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /announcements/active:
+    get:
+      operationId: getActiveAnnouncement
+      tags: [announcements]
+      summary: Get the current site-wide announcement
+      responses:
+        "200":
+          description: Current announcement, if one is active
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActiveAnnouncementState"
+    post:
+      operationId: publishAnnouncement
+      tags: [announcements]
+      summary: Publish a developer announcement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnnouncementInput"
+      responses:
+        "201":
+          description: Announcement published
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+        "400":
+          description: Invalid announcement
+        "401":
+          description: Sign in required
+        "403":
+          description: Developer rank required
+    delete:
+      operationId: clearAnnouncement
+      tags: [announcements]
+      summary: End the current site-wide announcement
+      responses:
+        "204":
+          description: Announcement ended
+        "401":
+          description: Sign in required
+        "403":
+          description: Developer rank required
+  /announcements/stream:
+    get:
+      operationId: streamAnnouncements
+      tags: [announcements]
+      summary: Subscribe to site-wide announcement updates
+      responses:
+        "200":
+          description: Server-sent announcement updates
+          content:
+            text/event-stream:
+              schema:
+                type: string
   /auth/signup:
     post:
       operationId: signUp
@@ -1222,4 +1282,41 @@ components:
         activityWindowSeconds:
           type: integer
           const: 90
+    AnnouncementInput:
+      type: object
+      required: [message, durationSeconds]
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 500
+        durationSeconds:
+          type: integer
+          minimum: 5
+          maximum: 259200
+    Announcement:
+      type: object
+      required: [id, message, createdByUsername, createdAt, expiresAt]
+      properties:
+        id:
+          type: integer
+          const: 1
+        message:
+          type: string
+        createdByUsername:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+    ActiveAnnouncementState:
+      type: object
+      required: [announcement]
+      properties:
+        announcement:
+          oneOf:
+            - $ref: "#/components/schemas/Announcement"
+            - type: "null"
 

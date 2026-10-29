@@ -368,6 +368,31 @@ export interface DeveloperOnlineCount {
   activityWindowSeconds: 90;
 }
 
+export interface AnnouncementInput {
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  message: string;
+  /**
+     * @minimum 5
+     * @maximum 259200
+     */
+  durationSeconds: number;
+}
+
+export interface Announcement {
+  id: 1;
+  message: string;
+  createdByUsername: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface ActiveAnnouncementState {
+  announcement: Announcement | null;
+}
+
 export type FindModerationUserParams = {
 /**
  * @minLength 3

@@ -7,6 +7,7 @@ import moderationRouter from "./moderation";
 import developerControlsRouter from "./developerControls";
 import adminPanelRouter from "./adminPanel";
 import presenceRouter from "./presence";
+import announcementsRouter from "./announcements";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(moderationRouter);
 router.use(developerControlsRouter);
 router.use(adminPanelRouter);
 router.use(presenceRouter);
+router.use(announcementsRouter);
 
 export default router;

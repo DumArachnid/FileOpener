@@ -24,3 +24,4 @@ export * from "./workspace-sync";
 export * from "./community-extensions";
 export * from "./developer-auth";
 export * from "./admin-panel";
+export * from "./site-announcement";

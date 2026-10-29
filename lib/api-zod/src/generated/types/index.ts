@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './activeAnnouncementState';
 export * from './adminHistoryEvent';
 export * from './adminHistoryEventDetails';
 export * from './adminHistoryList';
@@ -15,6 +16,8 @@ export * from './adminRewardInputCurrency';
 export * from './adminRewardTotals';
 export * from './adminUnlockFeaturesInput';
 export * from './adminUnlockFeaturesResult';
+export * from './announcement';
+export * from './announcementInput';
 export * from './authResult';
 export * from './beginDeveloperLoginParams';
 export * from './communityExtension';
