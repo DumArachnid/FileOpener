@@ -291,8 +291,9 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .admin-panel h2 { font-size: 19px; letter-spacing: -.035em; }
 .admin-panel-intro { max-width: 720px; margin: -3px 0 4px !important; font-size: 11px; line-height: 1.5 !important; }
 .admin-section-card { display: grid; gap: 12px; min-width: 0; padding: 16px; border: 1px solid var(--border); border-radius: 13px; background: color-mix(in srgb, var(--bg) 34%, var(--panel)); box-shadow: 0 3px 12px color-mix(in srgb, var(--text) 3%, transparent); }
-.admin-section-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; min-width: 0; }
-.admin-section-heading-copy { display: grid; gap: 4px; min-width: 0; }
+.admin-section-heading { display: flex; align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: 12px; min-width: 0; }
+.admin-section-heading-copy { display: grid; flex: 1 1 auto; gap: 4px; min-width: 0; }
+.admin-section-heading .admin-section-count, .admin-section-heading > .admin-section-mark:not(:first-child), .admin-section-heading > .btn { margin-left: auto; }
 .admin-section-heading h4, .admin-section-heading h5 { margin: 0; color: var(--text); font-size: 14px; letter-spacing: -.02em; }
 .admin-section-heading p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
 .admin-section-mark { display: grid; width: 34px; height: 34px; flex: none; place-items: center; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); color: var(--accent-ink); }
@@ -305,6 +306,7 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .admin-panel .moderation-search:not(.admin-account-reward) { padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); }
 .admin-panel .moderation-search textarea { min-height: 100px; }
 .admin-panel .moderation-search > p { color: var(--muted); }
+.admin-panel .moderation-search > .btn { justify-self: start; }
 .admin-panel .row-between { align-items: center; gap: 10px; }
 .admin-panel .developer-rank-notice { padding: 14px; border-color: color-mix(in srgb, var(--accent) 24%, var(--border)); border-radius: 11px; background: color-mix(in srgb, var(--accent-soft) 50%, var(--panel)); }
 .admin-panel .developer-rank-notice h4 { font-size: 13px; }
