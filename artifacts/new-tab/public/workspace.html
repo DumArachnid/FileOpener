@@ -282,6 +282,38 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .admin-panel h2 { margin: 0; font-size: 20px; }
 .admin-panel > p { margin: 0; color: var(--muted); line-height: 1.5; }
 .admin-panel .moderator-tools { border-top: 0; padding-top: 0; }
+.admin-panel .moderator-tools.admin-section-card, .admin-panel .moderator-tools.admin-account-management { border-top: 1px solid var(--border); }
+.admin-panel-topbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 2px 0 12px; border-bottom: 1px solid var(--border); }
+.admin-panel-brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.admin-panel-mark { display: grid; width: 38px; height: 38px; flex: none; place-items: center; border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border)); border-radius: 12px 12px 12px 4px; background: var(--accent-soft); color: var(--accent-ink); }
+.admin-panel-title-wrap { display: grid; gap: 4px; min-width: 0; }
+.admin-panel-eyebrow, .admin-section-eyebrow { color: var(--muted); font: 600 9px var(--mono); letter-spacing: .11em; text-transform: uppercase; }
+.admin-panel h2 { font-size: 19px; letter-spacing: -.035em; }
+.admin-panel-intro { max-width: 720px; margin: -3px 0 4px !important; font-size: 11px; line-height: 1.5 !important; }
+.admin-section-card { display: grid; gap: 12px; min-width: 0; padding: 16px; border: 1px solid var(--border); border-radius: 13px; background: color-mix(in srgb, var(--bg) 34%, var(--panel)); box-shadow: 0 3px 12px color-mix(in srgb, var(--text) 3%, transparent); }
+.admin-section-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; min-width: 0; }
+.admin-section-heading-copy { display: grid; gap: 4px; min-width: 0; }
+.admin-section-heading h4, .admin-section-heading h5 { margin: 0; color: var(--text); font-size: 14px; letter-spacing: -.02em; }
+.admin-section-heading p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
+.admin-section-mark { display: grid; width: 34px; height: 34px; flex: none; place-items: center; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); color: var(--accent-ink); }
+.admin-section-mark .ic { width: 15px; height: 15px; }
+.admin-section-count { flex: none; padding: 5px 8px; border: 1px solid var(--border); border-radius: 999px; background: var(--panel); color: var(--muted); font: 9px var(--mono); }
+.admin-panel .online-store-status:not(:empty) { padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: color-mix(in srgb, var(--input-bg) 76%, var(--panel)); line-height: 1.45; }
+.admin-panel .community-row { border-radius: 10px; background: var(--panel); transition: border-color .15s ease, background-color .15s ease; }
+.admin-panel .community-row:hover { border-color: color-mix(in srgb, var(--accent) 36%, var(--border)); }
+.admin-panel .community-row-actions .btn { min-height: 32px; }
+.admin-panel .moderation-search:not(.admin-account-reward) { padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); }
+.admin-panel .moderation-search textarea { min-height: 100px; }
+.admin-panel .moderation-search > p { color: var(--muted); }
+.admin-panel .row-between { align-items: center; gap: 10px; }
+.admin-panel .developer-rank-notice { padding: 14px; border-color: color-mix(in srgb, var(--accent) 24%, var(--border)); border-radius: 11px; background: color-mix(in srgb, var(--accent-soft) 50%, var(--panel)); }
+.admin-panel .developer-rank-notice h4 { font-size: 13px; }
+.admin-panel .admin-section-card > .community-list:empty { display: none; }
+.admin-panel .admin-section-card > .online-store-status:empty { display: none; }
+.admin-announcement-card { border-color: color-mix(in srgb, var(--accent) 24%, var(--border)); background: color-mix(in srgb, var(--accent-soft) 32%, var(--panel)); }
+.admin-announcement-card .moderation-search { background: color-mix(in srgb, var(--panel) 82%, var(--bg)); }
+.admin-appeals-card .account-review-card { border-radius: 10px; }
+.admin-appeals-card .review-form { padding-top: 8px; border-top: 1px solid var(--border); }
 .admin-account-management { display: grid; gap: 14px; padding: 16px !important; border: 1px solid var(--border); border-radius: 14px; background: color-mix(in srgb, var(--bg) 45%, var(--panel)); }
 .admin-account-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; }
 .admin-account-heading h4 { margin: 6px 0 4px; color: var(--text); font-size: 18px; letter-spacing: -.025em; }
@@ -349,6 +381,12 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
   .admin-account-audit { display: none; }
 }
 @media (max-width: 480px) {
+  .admin-panel { padding: 14px; }
+  .admin-section-card { padding: 12px; }
+  .admin-section-heading { align-items: flex-start; }
+  .admin-panel-brand { gap: 9px; }
+  .admin-panel-mark { width: 34px; height: 34px; }
+  .admin-panel h2 { font-size: 16px; }
   .admin-account-management { padding: 12px !important; }
   .admin-account-fields { grid-template-columns: 1fr; }
   .admin-account-search-row { flex-wrap: wrap; }
@@ -1020,17 +1058,20 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </div>
 <dialog id="adminDialog" class="admin-dialog" aria-labelledby="adminDialogTitle">
 <div class="admin-panel">
-<div class="row-between"><h2 id="adminDialogTitle">Study Desk admin panel</h2><button class="icon-btn" id="adminCloseBtn" type="button" aria-label="Close admin panel">×</button></div>
-<p>Admin actions are recorded. Tab details appear only when an account has opted in; only page titles and site names are shared.</p>
+<header class="admin-panel-topbar">
+<div class="admin-panel-brand"><span class="admin-panel-mark"><i data-ic="shield"></i></span><div class="admin-panel-title-wrap"><span class="admin-panel-eyebrow">STUDY DESK / TRUST &amp; SAFETY</span><h2 id="adminDialogTitle">Admin workspace</h2></div></div>
+<button class="icon-btn" id="adminCloseBtn" type="button" aria-label="Close admin panel">×</button>
+</header>
+<p class="admin-panel-intro">Manage community extensions, account access, and site announcements. Admin actions are recorded, and tab details remain private unless a learner opts in.</p>
 <section class="moderator-tools hidden" id="moderatorTools" aria-labelledby="moderatorToolsTitle">
-<div><h4 id="moderatorToolsTitle">Administration</h4><p>Review extensions, manage accounts, grant rewards, and inspect recent account actions.</p></div>
+<header class="admin-section-heading"><span class="admin-section-mark"><i data-ic="sliders"></i></span><div class="admin-section-heading-copy"><span class="admin-section-eyebrow">MODERATION TOOLS</span><h4 id="moderatorToolsTitle">Administration</h4><p>Review extensions, manage accounts, grant rewards, and inspect recent account actions.</p></div><span class="admin-section-count">ADMIN</span></header>
 <div class="developer-rank-notice hidden" id="developerAnnouncementNotice" role="note">
 <h4>Announcements require developer rank</h4>
 <p>Your account is an admin, but announcements are limited to dev accounts. An authorized developer can promote an account from the Extension Store’s Developer controls.</p>
 <button class="btn sm" id="openDeveloperControlsBtn" type="button">Open Developer controls</button>
 </div>
-<section class="moderator-tools hidden" id="developerAnnouncementTools" aria-labelledby="developerAnnouncementTitle">
-<div><h4 id="developerAnnouncementTitle">Site-wide announcement</h4><p>Publish a banner for everyone. A new announcement replaces the current one and expires automatically.</p></div>
+<section class="moderator-tools hidden admin-section-card admin-announcement-card" id="developerAnnouncementTools" aria-labelledby="developerAnnouncementTitle">
+<header class="admin-section-heading"><span class="admin-section-mark"><i data-ic="alert"></i></span><div class="admin-section-heading-copy"><span class="admin-section-eyebrow">DEVELOPER TOOL</span><h4 id="developerAnnouncementTitle">Site-wide announcement</h4><p>Publish a banner for everyone. A new announcement replaces the current one and expires automatically.</p></div><span class="admin-section-count">DEV</span></header>
 <form class="moderation-search" id="announcementForm">
 <label for="announcementMessage">Message (up to 500 characters)</label>
 <textarea id="announcementMessage" maxlength="500" required placeholder="Write a short announcement for all Study Desk visitors."></textarea>
@@ -1043,17 +1084,23 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div class="online-store-status" id="announcementAdminStatus" role="status">Checking for an active announcement…</div>
 <button class="btn sm danger-ghost" id="announcementClearBtn" type="button" hidden>End announcement now</button>
 </section>
-<div><h5>Submissions awaiting approval</h5></div>
+<section class="admin-section-card" aria-labelledby="approvalQueueTitle">
+<header class="admin-section-heading"><div class="admin-section-heading-copy"><span class="admin-section-eyebrow">EXTENSION STORE</span><h5 id="approvalQueueTitle">Submissions awaiting approval</h5><p>Review submissions before they appear in the community store.</p></div><span class="admin-section-mark"><i data-ic="clock"></i></span></header>
 <div class="online-store-status" id="moderationQueueStatus" role="status"></div>
 <div class="community-list" id="moderationQueue" aria-label="Extensions awaiting approval"></div>
-<div class="row-between"><h5>Community reports</h5><button class="btn sm" id="refreshExtensionReportsBtn" type="button">Refresh reports</button></div>
+</section>
+<section class="admin-section-card" aria-labelledby="extensionReportsTitle">
+<header class="admin-section-heading"><div class="admin-section-heading-copy"><span class="admin-section-eyebrow">COMMUNITY SAFETY</span><h5 id="extensionReportsTitle">Community reports</h5><p>Review reports submitted about public extensions.</p></div><button class="btn sm" id="refreshExtensionReportsBtn" type="button"><i data-ic="refresh"></i> Refresh</button></header>
 <div class="online-store-status" id="extensionReportsStatus" role="status"></div>
 <div class="community-list" id="extensionReportsList" aria-label="Reported community extensions"></div>
-<div><h5>Published extensions</h5><p>Take an extension out of the public store without deleting the creator’s saved code.</p></div>
+</section>
+<section class="admin-section-card" aria-labelledby="publishedExtensionsTitle">
+<header class="admin-section-heading"><div class="admin-section-heading-copy"><span class="admin-section-eyebrow">LIVE LISTINGS</span><h5 id="publishedExtensionsTitle">Published extensions</h5><p>Remove a listing from the public store without deleting its creator’s saved code.</p></div><span class="admin-section-mark"><i data-ic="globe"></i></span></header>
 <div class="online-store-status" id="moderationPublishedStatus" role="status"></div>
 <div class="community-list" id="moderationPublishedExtensions" aria-label="Published extensions available for moderation"></div>
-<section class="moderator-tools" id="curatedRandomLinksSection" aria-labelledby="curatedRandomLinksTitle">
-<div><h5 id="curatedRandomLinksTitle">Random bookmark links</h5><p>Manage the links users can add with the toolbar button. Requests save a bookmark only; they do not open the page.</p></div>
+</section>
+<section class="moderator-tools admin-section-card" id="curatedRandomLinksSection" aria-labelledby="curatedRandomLinksTitle">
+<header class="admin-section-heading"><span class="admin-section-mark"><i data-ic="bookmark"></i></span><div class="admin-section-heading-copy"><span class="admin-section-eyebrow">CURATED RESOURCES</span><h5 id="curatedRandomLinksTitle">Random bookmark links</h5><p>Manage resources users can save from the toolbar. Requests add a bookmark; they do not open the page.</p></div></header>
 <form class="moderation-search" id="curatedRandomLinkForm">
 <input id="curatedRandomLinkId" type="hidden">
 <label for="curatedRandomLinkTitle">Link title</label>
@@ -1070,9 +1117,11 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div class="online-store-status" id="curatedRandomLinksStatus" role="status" aria-live="polite"></div>
 <div class="community-list" id="curatedRandomLinksList" aria-label="Curated random bookmark links"></div>
 </section>
-<div><h5>Hidden extensions</h5><p>Restore a previously removed listing without changing the creator’s saved draft.</p></div>
+<section class="admin-section-card" aria-labelledby="hiddenExtensionsTitle">
+<header class="admin-section-heading"><div class="admin-section-heading-copy"><span class="admin-section-eyebrow">REMOVED LISTINGS</span><h5 id="hiddenExtensionsTitle">Hidden extensions</h5><p>Restore a listing without changing the creator’s saved draft.</p></div><span class="admin-section-mark"><i data-ic="file"></i></span></header>
 <div class="online-store-status" id="removedExtensionsStatus" role="status"></div>
 <div class="community-list" id="removedModerationExtensions" aria-label="Hidden extensions available for restoration"></div>
+</section>
 <section class="moderator-tools admin-account-management" aria-labelledby="manageAccountTitle">
 <header class="admin-account-heading">
 <div><span class="admin-account-eyebrow">Account oversight</span><h4 id="manageAccountTitle">Manage an account</h4><p>Look up an account to review access, rewards, and recent activity.</p></div>
@@ -1130,8 +1179,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </aside>
 </div>
 </section>
-<section class="moderator-tools" aria-labelledby="suspensionAppealsTitle">
-<div class="row-between"><h5 id="suspensionAppealsTitle">Suspension appeals</h5><button class="btn sm" id="refreshSuspensionAppealsBtn" type="button">Refresh queue</button></div>
+<section class="moderator-tools admin-section-card admin-appeals-card" aria-labelledby="suspensionAppealsTitle">
+<header class="admin-section-heading"><div class="admin-section-heading-copy"><span class="admin-section-eyebrow">ACCOUNT REVIEW</span><h5 id="suspensionAppealsTitle">Suspension appeals</h5><p>Review learner appeals and record a decision.</p></div><button class="btn sm" id="refreshSuspensionAppealsBtn" type="button"><i data-ic="refresh"></i> Refresh</button></header>
 <div class="online-store-status" id="suspensionAppealsStatus" role="status" aria-live="polite">Appeals awaiting review will appear here.</div>
 <div class="community-list" id="suspensionAppealsQueue" aria-label="Suspension appeals awaiting review"></div>
 </section>

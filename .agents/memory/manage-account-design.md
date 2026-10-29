@@ -1,10 +1,10 @@
 ---
-name: Manage-account visual direction
-description: The user's approved design direction for Study Desk's account-management panel.
+name: Admin-panel visual direction
+description: The user's approved card-based visual direction for Study Desk's admin and developer panels.
 ---
 
-For the Study Desk admin account panel, continue the calm, card-based layout with a clear account/action area and a separate activity and opt-in tab-review panel. Use the workspace's theme tokens rather than fixed accent colors.
+For Study Desk's admin and developer panels, use a calm, card-based structure with clear section headings, concise descriptions, and theme-aware surfaces. Keep account actions separate from activity and opt-in tab review.
 
-**Why:** The user explicitly praised the refined Manage account preview.
+**Why:** The user praised the refined Manage account design and asked to extend that visual direction across the rest of the admin/dev panel.
 
-**How to apply:** Use this as the starting point when integrating or extending the account-management UI, while preserving the existing role limits and privacy safeguards.
+**How to apply:** Use this visual direction across moderation, developer, and account-management controls while preserving role limits and privacy safeguards.

@@ -1,7 +1,7 @@
 - [Live viewer tabs](live-viewer-tabs.md) — keep inactive iframe viewports laid out; hiding with display:none can reset scroll despite preserving the document.
 - [Admin access and tab privacy](developer-admin-access.md) — developer role controls remain allowlisted; admin promotions and tab visibility follow explicit project rules.
 - [Theme-aware interface colors](theme-aware-colors.md) — use the workspace’s user-controlled theme tokens for accents, surfaces, notices, and other decorative UI colors.
-- [Manage-account visual direction](manage-account-design.md) — preserve the approved calm, card-based layout with actions and review activity separated.
+- [Admin-panel visual direction](manage-account-design.md) — use the approved calm, card-based visual language across admin/dev tools.
 - [Account reminders and feature grants](account-reminders-and-feature-grants.md) — keep signup optional and daily, and make administrator unlocks persist per account.
 - [Wrapped database errors](wrapped-database-errors.md) — Drizzle may expose PostgreSQL error codes on a nested cause, not the outer query error.
 - [Workflow stale child processes](workflow-stale-processes.md) — if an app responds while its workflow reports EADDRINUSE, stop the exact managed workflow before a single restart.
