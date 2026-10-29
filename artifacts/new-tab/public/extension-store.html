@@ -168,13 +168,61 @@
     .section { margin-top: 34px; padding: clamp(20px, 3vw, 28px); border: 1px solid var(--border); border-radius: 20px; background: color-mix(in srgb, var(--panel) 58%, var(--paper)); box-shadow: 0 8px 24px color-mix(in srgb, #000000 5%, transparent); }
     .section-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 18px; }
     .section-head p { max-width: 720px; margin: 6px 0 0; font-size: 13px; }
+    .section-kicker { display: block; margin-bottom: 8px; color: var(--accent-ink); font-size: 9px; font-weight: 800; letter-spacing: .14em; }
+    .creator-section { margin-top: 34px; border-color: color-mix(in srgb, var(--accent) 22%, var(--border)); background: color-mix(in srgb, var(--panel) 72%, var(--paper)); }
+    .creator-section .section-head { margin-bottom: 14px; }
+    .creator-section .section-head p { max-width: 650px; }
+    .owned-list { display: grid; gap: 9px; }
+    .owned-list .row { background: var(--paper); }
+    .discovery-section { margin-top: 42px; padding: 0; border: 0; background: transparent; box-shadow: none; }
+    .discovery-heading { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin-bottom: 22px; }
+    .discovery-heading h2 { font-size: clamp(25px, 3vw, 32px); }
+    .discovery-heading p { max-width: 690px; margin: 7px 0 0; font-size: 13px; }
+    .discovery-toolbar { display: grid; grid-template-columns: minmax(220px, 1fr) auto 180px; align-items: center; gap: 14px; padding: 13px; border: 1px solid var(--border); border-radius: 17px; background: color-mix(in srgb, var(--panel) 58%, var(--paper)); }
+    .search-box { position: relative; min-width: 0; }
+    .search-box svg { position: absolute; top: 50%; left: 14px; width: 18px; height: 18px; transform: translateY(-50%); fill: none; stroke: var(--muted); stroke-width: 1.8; stroke-linecap: round; }
+    .search-box input { min-height: 44px; padding: 10px 14px 10px 42px; border-radius: 12px; background: var(--paper); }
+    .discovery-filters { display: flex; align-items: center; gap: 6px; }
+    .filter-chip { min-height: 37px; padding: 8px 13px; border: 1px solid transparent; border-radius: 999px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 700; white-space: nowrap; }
+    .filter-chip:hover { border-color: var(--border-strong); color: var(--ink); }
+    .filter-chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+    .filter-chip:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 42%, transparent); outline-offset: 2px; }
+    #discoverySort { min-height: 42px; padding: 9px 30px 9px 12px; border: 1px solid var(--border-strong); border-radius: 11px; background: var(--paper); color: var(--ink); font: inherit; font-size: 11px; font-weight: 700; }
+    #discoverySort:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 42%, transparent); outline-offset: 2px; }
+    .discovery-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 38px; margin: 8px 3px 12px; }
+    .discovery-meta .status { margin: 0; font-size: 12px; }
+    #discoveryCount { color: var(--muted); font-size: 11px; white-space: nowrap; }
     .status { margin: 10px 0; color: var(--muted); font-size: 13px; }
     .status.error { color: var(--danger); }
-    #communityExtensions { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
-    #communityExtensions > .status { grid-column: 1 / -1; margin: 0; padding: 24px; border: 1px dashed var(--border-strong); border-radius: 15px; text-align: center; }
+    .discovery-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .discovery-grid > .discovery-empty { grid-column: 1 / -1; display: grid; min-height: 190px; align-content: center; justify-items: center; gap: 7px; padding: 26px; border: 1px dashed var(--border-strong); border-radius: 18px; background: color-mix(in srgb, var(--panel) 40%, var(--paper)); text-align: center; }
+    .discovery-empty strong { font-size: 15px; }
+    .discovery-empty p { max-width: 420px; margin: 0; font-size: 12px; }
     .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
     .card { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; min-width: 0; min-height: 200px; padding: 18px; border: 1px solid var(--border); border-radius: 16px; background: var(--paper); box-shadow: 0 4px 14px color-mix(in srgb, var(--ink) 4%, transparent); transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
     .card:hover { transform: translateY(-2px); border-color: var(--border-strong); box-shadow: 0 10px 22px color-mix(in srgb, var(--ink) 8%, transparent); }
+    .discovery-card { min-height: 242px; padding: 19px; border-radius: 18px; }
+    .discovery-cover { position: relative; display: grid; width: 100%; height: 108px; overflow: hidden; place-items: center; border: 1px solid var(--border); border-radius: 13px; background: linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, var(--panel) 70%, var(--paper))); }
+    .discovery-cover::before, .discovery-cover::after { position: absolute; border-radius: 50%; background: color-mix(in srgb, var(--accent) 11%, transparent); content: ""; }
+    .discovery-cover::before { top: -40px; right: -10px; width: 136px; height: 136px; }
+    .discovery-cover::after { bottom: -56px; left: 13%; width: 126px; height: 126px; background: color-mix(in srgb, var(--paper) 58%, transparent); }
+    .discovery-cover svg { position: relative; z-index: 1; width: 42px; height: 42px; padding: 9px; border: 1px solid var(--border); border-radius: 13px; background: var(--paper); color: var(--accent-ink); fill: none; stroke: currentColor; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; box-shadow: 0 5px 14px var(--shadow); }
+    .discovery-cover[data-category="focus"] { background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 14%, var(--panel)), var(--paper)); }
+    .discovery-cover[data-category="writing"] { background: linear-gradient(135deg, var(--panel), color-mix(in srgb, var(--accent-soft) 80%, var(--paper))); }
+    .discovery-card-top { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 8px; }
+    .category-label { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 10px; font-weight: 700; }
+    .category-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .discovery-card .card-title { font-size: 16px; }
+    .discovery-card .card-description { display: -webkit-box; overflow: hidden; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.55; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+    .discovery-card .card-meta { margin: auto 0 0; color: var(--muted); font-size: 10px; }
+    .discovery-actions { display: flex; width: 100%; align-items: center; gap: 8px; margin-top: 2px; }
+    .discovery-actions .btn { min-height: 36px; margin-top: 0; padding: 7px 11px; font-size: 11px; }
+    .discovery-actions .btn:first-child { flex: 1; }
+    .discovery-actions .btn:not(:first-child) { flex: none; }
+    .discovery-card form { width: 100%; }
+    .discovery-card form label { margin-top: 4px; }
+    .discovery-card form .btn { margin-top: 8px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
     .card-head { display: flex; align-items: center; gap: 10px; width: 100%; }
     .card-title { min-width: 0; overflow-wrap: anywhere; font-weight: 800; letter-spacing: -.025em; }
     .badge { margin-left: auto; flex: none; padding: 5px 8px; border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border)); border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); font-size: 9px; font-weight: 800; letter-spacing: .08em; }
@@ -219,7 +267,17 @@
       .section { margin-top: 30px; }
       .section-head { align-items: stretch; flex-direction: column; }
       .section-head > .btn { align-self: flex-start; }
+      .discovery-section { margin-top: 34px; }
+      .discovery-heading { align-items: stretch; flex-direction: column; }
+      .discovery-heading > .btn { align-self: flex-start; }
+      .discovery-toolbar { grid-template-columns: 1fr; }
+      .discovery-filters { flex-wrap: wrap; }
+      .discovery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .search-row { flex-direction: column; }
+    }
+    @media (min-width: 761px) and (max-width: 980px) {
+      .discovery-toolbar { grid-template-columns: minmax(220px, 1fr) auto; }
+      #discoverySort { grid-column: 1 / -1; justify-self: end; width: min(220px, 100%); }
     }
     @media (max-width: 460px) {
       .shell { width: calc(100% - 20px); }
@@ -231,6 +289,9 @@
       .art-caption { bottom: 0; left: 8px; }
       .trust-note { grid-template-columns: 30px minmax(0, 1fr); align-items: start; }
       .card { min-height: 176px; }
+      .discovery-grid { grid-template-columns: 1fr; }
+      .discovery-card { min-height: 205px; }
+      .discovery-meta { align-items: flex-start; flex-direction: column; gap: 3px; }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
@@ -278,14 +339,49 @@
       </div>
     </section>
 
-    <section class="section" id="communityStore" aria-labelledby="onlineStoreTitle">
+    <section class="section creator-section hidden" id="ownedSection" aria-labelledby="ownedTitle">
       <div class="section-head">
-        <div><h2 id="onlineStoreTitle">Online community store</h2><p>Browse published extensions or create a private draft. Submissions become public only after moderator approval.</p></div>
+        <div>
+          <span class="section-kicker">CREATOR SPACE</span>
+          <h2 id="ownedTitle">Your extensions</h2>
+          <p>Manage your drafts and keep track of review status. Your published extensions are listed here, not repeated in discovery.</p>
+        </div>
+      </div>
+      <div id="ownedExtensions" class="owned-list" aria-label="Your extensions"></div>
+    </section>
+
+    <section class="section discovery-section" id="communityStore" aria-labelledby="onlineStoreTitle">
+      <div class="discovery-heading">
+        <div>
+          <span class="section-kicker">COMMUNITY CATALOG</span>
+          <h2 id="onlineStoreTitle">Discover extensions</h2>
+          <p>Find helpful tools shared by Study Desk creators. Review each extension before installing.</p>
+        </div>
         <button class="btn primary" id="createExtensionBtn" type="button">＋ Create extension</button>
       </div>
-      <div class="status" id="storeStatus" role="status">Connecting to the online store…</div>
-      <div id="ownedExtensions" aria-label="Your extensions"></div>
-      <div class="cards" id="communityExtensions" aria-label="Published community extensions"></div>
+      <div class="discovery-toolbar">
+        <label class="sr-only" for="discoverySearch">Search community extensions</label>
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.5" /><path d="m16 16 4.5 4.5" /></svg>
+          <input id="discoverySearch" type="search" placeholder="Search extensions, topics, or creators…" autocomplete="off">
+        </div>
+        <div class="discovery-filters" role="group" aria-label="Filter extensions by category">
+          <button class="filter-chip" type="button" data-discovery-filter="all" aria-pressed="true">All</button>
+          <button class="filter-chip" type="button" data-discovery-filter="study" aria-pressed="false">Study</button>
+          <button class="filter-chip" type="button" data-discovery-filter="focus" aria-pressed="false">Focus</button>
+          <button class="filter-chip" type="button" data-discovery-filter="writing" aria-pressed="false">Writing</button>
+        </div>
+        <label class="sr-only" for="discoverySort">Sort extensions</label>
+        <select id="discoverySort">
+          <option value="recent">Recently updated</option>
+          <option value="name">Name A–Z</option>
+        </select>
+      </div>
+      <div class="discovery-meta">
+        <div class="status" id="storeStatus" role="status">Connecting to the online store…</div>
+        <span id="discoveryCount" aria-live="polite"></span>
+      </div>
+      <div class="discovery-grid" id="communityExtensions" aria-label="Published community extensions"></div>
     </section>
 
     <section class="section" aria-labelledby="demoTitle">
@@ -342,7 +438,7 @@
   (function () {
     'use strict';
     var $ = function (id) { return document.getElementById(id); };
-    var state = { user: null, developer: { user: null, authorized: false }, owned: [], public: [], selected: null, editing: null };
+    var state = { user: null, developer: { user: null, authorized: false }, owned: [], public: [], selected: null, editing: null, discoveryCategory: 'all', discoverySort: 'recent' };
     var detailsDialog = $('detailsDialog');
     var editorDialog = $('editorDialog');
     var storeChannel = 'BroadcastChannel' in window ? new BroadcastChannel('study-desk-store') : null;
@@ -492,13 +588,12 @@
     }
     function renderOwned() {
       var host = $('ownedExtensions');
+      var section = $('ownedSection');
       host.replaceChildren();
+      section.classList.toggle('hidden', !state.user);
       if (!state.user) return;
-      var title = text('h3', '', 'Your extensions');
-      title.style.margin = '18px 0 9px';
-      host.appendChild(title);
       if (!state.owned.length) {
-        host.appendChild(text('p', 'status', 'You have no drafts or submissions yet.'));
+        host.appendChild(text('p', 'status', 'Your drafts and submissions will appear here.'));
         return;
       }
       state.owned.forEach(function (item) {
@@ -560,16 +655,117 @@
         openDetails(item, detail.code, 'Published by ' + detail.publisherUsername + '. Review the source before enabling this extension.');
       } catch (error) { setStatus(error.message, true); }
     }
+    function categoryForExtension(item) {
+      var searchable = (String(item.name || '') + ' ' + String(item.description || '')).toLowerCase();
+      if (/\b(citation|reference|writing|essay|grammar|proofread|dictionary|editor)\b/.test(searchable)) {
+        return { key: 'writing', label: 'Writing' };
+      }
+      if (/\b(focus|timer|pomodoro|task|todo|productivity|schedule|shortcut|planner)\b/.test(searchable)) {
+        return { key: 'focus', label: 'Focus' };
+      }
+      return { key: 'study', label: 'Study' };
+    }
+    function discoveryIcon(category) {
+      var paths = {
+        study: [
+          'M5 4.5A2.5 2.5 0 0 1 7.5 2H20v17H7.5A2.5 2.5 0 0 0 5 21.5z',
+          'M5 4.5v17',
+          'M9 7h7',
+          'M9 11h6',
+        ],
+        focus: [
+          'M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16z',
+          'M12 8v4l3 2',
+          'M12 2v2',
+        ],
+        writing: [
+          'm14 5 5 5',
+          'M4 20l4.5-1 10.9-10.9a2.1 2.1 0 0 0-3-3L5.5 16z',
+          'M13 6l5 5',
+        ],
+      };
+      var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', '0 0 24 24');
+      svg.setAttribute('aria-hidden', 'true');
+      (paths[category.key] || paths.study).forEach(function (pathData) {
+        var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', pathData);
+        svg.appendChild(path);
+      });
+      return svg;
+    }
+    function visiblePublicExtensions() {
+      var query = $('discoverySearch').value.trim().toLowerCase();
+      var username = state.user && String(state.user.username || '').toLowerCase();
+      var visible = state.public.filter(function (item) {
+        if (username && String(item.publisherUsername || '').toLowerCase() === username) return false;
+        if (state.discoveryCategory !== 'all' && categoryForExtension(item).key !== state.discoveryCategory) return false;
+        if (!query) return true;
+        return [item.name, item.description, item.publisherUsername]
+          .some(function (value) { return String(value || '').toLowerCase().includes(query); });
+      });
+      visible.sort(function (first, second) {
+        if (state.discoverySort === 'name') return String(first.name || '').localeCompare(String(second.name || ''), undefined, { sensitivity: 'base' });
+        var firstTime = Date.parse(first.updatedAt || '');
+        var secondTime = Date.parse(second.updatedAt || '');
+        return Number.isFinite(secondTime - firstTime) ? secondTime - firstTime : 0;
+      });
+      return visible;
+    }
     function renderPublic() {
       var host = $('communityExtensions');
       host.replaceChildren();
-      state.public.forEach(function (item) {
-        var card = text('article', 'card');
-        var head = text('div', 'card-head');
-        head.append(text('strong', 'card-title', item.name), text('span', 'badge', 'PUBLIC'));
-        card.append(head, text('p', '', item.description), text('p', 'muted', 'By ' + item.publisherUsername + ' · ' + item.version));
-        card.appendChild(button('Review source', function () { reviewPublic(item); }));
-        if (!state.user || state.user.username !== item.publisherUsername) {
+      document.querySelectorAll('[data-discovery-filter]').forEach(function (filter) {
+        filter.setAttribute('aria-pressed', String(filter.dataset.discoveryFilter === state.discoveryCategory));
+      });
+      var items = visiblePublicExtensions();
+      $('discoveryCount').textContent = items.length + (items.length === 1 ? ' extension' : ' extensions');
+      if (!items.length) {
+        var empty = text('div', 'discovery-empty');
+        var search = $('discoverySearch').value.trim();
+        var ownPublished = state.user && state.public.length > 0 &&
+          state.public.every(function (item) { return String(item.publisherUsername || '').toLowerCase() === String(state.user.username || '').toLowerCase(); });
+        var title = !state.public.length
+          ? 'The community catalog is getting started'
+          : ownPublished && !search && state.discoveryCategory === 'all'
+            ? 'Your published extensions are in Your extensions'
+            : 'No extensions match those filters';
+        var message = !state.public.length
+          ? 'When creators publish approved extensions, you’ll find them here.'
+          : ownPublished && !search && state.discoveryCategory === 'all'
+            ? 'This discovery feed is for other creators’ work. Your listings are kept separate above.'
+            : 'Try another search or category to explore more of the catalog.';
+        empty.append(text('strong', '', title), text('p', '', message));
+        if (search || state.discoveryCategory !== 'all') {
+          empty.appendChild(button('Clear search and filters', function () {
+            $('discoverySearch').value = '';
+            state.discoveryCategory = 'all';
+            state.discoverySort = 'recent';
+            $('discoverySort').value = 'recent';
+            renderPublic();
+            $('discoverySearch').focus();
+          }));
+        }
+        host.appendChild(empty);
+        return;
+      }
+      items.forEach(function (item) {
+        var category = categoryForExtension(item);
+        var card = text('article', 'card discovery-card');
+        var top = text('div', 'discovery-card-top');
+        var cover = text('div', 'discovery-cover');
+        cover.dataset.category = category.key;
+        cover.appendChild(discoveryIcon(category));
+        var categoryLabel = text('span', 'category-label');
+        categoryLabel.appendChild(text('span', 'category-dot'));
+        categoryLabel.appendChild(document.createTextNode(category.label + ' tools'));
+        top.append(categoryLabel, text('span', 'badge', 'PUBLIC'));
+        card.append(cover, top, text('h3', 'card-title', item.name),
+          text('p', 'card-description', item.description || 'A community extension for your Study Desk.'),
+          text('p', 'card-meta', 'By ' + item.publisherUsername + ' · ' + item.version));
+        var actions = text('div', 'discovery-actions');
+        actions.appendChild(button('Review source', function () { reviewPublic(item); }, 'primary'));
+        if (!state.user || String(state.user.username || '').toLowerCase() !== String(item.publisherUsername || '').toLowerCase()) {
           var reportToggle = button('Report listing', function () {
             if (!state.user) {
               askForAccount('login');
@@ -609,11 +805,12 @@
           }, 'primary');
           reportForm.addEventListener('submit', function (event) { event.preventDefault(); submit.click(); });
           reportForm.append(reasonLabel, reason, submit, feedback);
-          card.append(reportToggle, reportForm);
+          actions.appendChild(reportToggle);
+          card.appendChild(reportForm);
         }
+        card.insertBefore(actions, card.querySelector('form'));
         host.appendChild(card);
       });
-      if (!state.public.length) host.appendChild(text('p', 'status', 'No public community extensions yet.'));
     }
     async function loadPublic() {
       try {
@@ -756,6 +953,17 @@
     }
     $('accountActionBtn').addEventListener('click', function () { askForAccount('login'); });
     $('createExtensionBtn').addEventListener('click', function () { openEditor(null); });
+    $('discoverySearch').addEventListener('input', renderPublic);
+    $('discoverySort').addEventListener('change', function () {
+      state.discoverySort = $('discoverySort').value;
+      renderPublic();
+    });
+    document.querySelectorAll('[data-discovery-filter]').forEach(function (filter) {
+      filter.addEventListener('click', function () {
+        state.discoveryCategory = filter.dataset.discoveryFilter || 'all';
+        renderPublic();
+      });
+    });
     $('installBtn').addEventListener('click', function () {
       if (!state.selected) return;
       var app = desk();
