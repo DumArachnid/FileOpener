@@ -85,6 +85,8 @@ kbd { font-family: var(--mono); font-size: 10.5px; padding: 2px 6px; border-radi
 
 .side-head { display: flex; justify-content: space-between; align-items: center; padding: 2px 2px 4px; }
 .side-title { display: flex; align-items: center; gap: 8px; }
+.side-brand-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.creator-credit { color: var(--muted); font-size: 10px; font-weight: 500; line-height: 1.1; letter-spacing: .02em; }
 .clock-status { display: flex; align-items: center; gap: 6px; flex: none; }
 h2 { margin: 0; font-size: 19px; font-weight: 700; letter-spacing: -.01em; }
 h3 { margin: 0; }
@@ -489,7 +491,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 
 <aside class="sidebar" id="sidebar" aria-label="Settings and tools">
 <div class="side-head">
-<div class="side-title"><span class="logo-mark"></span><h2>Study Desk</h2></div>
+<div class="side-title"><span class="logo-mark"></span><div class="side-brand-copy"><h2>Study Desk</h2><span class="creator-credit">Created by dum</span></div></div>
 <div class="clock-status">
 <span id="batteryDisplay" hidden role="img" aria-label="Battery level"></span>
 <div id="clockDisplay">00:00:00</div>
