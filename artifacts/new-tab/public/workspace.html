@@ -243,23 +243,49 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .extension-input-panel p { margin: 0; color: var(--muted); line-height: 1.5; }
 .extension-input-panel textarea { width: 100%; min-height: 180px; max-height: 55vh; resize: vertical; font-family: var(--main-font); line-height: 1.5; }
 .extension-input-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
-.account-dialog { width: min(540px, calc(100% - 28px)); max-width: 540px; max-height: 88vh; padding: 0; overflow: auto; border: 1.5px solid var(--border-strong); border-radius: 14px; background: var(--panel); color: var(--text); box-shadow: 5px 5px 0 var(--ink-shadow); }
+.account-dialog { width: min(520px, calc(100% - 28px)); max-width: 520px; max-height: min(90dvh, 760px); padding: 0; overflow: auto; overscroll-behavior: contain; border: 1px solid var(--border-strong); border-radius: 18px; background: var(--panel); color: var(--text); box-shadow: 0 24px 72px color-mix(in srgb, var(--text) 24%, transparent), 0 4px 0 var(--ink-shadow); animation: account-dialog-enter .2s var(--ease) both; }
 .admin-dialog { width: min(900px, calc(100% - 28px)); max-width: 900px; max-height: 90vh; padding: 0; overflow: auto; border: 1.5px solid var(--border-strong); border-radius: 14px; background: var(--panel); color: var(--text); box-shadow: 5px 5px 0 var(--ink-shadow); }
-.account-dialog::backdrop, .admin-dialog::backdrop { background: color-mix(in srgb, var(--text) 45%, transparent); backdrop-filter: blur(3px); }
-.account-panel { display: flex; flex-direction: column; gap: 12px; padding: 22px; }
-.account-panel h2 { margin: 0; font-size: 20px; }
-.account-panel p { margin: 0; color: var(--muted); line-height: 1.5; }
+.account-dialog::backdrop { background: color-mix(in srgb, var(--text) 48%, transparent); backdrop-filter: blur(5px) saturate(.8); }
+.admin-dialog::backdrop { background: color-mix(in srgb, var(--text) 45%, transparent); backdrop-filter: blur(3px); }
+.account-panel { display: flex; flex-direction: column; padding: clamp(22px, 5vw, 32px); }
+.account-topbar { display: flex; align-items: center; justify-content: space-between; min-height: 36px; }
+.account-brand { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .11em; }
+.account-brand .logo-mark { width: 13px; height: 13px; }
+.account-brand-separator { padding: 0 3px; color: var(--border-strong); }
+.account-close { width: 36px; height: 36px; border-color: transparent; color: var(--muted); font-size: 20px; }
+.account-close:hover { border-color: var(--border); background: var(--input-bg); color: var(--text); }
+.account-intro { display: grid; gap: 9px; margin: 27px 0 24px; }
+.account-panel h2 { margin: 0; font-size: clamp(27px, 6vw, 34px); line-height: 1.05; letter-spacing: -.045em; }
+.account-panel p { margin: 0; color: var(--muted); line-height: 1.55; }
+.account-intro p { max-width: 400px; font-size: 14px; }
+.account-sync-status { margin: -12px 0 18px !important; font-size: 12px; }
+.account-sync-status:empty { display: none; }
 .admin-panel { display: flex; flex-direction: column; gap: 12px; padding: 22px; }
 .admin-panel h2 { margin: 0; font-size: 20px; }
 .admin-panel > p { margin: 0; color: var(--muted); line-height: 1.5; }
 .admin-panel .moderator-tools { border-top: 0; padding-top: 0; }
-.share-tabs-setting { display: flex; align-items: flex-start; gap: 8px; margin-top: 10px; color: var(--text); font-size: 12px; line-height: 1.45; }
-.share-tabs-setting input { margin-top: 2px; }
-.account-form { display: grid; gap: 10px; }
-.account-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
-.account-link { border: 0; padding: 0; background: none; color: var(--accent-ink); text-decoration: underline; cursor: pointer; font: inherit; }
-.account-error { min-height: 1.2em; color: var(--danger); font-size: 12px; }
-.recovery-code-box { padding: 12px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--input-bg); }
+.share-tabs-setting { display: flex; align-items: flex-start; gap: 9px; margin: 15px 0; color: var(--text); font-size: 12px; line-height: 1.5; }
+.share-tabs-setting input { flex: none; margin: 2px 0 0; accent-color: var(--accent); }
+.account-form { display: grid; gap: 16px; }
+.account-field label { margin: 0 0 7px; color: var(--text); font-size: 12px; font-weight: 700; }
+.account-field input { display: block; width: 100%; min-height: 48px; padding: 11px 13px; border: 1px solid var(--border-strong); border-radius: 10px; outline: none; background: var(--input-bg); color: var(--text); transition: border-color .15s, box-shadow .15s, background .15s; }
+.account-field input::placeholder { color: color-mix(in srgb, var(--muted) 72%, transparent); }
+.account-field input:focus-visible { border-color: var(--accent); outline: 3px solid color-mix(in srgb, var(--accent) 18%, transparent); background: var(--panel); }
+.account-help { margin: -8px 0 0 !important; font-size: 12px; }
+.account-actions { display: flex; gap: 8px; margin-top: 2px; }
+.account-actions .btn { width: 100%; min-height: 48px; border-radius: 10px; }
+.account-form-footer { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px; color: var(--muted); font-size: 13px; }
+.account-link { border: 0; padding: 0; background: none; color: var(--accent-ink); cursor: pointer; font: inherit; font-weight: 700; }
+.account-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.account-recovery-link { justify-self: center; margin-top: -7px; font-size: 12px; font-weight: 600; }
+.account-optional-note { display: flex; align-items: flex-start; gap: 9px; margin: 5px 0 0 !important; padding: 12px 13px; border: 1px solid var(--border); border-radius: 11px; background: color-mix(in srgb, var(--input-bg) 78%, transparent); color: var(--muted); font-size: 11px; line-height: 1.45; }
+.account-optional-note span { flex: none; color: var(--accent-ink); font-weight: 700; }
+.account-error { min-height: 0; color: var(--danger); font-size: 12px; line-height: 1.45; }
+.account-error:not(:empty) { padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border)); border-radius: 10px; background: color-mix(in srgb, var(--danger) 7%, var(--panel)); }
+.recovery-code-box { padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--input-bg); }
+.account-signed-in > strong { display: block; margin-bottom: 5px; font-size: 14px; }
+.account-signed-in .btn { min-height: 40px; }
+.recovery-code-box > p { font-size: 12px; }
 .recovery-code-box code { display: block; margin: 8px 0; overflow-wrap: anywhere; font: 700 15px var(--mono); }
 .online-store-status { font-size: 12px; color: var(--muted); }
 .community-list { display: grid; gap: 8px; }
@@ -363,6 +389,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 @keyframes bob { 50% { translate: 0 -5px; } }
 @keyframes starPop { 40% { transform: scale(1.5) rotate(15deg); } }
 @keyframes pulse { 50% { transform: scale(1.06); } }
+@keyframes account-dialog-enter { from { opacity: 0; transform: translateY(8px) scale(.985); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
 
 /* responsive */
@@ -385,6 +412,13 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   .overlay { padding-top: 6vh; }
 }
 @media (min-width: 921px) { .app.sidebar-collapsed .sidebar { display: none; } }
+@media (max-width: 520px) {
+  .account-dialog { width: calc(100% - 20px); max-height: calc(100dvh - 20px); border-radius: 16px; }
+  .account-panel { padding: 22px 18px; }
+  .account-intro { margin: 22px 0 20px; }
+  .account-form { gap: 14px; }
+  .account-form-footer { font-size: 12px; }
+}
 
 .compatibility-toast {
   position: fixed; right: max(20px, env(safe-area-inset-right)); bottom: max(20px, env(safe-area-inset-bottom));
@@ -899,31 +933,44 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </div>
 </dialog>
 
-<dialog id="accountDialog" class="account-dialog" aria-labelledby="accountDialogTitle">
+<dialog id="accountDialog" class="account-dialog" aria-labelledby="accountDialogTitle" aria-describedby="accountDialogIntro">
 <div class="account-panel">
-<div class="row-between"><h2 id="accountDialogTitle">Study Desk account</h2><button class="icon-btn" id="accountCloseBtn" type="button" aria-label="Close account dialog">×</button></div>
-<p id="accountDialogIntro">Create an account to sync preferences, notes, and bookmarks across your devices.</p>
-<p class="small muted" id="accountSyncStatus" role="status" aria-live="polite"></p>
-<div class="recovery-code-box hidden" id="accountSignedInPanel"><strong>Signed in as <span id="accountUsername"></span></strong><p class="small">Your preferences, notes, and bookmarks sync to your account.</p><label class="share-tabs-setting"><input id="shareTabsToggle" type="checkbox"><span>Share open web-tab titles and site names with admins. This shares no page contents, local file names, or full URLs. You can turn it off at any time.</span></label><button class="btn sm" id="accountSignoutBtn" type="button">Sign out</button></div>
+<header class="account-topbar">
+<div class="account-brand"><span class="logo-mark" aria-hidden="true"></span><span>STUDY DESK <span class="account-brand-separator">/</span> <span id="accountDialogEyebrow">ACCOUNT</span></span></div>
+<button class="icon-btn account-close" id="accountCloseBtn" type="button" aria-label="Close account dialog">×</button>
+</header>
+<div class="account-intro">
+<h2 id="accountDialogTitle">Welcome back</h2>
+<p id="accountDialogIntro">Sign in to sync your notes, bookmarks, and preferences across devices.</p>
+</div>
+<p class="small muted account-sync-status" id="accountSyncStatus" role="status" aria-live="polite"></p>
+<div class="recovery-code-box account-signed-in hidden" id="accountSignedInPanel">
+<strong>Signed in as <span id="accountUsername"></span></strong>
+<p>Your preferences, notes, and bookmarks sync to your account.</p>
+<label class="share-tabs-setting"><input id="shareTabsToggle" type="checkbox"><span>Share open web-tab titles and site names with admins. This shares no page contents, local file names, or full URLs. You can turn it off at any time.</span></label>
+<button class="btn sm" id="accountSignoutBtn" type="button">Sign out</button>
+</div>
 <form class="account-form" id="accountLoginForm">
-<label for="loginUsername">Username</label><input id="loginUsername" name="username" autocomplete="username" minlength="3" maxlength="24" required>
-<label for="loginPassword">Password</label><input id="loginPassword" name="password" type="password" autocomplete="current-password" required>
+<div class="account-field"><label for="loginUsername">Username</label><input id="loginUsername" name="username" type="text" autocomplete="username" minlength="3" maxlength="24" placeholder="Your username" required></div>
+<div class="account-field"><label for="loginPassword">Password</label><input id="loginPassword" name="password" type="password" autocomplete="current-password" placeholder="Your password" required></div>
 <div class="account-actions"><button class="btn primary" type="submit">Sign in</button></div>
-<div class="row-between small"><button class="account-link" id="showSignupBtn" type="button">Create an account</button><button class="account-link" id="showRecoveryBtn" type="button">Use a recovery code</button></div>
+<div class="account-form-footer"><span>New to Study Desk?</span><button class="account-link" id="showSignupBtn" type="button">Create an account</button></div>
+<button class="account-link account-recovery-link" id="showRecoveryBtn" type="button">Use a recovery code</button>
+<p class="account-optional-note"><span aria-hidden="true">i</span>Account creation is optional. You can keep using Study Desk without signing in.</p>
 </form>
 <form class="account-form hidden" id="accountSignupForm">
-<label for="signupUsername">Username</label><input id="signupUsername" name="username" autocomplete="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" required>
-<label for="signupPassword">Password</label><input id="signupPassword" name="new-password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
-<p class="small">Use at least 12 characters. Username-only accounts do not use email.</p>
+<div class="account-field"><label for="signupUsername">Username</label><input id="signupUsername" name="username" type="text" autocomplete="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="Choose a username" required></div>
+<div class="account-field"><label for="signupPassword">Password</label><input id="signupPassword" name="new-password" type="password" autocomplete="new-password" minlength="12" maxlength="128" placeholder="At least 12 characters" required></div>
+<p class="small muted account-help">Use at least 12 characters. Study Desk accounts use a username, not an email address.</p>
 <div class="account-actions"><button class="btn primary" type="submit">Create account</button></div>
-<button class="account-link small" id="showLoginFromSignupBtn" type="button">Already have an account? Sign in</button>
+<div class="account-form-footer"><span>Already have an account?</span><button class="account-link" id="showLoginFromSignupBtn" type="button">Sign in</button></div>
 </form>
 <form class="account-form hidden" id="accountRecoveryForm">
-<label for="recoveryUsername">Username</label><input id="recoveryUsername" name="username" autocomplete="username" minlength="3" maxlength="24" required>
-<label for="recoveryCode">Recovery code</label><input id="recoveryCode" name="recoveryCode" autocomplete="off" required>
-<label for="recoveryNewPassword">New password</label><input id="recoveryNewPassword" name="new-password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+<div class="account-field"><label for="recoveryUsername">Username</label><input id="recoveryUsername" name="username" type="text" autocomplete="username" minlength="3" maxlength="24" placeholder="Your username" required></div>
+<div class="account-field"><label for="recoveryCode">Recovery code</label><input id="recoveryCode" name="recoveryCode" type="text" autocomplete="off" placeholder="Paste your recovery code" required></div>
+<div class="account-field"><label for="recoveryNewPassword">New password</label><input id="recoveryNewPassword" name="new-password" type="password" autocomplete="new-password" minlength="12" maxlength="128" placeholder="At least 12 characters" required></div>
 <div class="account-actions"><button class="btn primary" type="submit">Reset password</button></div>
-<button class="account-link small" id="showLoginFromRecoveryBtn" type="button">Back to sign in</button>
+<div class="account-form-footer"><span>Remembered your password?</span><button class="account-link" id="showLoginFromRecoveryBtn" type="button">Back to sign in</button></div>
 </form>
 <div class="recovery-code-box hidden" id="recoveryCodePanel">
 <strong>Save your recovery code</strong>
@@ -4252,6 +4299,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     var previousModerator = hasModeratorAccess(accountUser);
     var previousUsername = accountUser && accountUser.username;
     accountUser = user || null;
+    $('accountDialogTitle').textContent = accountUser ? 'Your account' : 'Welcome back';
+    $('accountDialogEyebrow').textContent = accountUser ? 'PROFILE' : 'ACCOUNT';
     var isModerator = hasModeratorAccess(accountUser);
     updatePresenceTracking();
     if (accountUser) {
@@ -4304,21 +4353,29 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     if (!accountUser) $('recoveryCodePanel').classList.add('hidden');
     setCloudStatus(accountUser
       ? 'Signed in as ' + accountUser.username + ' · workspace sync is on.'
-      : 'Sign in to create extensions and sync your workspace.', false);
+      : '', false);
   }
   function accountMode(mode) {
     $('accountError').textContent = '';
+    $('accountDialogEyebrow').textContent = mode === 'recovery' ? 'RECOVERY' : 'ACCOUNT';
+    $('accountDialogTitle').textContent = mode === 'signup'
+      ? 'Create your account'
+      : mode === 'recovery'
+        ? 'Reset your password'
+        : 'Welcome back';
     $('accountSignedInPanel').classList.add('hidden');
     $('accountLoginForm').classList.toggle('hidden', mode !== 'login');
     $('accountSignupForm').classList.toggle('hidden', mode !== 'signup');
     $('accountRecoveryForm').classList.toggle('hidden', mode !== 'recovery');
     $('recoveryCodePanel').classList.add('hidden');
     $('accountDialogIntro').textContent = mode === 'signup'
-      ? 'Choose a username and password. Save the recovery code shown after signup.'
+      ? 'Create an account to sync your notes, bookmarks, and preferences across devices.'
       : mode === 'recovery'
-        ? 'Use the one-time recovery code from account creation to set a new password.'
-        : 'Sign in to sync preferences, notes, and bookmarks across your devices.';
+        ? 'Enter your username and recovery code, then choose a new password.'
+        : 'Sign in to sync your notes, bookmarks, and preferences across devices.';
     if (accountUser) {
+      $('accountDialogEyebrow').textContent = 'PROFILE';
+      $('accountDialogTitle').textContent = 'Your account';
       $('accountSignedInPanel').classList.remove('hidden');
       $('accountLoginForm').classList.add('hidden');
       $('accountSignupForm').classList.add('hidden');
