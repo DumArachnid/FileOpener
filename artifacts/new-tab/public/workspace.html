@@ -11,7 +11,7 @@
 <style>
 /* Study Desk workspace — colors are user-controlled; defaults follow the device color preference. */
 :root {
-  --bg: #ffffff; --panel: #ebebeb; --text: #000000; --accent: #ffffff;
+  --bg: #ffffff; --panel: #ebebeb; --text: #000000; --accent: #333333;
   --on-accent: #000000; --on-accent-hover: #000000; --accent-ink: #000000;
   --accent-hover: color-mix(in srgb, var(--accent) 84%, #000);
   --accent-soft: color-mix(in srgb, var(--accent) 12%, var(--panel));
@@ -1345,7 +1345,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     MAX_AWAY_TIME_MS: 3 * 60 * 60 * 1000,
     SHARDS_PER_SECOND: 1
   };
-  const LIGHT_DEFAULT_COLORS = { accent: '#ffffff', bg: '#ffffff', panel: '#ebebeb', text: '#000000' };
+  const LIGHT_DEFAULT_COLORS = { accent: '#333333', bg: '#ffffff', panel: '#ebebeb', text: '#000000' };
   const DARK_DEFAULT_COLORS = { accent: '#000000', bg: '#000000', panel: '#333333', text: '#ffffff' };
   const COLOR_KEYS = Object.keys(LIGHT_DEFAULT_COLORS);
   const systemColorPreference = typeof window.matchMedia === 'function'
