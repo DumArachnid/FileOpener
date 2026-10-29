@@ -24,7 +24,7 @@ function Home() {
       data-testid="frame-workspace"
       src={`${import.meta.env.BASE_URL}workspace.html?build=${encodeURIComponent(buildId)}`}
       className="fixed inset-0 h-[100dvh] w-full border-0"
-      style={{ background: '#f2ebdd' }}
+      style={{ background: 'transparent' }}
       allow="fullscreen; clipboard-write"
       allowFullScreen
       onLoad={() => ref.current?.contentWindow?.focus()}

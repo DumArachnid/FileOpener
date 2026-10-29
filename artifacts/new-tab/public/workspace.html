@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Study Desk — Learning Workspace</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23d4451f'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23333333'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -37,7 +37,7 @@
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; font-family: var(--main-font); color: var(--text); background: var(--bg); transition: opacity .2s; font-size: 14px; }
 body::before { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .5; mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.4  0 0 0 0 0.35  0 0 0 0 0.25  0 0 0 .09 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>"); }
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 .09 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>"); }
 body.hide-cursor { cursor: none !important; }
 button, input, textarea, select { font: inherit; }
 ::-webkit-scrollbar { width: 9px; height: 9px; }
@@ -243,7 +243,7 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .preview-area { flex: 1; border: 2px dashed var(--border-strong); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; background: var(--input-bg); overflow: hidden; position: relative; transition: border-color .2s, background .2s, transform .2s var(--ease); min-height: 0; }
 .preview-area.drag-over { border-color: var(--accent); background: var(--accent-soft); border-style: solid; transform: scale(.995); }
 .preview-area.tab-parked { position: absolute; top: 0; left: 0; visibility: hidden; pointer-events: none; }
-.preview-area iframe, .preview-area img { width: 100%; height: 100%; border: 0; display: block; object-fit: contain; background: #fff; }
+.preview-area iframe, .preview-area img { width: 100%; height: 100%; border: 0; display: block; object-fit: contain; background: var(--bg); }
 .preview-area pre { width: 100%; height: 100%; margin: 0; padding: 20px; white-space: pre-wrap; word-break: break-word; overflow: auto; font-size: var(--font-size, 14px); font-family: var(--mono); line-height: 1.6; background: var(--panel); align-self: stretch; }
 .extension-input-dialog { width: min(560px, calc(100% - 32px)); max-width: 560px; max-height: 85vh; padding: 0; overflow: hidden; border: 1.5px solid var(--border-strong); border-radius: 14px; background: var(--panel); color: var(--text); box-shadow: 5px 5px 0 var(--ink-shadow); }
 .extension-input-dialog::backdrop { background: color-mix(in srgb, var(--text) 42%, transparent); }
@@ -1641,7 +1641,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     picker.addEventListener('input', () => { colors[k] = picker.value; hex.value = picker.value; hex.classList.remove('invalid'); applyColors(); NT.setJSON('disguise_colors', colors); });
     hex.addEventListener('input', () => {
       const h = normHex(hex.value);
-      if (!h) { hex.classList.add('invalid'); const hint = el('colorHint'); hint.className = 'small bad'; hint.textContent = COLOR_LABELS[k] + ': enter a hex like #d4451f'; return; }
+      if (!h) { hex.classList.add('invalid'); const hint = el('colorHint'); hint.className = 'small bad'; hint.textContent = COLOR_LABELS[k] + ': enter a hex like #2563eb'; return; }
       hex.classList.remove('invalid'); colors[k] = h; picker.value = h; applyColors(); NT.setJSON('disguise_colors', colors);
     });
     hex.addEventListener('blur', () => { hex.value = colors[k]; hex.classList.remove('invalid'); applyColors(); });
@@ -2224,7 +2224,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     const fav = localStorage.getItem('disguise_favicon') || '';
     if (fav && validIcon(fav)) { const l = d.createElement('link'); l.rel = 'icon'; l.href = fav; d.head.appendChild(l); }
     const st = d.createElement('style');
-    st.textContent = 'html,body{height:100%;margin:0;padding:0;overflow:hidden;background:#fff}iframe{width:100vw;height:100vh;border:none;display:block}';
+    st.textContent = 'html,body{height:100%;margin:0;padding:0;overflow:hidden;background:' + colors.bg + ';color:' + colors.text + '}iframe{width:100vw;height:100vh;border:none;display:block}';
     d.head.appendChild(st);
     const f = d.createElement('iframe');
     f.setAttribute('sandbox', 'allow-scripts allow-forms allow-popups allow-pointer-lock' + (/^https?:/i.test(targetUrl) ? ' allow-same-origin' : ''));
