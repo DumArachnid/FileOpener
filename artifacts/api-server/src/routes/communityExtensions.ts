@@ -21,9 +21,20 @@ import {
 import { communityExtensionReportsTable, communityExtensionsTable, db, studyUsersTable } from "@workspace/db";
 import { authRateLimit } from "../middlewares/authRateLimit";
 import { requireAccount } from "../middlewares/accountSession";
+import { createReadRateLimit } from "../middlewares/readRateLimit";
 
 const router: IRouter = Router();
 const MAX_PER_ACCOUNT = 25;
+const publicCatalogRateLimit = createReadRateLimit({
+  limit: 30,
+  windowMs: 60_000,
+  message: "The extension catalog is being requested too often. Please wait a minute and try again.",
+});
+const publicExtensionRateLimit = createReadRateLimit({
+  limit: 45,
+  windowMs: 60_000,
+  message: "Extension details are being requested too often. Please wait a minute and try again.",
+});
 
 function summary(row: {
   id: string;
@@ -57,7 +68,7 @@ function validInput(input: { name: string; description: string; code: string }) 
   };
 }
 
-router.get("/store/extensions", async (_req, res): Promise<void> => {
+router.get("/store/extensions", publicCatalogRateLimit, async (_req, res): Promise<void> => {
   const rows = await db
     .select({
       id: communityExtensionsTable.id,
@@ -82,7 +93,7 @@ router.get("/store/extensions", async (_req, res): Promise<void> => {
   res.json(ListPublicExtensionsResponse.parse(rows.map(summary)));
 });
 
-router.get("/store/extensions/:id", async (req, res): Promise<void> => {
+router.get("/store/extensions/:id", publicExtensionRateLimit, async (req, res): Promise<void> => {
   const params = GetPublicExtensionParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: "Invalid extension id." });

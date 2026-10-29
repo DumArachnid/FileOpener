@@ -35,6 +35,10 @@ app.use(resolveAccountSession);
 app.use(resolveDeveloperSession);
 app.use(sameOriginForWrites);
 
+app.use("/api", (_req, res, next) => {
+  res.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive");
+  next();
+});
 app.use("/api", router);
 
 export default app;
