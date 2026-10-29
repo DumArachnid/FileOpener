@@ -329,6 +329,9 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .moderation-search-row input { flex: 1; min-width: 160px; }
 .moderation-source { max-height: 240px; overflow: auto; margin: 8px 0; padding: 10px; border-radius: 8px; background: var(--input-bg); font: 11px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
 #helpBtn, #paletteBtn, #storeBtn, #adminPanelBtn { min-width: 32px; padding-inline: 6px; }
+#extensionStoreView { position: fixed; inset: 0; z-index: 1000; background: var(--bg); }
+#extensionStoreView[hidden] { display: none; }
+#extensionStoreFrame { display: block; width: 100%; height: 100%; min-height: 0; border: 0; background: var(--bg); }
 .large-html-card { width: min(620px, calc(100% - 32px)); padding: 22px; border: 1.5px solid var(--border-strong); border-radius: var(--radius); background: var(--panel); color: var(--text); text-align: center; box-shadow: 3px 3px 0 var(--ink-shadow); }
 .large-html-card h3 { margin-bottom: 8px; font-size: 18px; }
 .large-html-card p { margin: 8px 0; color: var(--muted); font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
@@ -872,7 +875,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <span class="topbar-gap"></span>
 <button class="timer-pill hidden" id="timerPill" title="Focus timer (Alt+P to pause)"><i data-ic="timer"></i><span id="timerPillText">25:00</span></button>
 <button class="btn sm hide-in-focus" id="helpBtn" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts"><i data-ic="keyboard"></i></button>
-<button class="btn sm hide-in-focus" id="storeBtn" type="button" title="Open the Extension Store in a new tab" aria-label="Open the Extension Store"><i data-ic="cart"></i></button>
+<button class="btn sm hide-in-focus" id="storeBtn" type="button" title="Open the Extension Store" aria-label="Open the Extension Store"><i data-ic="cart"></i></button>
 <button class="btn sm hide-in-focus hidden" id="adminPanelBtn" type="button" title="Open admin panel" aria-label="Open admin panel"><i data-ic="shield"></i></button>
 <button class="btn sm hide-in-focus hidden" id="devOnlineBtn" type="button" title="Signed-in accounts active within the last 90 seconds" aria-live="polite">Online: …</button>
 <button class="btn sm hide-in-focus" id="accountBtn" type="button" title="Sign in to sync your workspace"><i data-ic="user"></i><span id="accountBtnText">Account</span></button>
@@ -1073,6 +1076,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </section>
 </main>
 </div>
+
+<section id="extensionStoreView" hidden aria-label="Extension Store">
+  <iframe id="extensionStoreFrame" title="Study Desk Extension Store" referrerpolicy="same-origin"></iframe>
+</section>
 
 <template id="emptyTpl">
 <div class="empty" data-empty-state>
@@ -1541,13 +1548,43 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     if (NT.afterEmpty) NT.afterEmpty();
   }
   const storeButton = el('storeBtn');
-  storeButton.addEventListener('click', function () {
-    const storeUrl = new URL('extension-store.html', location.href);
-    const buildId = new URLSearchParams(location.search).get('build');
-    if (buildId) storeUrl.searchParams.set('build', buildId);
-    const storeWindow = window.open(storeUrl.href, '_blank');
-    if (!storeWindow) toast('Allow pop-ups to open the Extension Store in a new tab.', 'error');
+  const storeView = el('extensionStoreView');
+  const storeFrame = el('extensionStoreFrame');
+  const workspaceApp = el('app');
+  let storeFrameLoaded = false;
+  function openExtensionStore(updateHistory) {
+    storeView.hidden = false;
+    workspaceApp.inert = true;
+    if (!storeFrameLoaded) {
+      const storeUrl = new URL('extension-store.html', location.href);
+      const buildId = new URLSearchParams(location.search).get('build');
+      if (buildId) storeUrl.searchParams.set('build', buildId);
+      storeFrame.src = storeUrl.href;
+      storeFrameLoaded = true;
+    }
+    if (updateHistory !== false && location.hash !== '#extension-store') {
+      history.pushState({ studyDeskExtensionStore: true }, '', location.pathname + location.search + '#extension-store');
+    }
+    storeFrame.focus();
+  }
+  function closeExtensionStore(updateHistory) {
+    storeView.hidden = true;
+    workspaceApp.inert = false;
+    if (updateHistory !== false && location.hash === '#extension-store') {
+      history.replaceState(history.state, '', location.pathname + location.search);
+    }
+    storeButton.focus();
+  }
+  storeButton.addEventListener('click', function () { openExtensionStore(true); });
+  window.addEventListener('message', function (event) {
+    if (event.origin !== location.origin || !event.data || event.data.type !== 'study-desk-close-store') return;
+    closeExtensionStore(true);
   });
+  window.addEventListener('popstate', function () {
+    if (location.hash === '#extension-store') openExtensionStore(false);
+    else closeExtensionStore(false);
+  });
+  if (location.hash === '#extension-store') openExtensionStore(false);
   function updateActions(has) {
     if (optionsHidden) fileActions.classList.add('hidden');
     else fileActions.classList.toggle('hidden', !has);
