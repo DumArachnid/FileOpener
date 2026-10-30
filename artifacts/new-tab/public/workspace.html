@@ -5540,8 +5540,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   scheduleIdleSleep();
 
   var announcementExpiryTimer = null;
-  var announcementFallbackTimer = null;
-  var announcementStream = null;
+  var announcementPollTimer = null;
   var currentAnnouncement = null;
   function updateAnnouncementLayout() {
     var banner = $('siteAnnouncementBanner');
@@ -5612,46 +5611,13 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
   function startAnnouncementUpdates() {
     if (backgroundSleeping || (window.location.protocol !== 'http:' && window.location.protocol !== 'https:')) return;
-    if (announcementStream || announcementFallbackTimer) return;
-    if (typeof window.EventSource === 'function') {
-      try {
-        announcementStream = new EventSource('/api/announcements/stream');
-      } catch (error) {
-        refreshSiteAnnouncement();
-        announcementFallbackTimer = setInterval(refreshSiteAnnouncement, 2500);
-        return;
-      }
-      announcementStream.onmessage = function (event) {
-        if (backgroundSleeping) return;
-        try {
-          var update = JSON.parse(event.data);
-          showSiteAnnouncement(update && update.announcement);
-        } catch (error) {
-          console.warn('Could not read a Study Desk announcement update:', error);
-        }
-      };
-      announcementStream.onerror = function () {
-        if (backgroundSleeping) return;
-        refreshSiteAnnouncement();
-        if (!announcementFallbackTimer) {
-          announcementFallbackTimer = setInterval(refreshSiteAnnouncement, 2500);
-        }
-      };
-      announcementStream.onopen = function () {
-        if (backgroundSleeping) return;
-        if (announcementFallbackTimer) clearInterval(announcementFallbackTimer);
-        announcementFallbackTimer = null;
-      };
-    } else {
-      refreshSiteAnnouncement();
-      announcementFallbackTimer = setInterval(refreshSiteAnnouncement, 2500);
-    }
+    if (announcementPollTimer) return;
+    refreshSiteAnnouncement();
+    announcementPollTimer = setInterval(refreshSiteAnnouncement, 30_000);
   }
   function stopAnnouncementUpdates() {
-    if (announcementStream) announcementStream.close();
-    announcementStream = null;
-    if (announcementFallbackTimer) clearInterval(announcementFallbackTimer);
-    announcementFallbackTimer = null;
+    if (announcementPollTimer) clearInterval(announcementPollTimer);
+    announcementPollTimer = null;
   }
   window.addEventListener('resize', updateAnnouncementLayout);
   NT.onBackgroundSleepChange(function (sleeping) {

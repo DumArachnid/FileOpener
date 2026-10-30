@@ -1,5 +1,5 @@
 import { and, eq, gt } from "drizzle-orm";
-import { Router, type IRouter, type Response } from "express";
+import { Router, type IRouter } from "express";
 import {
   GetActiveAnnouncementResponse,
   PublishAnnouncementBody,
@@ -10,8 +10,6 @@ import { requireDeveloperRank } from "../middlewares/accountSession";
 
 const router: IRouter = Router();
 const ACTIVE_ANNOUNCEMENT_ID = 1;
-const announcementStreams = new Set<Response>();
-let announcementRevision = 0;
 
 type AnnouncementRow = typeof siteAnnouncementTable.$inferSelect;
 type ActiveAnnouncement = AnnouncementRow | null;
@@ -28,48 +26,16 @@ async function findActiveAnnouncement(): Promise<ActiveAnnouncement> {
   return announcement ?? null;
 }
 
-function sendAnnouncement(response: Response, announcement: ActiveAnnouncement): void {
-  if (response.destroyed || response.writableEnded) return;
-  response.write(`data: ${JSON.stringify({ announcement })}\n\n`);
-}
-
-function broadcastAnnouncement(announcement: ActiveAnnouncement): void {
-  announcementRevision += 1;
-  for (const response of announcementStreams) sendAnnouncement(response, announcement);
-}
-
 router.get("/announcements/active", async (_req, res): Promise<void> => {
   const announcement = await findActiveAnnouncement();
-  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("Cache-Control", "private, max-age=5");
   res.json(GetActiveAnnouncementResponse.parse({ announcement }));
 });
 
-router.get("/announcements/stream", async (req, res): Promise<void> => {
-  res.status(200);
-  res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
-  res.setHeader("Cache-Control", "no-cache, no-transform");
-  res.setHeader("X-Accel-Buffering", "no");
-  res.flushHeaders();
-
-  const initialRevision = announcementRevision;
-  announcementStreams.add(res);
-  res.write("retry: 3000\n\n");
-
-  const heartbeat = setInterval(() => {
-    if (!res.destroyed && !res.writableEnded) res.write(": keep-alive\n\n");
-  }, 20_000);
-  heartbeat.unref?.();
-  res.on("close", () => {
-    clearInterval(heartbeat);
-    announcementStreams.delete(res);
-  });
-  try {
-    const announcement = await findActiveAnnouncement();
-    if (initialRevision === announcementRevision) sendAnnouncement(res, announcement);
-  } catch (error) {
-    req.log.error({ err: error }, "Could not load the active announcement for a stream");
-    res.end();
-  }
+router.get("/announcements/stream", (_req, res): void => {
+  // Keep old clients from holding open a request; they fall back to polling.
+  res.setHeader("Cache-Control", "no-store");
+  res.sendStatus(204);
 });
 
 router.post(
@@ -111,7 +77,6 @@ router.post(
       .returning();
 
     const result = PublishAnnouncementResponse.parse(announcement);
-    broadcastAnnouncement(announcement);
     res.status(201).json(result);
   },
 );
@@ -123,7 +88,6 @@ router.delete(
     await db
       .delete(siteAnnouncementTable)
       .where(eq(siteAnnouncementTable.id, ACTIVE_ANNOUNCEMENT_ID));
-    broadcastAnnouncement(null);
     res.sendStatus(204);
   },
 );

@@ -91,6 +91,7 @@ async function request(route, { method = "GET", cookie, body, headers: additiona
     appealCookie: appealCookie ? `study_desk_suspension_appeal=${appealCookie}` : undefined,
     randomVisitorCookie,
     randomLinkNextAvailableAt: response.headers.get("X-Random-Link-Next-Available-At"),
+    cacheControl: response.headers.get("Cache-Control"),
   };
 }
 
@@ -533,6 +534,10 @@ test("announcements are public to read and only developer accounts can manage th
   const active = await request("/announcements/active");
   assert.equal(active.status, 200);
   assert.ok(Object.hasOwn(active.data, "announcement"));
+  assert.equal(active.cacheControl, "private, max-age=5");
+
+  const legacyStream = await request("/announcements/stream");
+  assert.equal(legacyStream.status, 204, "legacy stream clients must not hold long-lived requests");
 
   const announcement = { message: "Test announcement", durationSeconds: 30 };
   assert.equal(
