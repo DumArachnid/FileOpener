@@ -296,6 +296,10 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .account-intro p { max-width: 400px; font-size: 14px; }
 .account-sync-status { margin: -12px 0 18px !important; font-size: 12px; }
 .account-sync-status:empty { display: none; }
+.account-sync-actions { display: grid; gap: 8px; margin: 12px 0; }
+.account-sync-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.account-sync-buttons .btn { min-height: 40px; }
+.account-sync-actions > p { margin: 0; font-size: 11px; line-height: 1.45; }
 .admin-panel { display: flex; flex-direction: column; gap: 12px; padding: 22px; }
 .admin-panel h2 { margin: 0; font-size: 20px; }
 .admin-panel > p { margin: 0; color: var(--muted); line-height: 1.5; }
@@ -1070,7 +1074,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <button class="btn sm hide-in-focus" id="storeBtn" type="button" title="Open the Extension Store" aria-label="Open the Extension Store"><i data-ic="cart"></i></button>
 <button class="btn sm hide-in-focus hidden" id="adminPanelBtn" type="button" title="Open admin panel" aria-label="Open admin panel"><i data-ic="shield"></i></button>
 <button class="btn sm hide-in-focus hidden" id="devOnlineBtn" type="button" title="Signed-in accounts active within the last 90 seconds" aria-live="polite">Online: …</button>
-<button class="btn sm hide-in-focus" id="accountBtn" type="button" title="Sign in to sync your workspace"><i data-ic="user"></i><span id="accountBtnText">Account</span></button>
+<button class="btn sm hide-in-focus" id="accountBtn" type="button" title="Sign in to manually sync your workspace"><i data-ic="user"></i><span id="accountBtnText">Account</span></button>
 <button class="btn sm hide-in-focus" id="paletteBtn" title="Command palette (Ctrl/Cmd+K)"><i data-ic="command"></i></button>
 <button class="btn sm" id="screenSleepBtn" type="button" title="Put the screen to sleep" aria-label="Put the screen to sleep"><i data-ic="moon"></i><span>Sleep</span></button>
 <button class="btn sm" id="focusModeBtn" title="Expand view / toggle focus mode (Alt+Z)"><i data-ic="eye"></i><span>Focus</span></button>
@@ -1262,12 +1266,19 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </header>
 <div class="account-intro">
 <h2 id="accountDialogTitle">Welcome back</h2>
-<p id="accountDialogIntro">Sign in to sync your notes, bookmarks, and preferences across devices.</p>
+<p id="accountDialogIntro">Sign in to manually push or pull your notes, bookmarks, and preferences across devices.</p>
 </div>
 <p class="small muted account-sync-status" id="accountSyncStatus" role="status" aria-live="polite"></p>
 <div class="recovery-code-box account-signed-in hidden" id="accountSignedInPanel">
 <strong><span id="accountStatusLabel">Signed in as</span> <span id="accountUsername"></span></strong>
-<p id="accountSignedInDescription">Your preferences, notes, and bookmarks sync to your account.</p>
+<p id="accountSignedInDescription">Preferences, notes, and bookmarks stay on this device until you choose to push or pull a sync.</p>
+<div class="account-sync-actions" id="accountSyncActions">
+<div class="account-sync-buttons">
+<button class="btn primary" id="accountSyncPushBtn" type="button">Sync</button>
+<button class="btn" id="accountSyncPullBtn" type="button">Pull</button>
+</div>
+<p class="small muted">Sync pushes this device’s saved values and can replace account values. Pull replaces matching values here; fields not saved to the account stay local.</p>
+</div>
 <label class="share-tabs-setting"><input id="shareTabsToggle" type="checkbox"><span>Share open web-tab titles and site names with admins. This shares no page contents, local file names, or full URLs. You can turn it off at any time.</span></label>
 <button class="btn sm" id="accountSignoutBtn" type="button">Sign out</button>
 </div>
@@ -1444,7 +1455,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </dialog>
 <aside id="accountNudge" class="account-nudge" role="region" aria-label="Account recommendation" hidden>
 <div class="row-between"><h3>Keep your Study Desk in sync</h3><button class="icon-btn" id="accountNudgeClose" type="button" aria-label="Dismiss account recommendation">×</button></div>
-<p>Create an account to sync your notes, bookmarks, and preferences across devices. You can keep using Study Desk without one.</p>
+<p>Create an account to manually sync your notes, bookmarks, and preferences across devices. You can keep using Study Desk without one.</p>
 <div class="account-nudge-actions"><button class="btn sm primary" id="accountNudgeCreate" type="button">Create account</button><button class="btn sm" id="accountNudgeLater" type="button">Not now</button></div>
 </aside>
 <dialog id="educationalUseNotice" aria-labelledby="educationalUseTitle" aria-describedby="educationalUseCopy" style="max-width:560px;width:calc(100% - 32px);max-height:85vh;overflow:auto;padding:28px;border:2px solid var(--border-strong);border-radius:16px;background:var(--panel);color:var(--text);box-shadow:6px 6px 0 var(--ink-shadow)">
@@ -4995,7 +5006,6 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   var adminListsLoading = false;
   var moderatedUser = null;
   var revision = 0;
-  var lastLocalSnapshot = null;
   var syncBusy = false;
   var syncKeys = [
     'disguise_colors', 'disguise_custom_fonts', 'disguise_font', 'disguise_main_font',
@@ -5557,45 +5567,12 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     syncKeys.forEach(function (key) { result[key] = localStorage.getItem(key); });
     return result;
   }
-  function mergeCloudValue(key, localValue, remoteValue) {
-    if (!localValue || !remoteValue || localValue === remoteValue) return remoteValue || localValue || '';
-    if (key === 'disguise_notes') {
-      if (remoteValue.indexOf(localValue) !== -1) return remoteValue;
-      if (localValue.indexOf(remoteValue) !== -1) return localValue;
-      var mergedText = remoteValue + '\n\n--- Notes from this device ---\n\n' + localValue;
-      return new Blob([mergedText]).size <= 120 * 1024 ? mergedText : null;
-    }
-    if (key === 'disguise_bookmarks') {
-      try {
-        var remoteList = JSON.parse(remoteValue);
-        var localList = JSON.parse(localValue);
-        if (!Array.isArray(remoteList) || !Array.isArray(localList)) return remoteValue;
-        var byUrl = new Map();
-        remoteList.concat(localList).forEach(function (bookmark) {
-          if (bookmark && typeof bookmark.url === 'string' && !byUrl.has(bookmark.url)) {
-            byUrl.set(bookmark.url, bookmark);
-          }
-        });
-        var extensionBookmarkCount = 0;
-        var mergedBookmarks = Array.from(byUrl.values()).filter(function (bookmark) {
-          var extensionId = bookmark && typeof bookmark.sourceExtensionId === 'string' ? bookmark.sourceExtensionId : '';
-          if (!extensionId) return true;
-          if (extensionBookmarkCount >= 10) return false;
-          extensionBookmarkCount++;
-          return true;
-        });
-        var mergedList = JSON.stringify(mergedBookmarks.slice(0, 300));
-        return new Blob([mergedList]).size <= 120 * 1024 ? mergedList : null;
-      } catch (error) { return remoteValue; }
-    }
-    return remoteValue;
-  }
   function allowedCloudUpdates(updates) {
     var safe = {};
     Object.keys(updates).forEach(function (key) {
       var value = updates[key];
-      if (value === null || typeof value !== 'string') return;
-      if ((key === 'disguise_notes' || key === 'disguise_bookmarks') && new Blob([value]).size > 120 * 1024) {
+      if (value !== null && typeof value !== 'string') return;
+      if (value !== null && (key === 'disguise_notes' || key === 'disguise_bookmarks') && new Blob([value]).size > 120 * 1024) {
         setCloudStatus('A large note or bookmark list stays on this device; smaller settings still sync.', true);
         return;
       }
@@ -5612,6 +5589,12 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     if (!status) return;
     status.textContent = message;
     status.style.color = isError ? 'var(--danger)' : '';
+  }
+  function updateManualSyncControls() {
+    var available = !!accountUser && !isOfflineCopy && !backgroundSleeping && !syncBusy;
+    $('accountSyncActions').classList.toggle('hidden', isOfflineCopy || !accountUser);
+    $('accountSyncPushBtn').disabled = !available;
+    $('accountSyncPullBtn').disabled = !available;
   }
   function updateTabShareControl() {
     var toggle = $('shareTabsToggle');
@@ -5804,7 +5787,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     $('accountBtnText').textContent = accountUser ? accountUser.username : 'Account';
     $('accountBtn').title = accountUser
       ? (isOfflineCopy ? 'Account verified online for this session' : 'Signed in as ' + accountUser.username)
-      : (isOfflineCopy ? 'Verify an account online' : 'Sign in to sync your workspace');
+      : (isOfflineCopy ? 'Verify an account online' : 'Sign in to manually sync your workspace');
     $('accountSignedInPanel').classList.toggle('hidden', !accountUser);
     $('accountLoginForm').classList.toggle('hidden', !!accountUser || isOfflineCopy);
     $('accountSignupForm').classList.add('hidden');
@@ -5815,7 +5798,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     $('accountStatusLabel').textContent = isOfflineCopy ? 'Verified account:' : 'Signed in as';
     $('accountSignedInDescription').textContent = isOfflineCopy
       ? 'Your account was verified by the Study Desk server for this session. This downloaded copy does not sync workspace data.'
-      : 'Your preferences, notes, and bookmarks sync to your account.';
+      : 'Preferences, notes, and bookmarks stay on this device until you choose to push or pull a sync.';
     $('accountDialogIntro').textContent = accountUser
       ? (isOfflineCopy
         ? 'Your account was verified online for this session. Reopen verification the next time you launch this downloaded copy.'
@@ -5823,17 +5806,18 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         ? 'Developer rank is active. The online count shows signed-in accounts active in the last 90 seconds; existing Admin tools are also available.'
         : accountUser.role === 'moderator'
         ? 'Use the Admin button beside the Extension Store to review submissions, manage accounts, and grant rewards.'
-        : 'Your preferences, notes, and bookmarks are connected to this account.')
+        : 'Choose Sync or Pull to move your preferences, notes, and bookmarks between this device and your account.')
       : isOfflineCopy
         ? 'Verify your existing account through the Study Desk server. Internet access is required.'
-        : 'Create an account to sync preferences, notes, and bookmarks across your devices.';
+        : 'Create an account to manually sync preferences, notes, and bookmarks across your devices.';
     if (!accountUser) $('recoveryCodePanel').classList.add('hidden');
     $('accountSignoutBtn').textContent = isOfflineCopy ? 'Forget verification' : 'Sign out';
     setCloudStatus(accountUser
       ? (isOfflineCopy
         ? 'Account verified online for this session. Workspace sync is unavailable in a downloaded copy.'
-        : 'Signed in as ' + accountUser.username + ' · workspace sync is on.')
+        : 'Signed in as ' + accountUser.username + ' · workspace sync is manual.')
       : '', false);
+    updateManualSyncControls();
   }
   function accountMode(mode) {
     $('accountError').textContent = '';
@@ -5861,10 +5845,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       : hostedHandoffState
       ? 'Sign in to verify an existing account for the downloaded Study Desk copy that opened this window.'
       : mode === 'signup'
-      ? 'Create an account to sync your notes, bookmarks, and preferences across devices.'
+      ? 'Create an account to manually sync your notes, bookmarks, and preferences across devices.'
       : mode === 'recovery'
         ? 'Enter your username and recovery code, then choose a new password.'
-        : 'Sign in to sync your notes, bookmarks, and preferences across devices.';
+        : 'Sign in to manually sync your notes, bookmarks, and preferences across devices.';
     if (accountUser) {
       $('accountDialogEyebrow').textContent = 'PROFILE';
       $('accountDialogTitle').textContent = 'Your account';
@@ -5878,7 +5862,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         ? 'Developer rank is active. The online count shows signed-in accounts active in the last 90 seconds; existing Admin tools are also available.'
         : accountUser.role === 'moderator'
         ? 'Use the Admin button beside the Extension Store to review submissions, manage accounts, and grant rewards.'
-        : 'Your preferences, notes, and bookmarks are connected to this account.';
+        : 'Choose Sync or Pull to move your preferences, notes, and bookmarks between this device and your account.';
     }
   }
   function openAccount(mode) {
@@ -6063,78 +6047,107 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     NT.toast('Account verified for this session.');
   });
 
-  async function saveLocalChanges() {
-    if (isOfflineCopy || !accountUser || !lastLocalSnapshot || syncBusy || backgroundSleeping) return;
-    var current = localSnapshot();
-    var updates = {};
-    syncKeys.forEach(function (key) {
-      if (current[key] !== lastLocalSnapshot[key]) updates[key] = current[key] === null ? '' : current[key];
-    });
-    updates = allowedCloudUpdates(updates);
-    if (!Object.keys(updates).length) return;
+  async function pushWorkspaceSync() {
+    if (isOfflineCopy || !accountUser || syncBusy || backgroundSleeping) return;
+    var username = accountUser.username;
     syncBusy = true;
+    updateManualSyncControls();
     try {
-      var result = await syncRequestBody(updates);
-      revision = result.revision;
-      lastLocalSnapshot = localSnapshot();
+      var confirmed = await NT.confirmDialog(
+        'Push this device to your account?',
+        'This sends this browser’s saved preferences, notes, and bookmarks to your account. Matching account values will be replaced, and fields missing here will be removed from account sync. This does not change this device.',
+        'Push to account',
+        true
+      );
+      if (!confirmed || !accountUser || accountUser.username !== username) {
+        if (!confirmed) setCloudStatus('Push cancelled. No account data was changed.', false);
+        return;
+      }
+      setCloudStatus('Pushing this device’s workspace…', false);
+      var local = localSnapshot();
+      var skippedLarge = ['disguise_notes', 'disguise_bookmarks'].filter(function (key) {
+        return typeof local[key] === 'string' && new Blob([local[key]]).size > 120 * 1024;
+      });
+      var result = await syncRequestBody(allowedCloudUpdates(local));
+      if (!accountUser || accountUser.username !== username) return;
+      revision = result.revision || 0;
+      setCloudStatus(
+        skippedLarge.length
+          ? 'Workspace pushed. Large notes or bookmarks stayed on this device.'
+          : 'This device’s workspace was pushed to your account.',
+        skippedLarge.length > 0
+      );
     } catch (error) {
-      setCloudStatus('Sync paused: ' + readError(error), true);
+      setCloudStatus('Could not push this workspace: ' + readError(error), true);
     } finally {
       syncBusy = false;
+      updateManualSyncControls();
     }
   }
 
-  async function syncAccountData(isFirstLoad) {
+  async function pullWorkspaceSync() {
     if (isOfflineCopy || !accountUser || syncBusy || backgroundSleeping) return;
+    var username = accountUser.username;
     syncBusy = true;
+    updateManualSyncControls();
     try {
-      var local = localSnapshot();
+      setCloudStatus('Checking your account for saved workspace data…', false);
       var result = await api('/sync');
-      var remote = result.data || {};
+      if (!accountUser || accountUser.username !== username) return;
       revision = result.revision || 0;
+      var remote = result.data && typeof result.data === 'object' ? result.data : {};
+      var keys = [];
+      var skippedLarge = [];
+      syncKeys.forEach(function (key) {
+        var value = remote[key];
+        if (!Object.prototype.hasOwnProperty.call(remote, key) || typeof value !== 'string') return;
+        if ((key === 'disguise_notes' || key === 'disguise_bookmarks') && new Blob([value]).size > 120 * 1024) {
+          skippedLarge.push(key);
+          return;
+        }
+        keys.push(key);
+      });
+      if (!keys.length) {
+        setCloudStatus(
+          skippedLarge.length
+            ? 'The account has notes or bookmarks too large to pull; this device was not changed.'
+            : 'No workspace data is saved to this account yet. Use Sync to push this device.',
+          skippedLarge.length > 0
+        );
+        return;
+      }
+      var confirmed = await NT.confirmDialog(
+        'Pull account data to this device?',
+        'Values saved in your account will replace matching values on this device. Local fields not present in the account stay unchanged.',
+        'Pull from account',
+        true
+      );
+      if (!confirmed || !accountUser || accountUser.username !== username) {
+        if (!confirmed) setCloudStatus('Pull cancelled. This device was not changed.', false);
+        return;
+      }
       var changed = [];
-      var updates = {};
-      if (isFirstLoad && !Object.keys(remote).length) {
-        syncKeys.forEach(function (key) {
-          if (local[key] !== null) updates[key] = local[key];
-        });
-      } else {
-        syncKeys.forEach(function (key) {
-          if (Object.prototype.hasOwnProperty.call(remote, key)) {
-            var value = remote[key];
-            if (isFirstLoad && local[key] !== null && (key === 'disguise_notes' || key === 'disguise_bookmarks')) {
-              var mergedValue = mergeCloudValue(key, local[key], value);
-              if (mergedValue !== null && mergedValue !== value) {
-                value = mergedValue;
-                updates[key] = value;
-              } else if (mergedValue === null) {
-                setCloudStatus('Some notes or bookmarks are large; the local copy was kept on this device.', true);
-                return;
-              }
-            }
-            if (localStorage.getItem(key) !== value) {
-              localStorage.setItem(key, value);
-              changed.push(key);
-            }
-          } else if (local[key] !== null) {
-            updates[key] = local[key];
-          }
-        });
-      }
-      updates = allowedCloudUpdates(updates);
-      if (Object.keys(updates).length) {
-        var saved = await syncRequestBody(updates);
-        revision = saved.revision;
-      }
-      lastLocalSnapshot = localSnapshot();
+      var failed = [];
+      keys.forEach(function (key) {
+        if (localStorage.getItem(key) === remote[key]) return;
+        try {
+          localStorage.setItem(key, remote[key]);
+          changed.push(key);
+        } catch (error) {
+          failed.push(key);
+        }
+      });
       dispatchCloudChange(changed);
-      if (!Object.keys(updates).length || !changed.length) {
-        setCloudStatus('Signed in as ' + accountUser.username + ' · synced just now.', false);
-      }
+      updateTabShareControl();
+      var details = 'Pulled ' + keys.length + ' account field(s); ' + changed.length + ' changed on this device.';
+      if (skippedLarge.length) details += ' Large notes or bookmarks were skipped.';
+      if (failed.length) details += ' Some values could not be saved in browser storage.';
+      setCloudStatus(details, skippedLarge.length > 0 || failed.length > 0);
     } catch (error) {
-      setCloudStatus('Could not sync this workspace: ' + readError(error), true);
+      setCloudStatus('Could not pull workspace data: ' + readError(error), true);
     } finally {
       syncBusy = false;
+      updateManualSyncControls();
     }
   }
 
@@ -6178,11 +6191,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       dispatchCloudChange(syncKeys.slice());
     }
     localStorage.setItem(ownerKey, user.username);
-    lastLocalSnapshot = localSnapshot();
-    await syncAccountData(true);
     updateTabShareControl();
     refreshSharedTabSnapshot();
-    await saveLocalChanges();
     await applyAdminRewardGrants();
     await loadMyExtensions();
     await loadPublicExtensions();
@@ -6209,7 +6219,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         return;
       }
       await finishSignIn(result.user, false);
-      NT.toast('Signed in. Your workspace is syncing.');
+      NT.toast('Signed in. Use Sync or Pull from your account menu when you’re ready.');
     } catch (error) {
       if (!showAccountSuspension(error)) accountError.textContent = readError(error);
     }
@@ -6581,17 +6591,21 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       button.disabled = false;
     }
   });
-  $('shareTabsToggle').addEventListener('change', async function () {
+  $('accountSyncPushBtn').addEventListener('click', pushWorkspaceSync);
+  $('accountSyncPullBtn').addEventListener('click', pullWorkspaceSync);
+  $('shareTabsToggle').addEventListener('change', function () {
     if (!accountUser) {
       this.checked = false;
       return;
     }
     localStorage.setItem('disguise_admin_tab_sharing', this.checked ? 'true' : 'false');
     refreshSharedTabSnapshot();
-    await saveLocalChanges();
+    setCloudStatus(this.checked
+      ? 'Tab sharing is enabled on this device. Click Sync to apply it to your account.'
+      : 'Tab sharing is off on this device. Click Sync to remove its saved account snapshot.', false);
     NT.toast(this.checked
-      ? 'Opt-in tab sharing is on. Only web-page titles and site names are shared.'
-      : 'Tab sharing is off and the shared snapshot was removed.');
+      ? 'Tab sharing is on here. Click Sync to apply the change to your account.'
+      : 'Tab sharing is off here. Click Sync to update your account.');
   });
   window.addEventListener('study-desk-cloud-sync', function (event) {
     var keys = event.detail && event.detail.keys || [];
@@ -6606,7 +6620,6 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       try { await api('/auth/logout', { method: 'POST' }); } catch (error) {}
     }
     setAccountUser(null);
-    lastLocalSnapshot = null;
     if (!isOfflineCopy) await loadMyExtensions();
     accountDialog.close();
     NT.toast(isOfflineCopy
@@ -7419,52 +7432,18 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       }
     }
   }
-  async function pollCloudState() {
-    if (backgroundSleeping || !accountUser || syncBusy) return;
-    try {
-      await saveLocalChanges();
-      if (backgroundSleeping || !accountUser || syncBusy) return;
-      var result = await api('/sync');
-      if (result.revision !== revision) {
-        revision = result.revision;
-        var changed = [];
-        Object.keys(result.data || {}).forEach(function (key) {
-          if (syncKeys.indexOf(key) === -1) return;
-          if (localStorage.getItem(key) !== result.data[key]) {
-            localStorage.setItem(key, result.data[key]);
-            changed.push(key);
-          }
-        });
-        lastLocalSnapshot = localSnapshot();
-        dispatchCloudChange(changed);
-        setCloudStatus('Signed in as ' + accountUser.username + ' · synced just now.', false);
-      }
-    } catch (error) { setCloudStatus('Sync paused: ' + readError(error), true); }
-  }
-  var localSaveTimer = null;
-  var cloudSyncTimer = null;
   var adminGrantTimer = null;
   function stopCloudBackgroundTasks() {
-    if (localSaveTimer) clearInterval(localSaveTimer);
-    if (cloudSyncTimer) clearInterval(cloudSyncTimer);
     if (adminGrantTimer) clearInterval(adminGrantTimer);
-    localSaveTimer = null;
-    cloudSyncTimer = null;
     adminGrantTimer = null;
   }
   function startCloudBackgroundTasks() {
     if (isOfflineCopy || backgroundSleeping) return;
-    if (!localSaveTimer) localSaveTimer = setInterval(saveLocalChanges, 2500);
-    if (!cloudSyncTimer) cloudSyncTimer = setInterval(pollCloudState, 15000);
     if (!adminGrantTimer) adminGrantTimer = setInterval(applyAdminRewardGrants, 30000);
-    if (accountUser) {
-      Promise.resolve(saveLocalChanges()).then(function () {
-        if (!backgroundSleeping && accountUser) return syncAccountData(false);
-      });
-      applyAdminRewardGrants();
-    }
+    if (accountUser) applyAdminRewardGrants();
   }
   NT.onBackgroundSleepChange(function (sleeping) {
+    updateManualSyncControls();
     if (sleeping) stopCloudBackgroundTasks();
     else startCloudBackgroundTasks();
   });
