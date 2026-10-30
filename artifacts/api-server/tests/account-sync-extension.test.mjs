@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
 import { createRequire } from "node:module";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { after, before, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -16,6 +16,7 @@ const { Pool } = requireDatabasePackage("pg");
 const cleanupPool = new Pool({ connectionString: process.env.DATABASE_URL });
 const fixtureUsernames = [];
 const fixtureRandomLinkIds = [];
+const fixtureRandomLinkClaimKeys = [];
 const fixtureDeveloperSessionIds = [];
 const developerTestEmail = `developer-${randomUUID()}@example.test`;
 const unverifiedDeveloperEmail = `unverified-${randomUUID()}@example.test`;
@@ -48,9 +49,10 @@ async function availablePort() {
   return address.port;
 }
 
-async function request(route, { method = "GET", cookie, body } = {}) {
+async function request(route, { method = "GET", cookie, body, headers: additionalHeaders } = {}) {
   const headers = {
     "x-forwarded-for": `198.51.100.${(forwardedIp++ % 200) + 1}`,
+    ...additionalHeaders,
   };
   if (cookie) headers.cookie = cookie;
   if (body !== undefined) headers["content-type"] = "application/json";
@@ -71,11 +73,24 @@ async function request(route, { method = "GET", cookie, body } = {}) {
   const appealCookie = (response.headers.getSetCookie?.() ?? [])
     .map((value) => value.match(/(?:^|,\s*)study_desk_suspension_appeal=([^;]*)/))
     .find(Boolean)?.[1];
+  const visitorToken = (response.headers.getSetCookie?.() ?? [])
+    .map((value) => value.match(/(?:^|,\s*)study_desk_random_link_visitor=([^;]*)/))
+    .find(Boolean)?.[1];
+  const randomVisitorCookie = visitorToken
+    ? `study_desk_random_link_visitor=${visitorToken}`
+    : undefined;
+  if (visitorToken) {
+    fixtureRandomLinkClaimKeys.push(
+      `visitor:${createHash("sha256").update(decodeURIComponent(visitorToken)).digest("hex")}`,
+    );
+  }
   return {
     status: response.status,
     data,
     cookie: sessionCookie ? `study_desk_session=${sessionCookie}` : undefined,
     appealCookie: appealCookie ? `study_desk_suspension_appeal=${appealCookie}` : undefined,
+    randomVisitorCookie,
+    randomLinkNextAvailableAt: response.headers.get("X-Random-Link-Next-Available-At"),
   };
 }
 
@@ -162,6 +177,21 @@ after(async () => {
     await cleanupPool.query("DELETE FROM study_desk_replit_sessions WHERE sid = ANY($1)", [
       fixtureDeveloperSessionIds,
     ]);
+  }
+  if (fixtureUsernames.length) {
+    const fixtureUsers = await cleanupPool.query(
+      "SELECT id FROM study_desk_users WHERE username = ANY($1)",
+      [fixtureUsernames],
+    );
+    fixtureRandomLinkClaimKeys.push(
+      ...fixtureUsers.rows.map((user) => `account:${user.id}`),
+    );
+  }
+  if (fixtureRandomLinkClaimKeys.length) {
+    await cleanupPool.query(
+      "DELETE FROM study_desk_random_link_claims WHERE identity_key = ANY($1::text[])",
+      [fixtureRandomLinkClaimKeys],
+    );
   }
   if (fixtureUsernames.length) {
     await cleanupPool.query(
@@ -683,6 +713,7 @@ test("random curated links are public to request and moderator-managed", async (
 
   const initialRandom = await request("/random-links/random");
   assert.equal(initialRandom.status, 200);
+  assert.ok(initialRandom.randomVisitorCookie);
   if (!initiallyActiveIds.length) {
     assert.deepEqual(initialRandom.data, { link: null });
   } else {
@@ -719,7 +750,31 @@ test("random curated links are public to request and moderator-managed", async (
 
   const randomWithCreatedLink = await request("/random-links/random");
   assert.equal(randomWithCreatedLink.status, 200);
+  assert.ok(randomWithCreatedLink.randomVisitorCookie);
   assert.ok(randomWithCreatedLink.data.link);
+  assert.ok(Date.parse(randomWithCreatedLink.randomLinkNextAvailableAt) > Date.now());
+  assert.match(
+    randomWithCreatedLink.data.link.url,
+    /^https?:\/\//,
+  );
+  const guestRepeat = await request("/random-links/random", {
+    cookie: randomWithCreatedLink.randomVisitorCookie,
+  });
+  assert.equal(guestRepeat.status, 429);
+  assert.equal(guestRepeat.data.dailyLimit, true);
+  assert.ok(Date.parse(guestRepeat.data.availableAt) > Date.now());
+  assert.ok(Number(guestRepeat.data.retryAfterSeconds) > 0);
+
+  const accountRandom = await request("/random-links/random", {
+    cookie: regularAccount.cookie,
+  });
+  assert.equal(accountRandom.status, 200);
+  const accountRepeat = await request("/random-links/random", {
+    cookie: regularAccount.cookie,
+  });
+  assert.equal(accountRepeat.status, 429);
+  assert.equal(accountRepeat.data.dailyLimit, true);
+
   const activeIds = (await request("/moderation/random-links", { cookie: moderator.cookie }))
     .data.filter((link) => link.enabled).map((link) => link.id);
   assert.ok(activeIds.includes(randomWithCreatedLink.data.link.id));

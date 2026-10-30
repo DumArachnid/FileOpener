@@ -49,6 +49,7 @@ import type {
   ExtensionTakedownInput,
   FindDeveloperManagedAccountParams,
   FindModerationUserParams,
+  GetRandomCuratedLink429,
   HealthStatus,
   LogOutDeveloperParams,
   LoginInput,
@@ -3560,7 +3561,7 @@ export const getGetRandomCuratedLinkQueryKey = () => {
     }
 
 
-export const getGetRandomCuratedLinkQueryOptions = <TData = Awaited<ReturnType<typeof getRandomCuratedLink>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRandomCuratedLink>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetRandomCuratedLinkQueryOptions = <TData = Awaited<ReturnType<typeof getRandomCuratedLink>>, TError = ErrorType<GetRandomCuratedLink429>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRandomCuratedLink>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -3579,14 +3580,14 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetRandomCuratedLinkQueryResult = NonNullable<Awaited<ReturnType<typeof getRandomCuratedLink>>>
-export type GetRandomCuratedLinkQueryError = ErrorType<void>
+export type GetRandomCuratedLinkQueryError = ErrorType<GetRandomCuratedLink429>
 
 
 /**
  * @summary Get one random active bookmark link
  */
 
-export function useGetRandomCuratedLink<TData = Awaited<ReturnType<typeof getRandomCuratedLink>>, TError = ErrorType<void>>(
+export function useGetRandomCuratedLink<TData = Awaited<ReturnType<typeof getRandomCuratedLink>>, TError = ErrorType<GetRandomCuratedLink429>>(
   options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRandomCuratedLink>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {

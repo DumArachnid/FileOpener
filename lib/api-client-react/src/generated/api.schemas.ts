@@ -568,6 +568,13 @@ export type FindModerationUserParams = {
 username: string;
 };
 
+export type GetRandomCuratedLink429 = {
+  error?: string;
+  dailyLimit?: boolean;
+  availableAt?: string;
+  retryAfterSeconds?: number;
+};
+
 export type CreateDeveloperStudyDeskSession200 = {
   user: UserSummary;
 };

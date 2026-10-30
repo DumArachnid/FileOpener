@@ -887,12 +887,42 @@ paths:
       responses:
         "200":
           description: A random active link, or null when no links are available
+          headers:
+            X-Random-Link-Next-Available-At:
+              description: When this account or browser may request another link
+              schema:
+                type: string
+                format: date-time
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/RandomLinkResult"
         "429":
-          description: Too many requests
+          description: Daily link cooldown or short-term request rate limit
+          headers:
+            Retry-After:
+              description: Seconds until the request may be retried
+              schema:
+                type: integer
+            X-Random-Link-Next-Available-At:
+              description: When the daily link allowance becomes available again
+              schema:
+                type: string
+                format: date-time
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  dailyLimit:
+                    type: boolean
+                  availableAt:
+                    type: string
+                    format: date-time
+                  retryAfterSeconds:
+                    type: integer
   /moderation/random-links:
     get:
       operationId: listCuratedRandomLinks

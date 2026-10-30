@@ -2910,8 +2910,35 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     if (!silent) toast('Bookmarked ' + hostOf(u));
     return true;
   }
-  el('randomLinkBtn').addEventListener('click', async function () {
-    var button = el('randomLinkBtn');
+  var randomLinkButton = el('randomLinkBtn');
+  var randomLinkCooldownUntil = 0;
+  var randomLinkCooldownTimer = null;
+  var randomLinkDefaultTitle = randomLinkButton.title || 'Add a random curated link to bookmarks';
+  function setRandomLinkCooldown(value) {
+    var time = typeof value === 'number' ? value : Date.parse(value);
+    if (!Number.isFinite(time) || time <= Date.now()) return false;
+    randomLinkCooldownUntil = time;
+    randomLinkButton.disabled = true;
+    var availableLabel = new Date(time).toLocaleString();
+    randomLinkButton.title = 'Your next random link is available ' + availableLabel;
+    randomLinkButton.setAttribute('aria-label', randomLinkButton.title);
+    if (randomLinkCooldownTimer) clearTimeout(randomLinkCooldownTimer);
+    randomLinkCooldownTimer = setTimeout(function checkRandomLinkCooldown() {
+      var remaining = randomLinkCooldownUntil - Date.now();
+      if (remaining > 0) {
+        randomLinkCooldownTimer = setTimeout(checkRandomLinkCooldown, remaining);
+        return;
+      }
+      randomLinkCooldownUntil = 0;
+      randomLinkCooldownTimer = null;
+      randomLinkButton.disabled = false;
+      randomLinkButton.title = randomLinkDefaultTitle;
+      randomLinkButton.setAttribute('aria-label', 'Add a random link bookmark');
+    }, time - Date.now());
+    return true;
+  }
+  randomLinkButton.addEventListener('click', async function () {
+    var button = randomLinkButton;
     if (window.location.protocol === 'file:') {
       toast('Random link suggestions require the online Study Desk page.', 'error');
       return;
@@ -2922,14 +2949,22 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       var response = await fetch('/api/random-links/random', {
         headers: { Accept: 'application/json' },
         cache: 'no-store',
-        credentials: 'omit'
+        credentials: 'same-origin'
       });
       var result = {};
       try { result = await response.json(); } catch (error) {}
+      var nextAvailableAt = response.headers.get('X-Random-Link-Next-Available-At');
+      if (response.ok && nextAvailableAt) setRandomLinkCooldown(nextAvailableAt);
       if (!response.ok) {
-        throw new Error(response.status === 429
-          ? 'Too many requests. Try again in a minute.'
-          : (result && result.error) || 'Could not get a random link.');
+        if (response.status === 429 && result && result.dailyLimit && result.availableAt) {
+          setRandomLinkCooldown(result.availableAt);
+          throw new Error('You already received a random link in the last 24 hours. Try again after ' + new Date(result.availableAt).toLocaleString() + '.');
+        }
+        if (response.status === 429) {
+          var retryAfter = Number(response.headers.get('Retry-After'));
+          if (Number.isFinite(retryAfter) && retryAfter > 0) setRandomLinkCooldown(Date.now() + retryAfter * 1000);
+        }
+        throw new Error((result && result.error) || 'Could not get a random link.');
       }
       if (!result || !result.link) {
         toast('There are no active links in the curated list yet.', 'error');
@@ -2942,8 +2977,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     } catch (error) {
       toast(error && error.message ? error.message : 'Could not get a random link. Check your connection.', 'error');
     } finally {
-      button.disabled = false;
       button.removeAttribute('aria-busy');
+      if (randomLinkCooldownUntil <= Date.now()) button.disabled = false;
     }
   });
   function removeBookmark(id) { bookmarks = bookmarks.filter(function (b) { return b.id !== id; }); saveBookmarks(); toast('Bookmark removed'); }

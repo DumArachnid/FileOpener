@@ -1,5 +1,6 @@
+import { createHash, randomBytes } from "node:crypto";
 import { desc, eq, ne, sql } from "drizzle-orm";
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response } from "express";
 import {
   CreateCuratedRandomLinkBody,
   CreateCuratedRandomLinkResponse,
@@ -10,7 +11,7 @@ import {
   UpdateCuratedRandomLinkParams,
   UpdateCuratedRandomLinkResponse,
 } from "@workspace/api-zod";
-import { db, randomLinksTable } from "@workspace/db";
+import { db, randomLinkClaimsTable, randomLinksTable } from "@workspace/db";
 import { requireModerator } from "../middlewares/accountSession";
 import { createReadRateLimit } from "../middlewares/readRateLimit";
 
@@ -21,6 +22,28 @@ const randomLinkRateLimit = createReadRateLimit({
   message: "Random links are being requested too often. Please try again in a minute.",
 });
 const MAX_CATALOG_SIZE = 500;
+const RANDOM_LINK_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+const RANDOM_LINK_VISITOR_COOKIE = "study_desk_random_link_visitor";
+
+function getRandomLinkIdentity(req: Request, res: Response): string {
+  if (req.studyDeskUser) return `account:${req.studyDeskUser.id}`;
+
+  let visitorToken = req.cookies?.[RANDOM_LINK_VISITOR_COOKIE];
+  if (typeof visitorToken !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(visitorToken)) {
+    visitorToken = randomBytes(32).toString("base64url");
+    const forwardedProtocol = req.get("x-forwarded-proto")?.split(",")[0]?.trim();
+    res.cookie(RANDOM_LINK_VISITOR_COOKIE, visitorToken, {
+      httpOnly: true,
+      secure: req.secure || forwardedProtocol === "https",
+      sameSite: "lax",
+      path: "/api/random-links",
+      maxAge: 365 * 24 * 60 * 60 * 1000,
+    });
+  }
+
+  const visitorHash = createHash("sha256").update(visitorToken).digest("hex");
+  return `visitor:${visitorHash}`;
+}
 
 function normalizeInput(input: { title: string; url: string; enabled: boolean }) {
   const title = input.title.trim();
@@ -60,7 +83,8 @@ function hasErrorCode(error: unknown, code: string): boolean {
   return false;
 }
 
-router.get("/random-links/random", randomLinkRateLimit, async (_req, res): Promise<void> => {
+router.get("/random-links/random", randomLinkRateLimit, async (req, res): Promise<void> => {
+  const identityKey = getRandomLinkIdentity(req, res);
   const [link] = await db
     .select({
       id: randomLinksTable.id,
@@ -72,7 +96,47 @@ router.get("/random-links/random", randomLinkRateLimit, async (_req, res): Promi
     .orderBy(sql`random()`)
     .limit(1);
   res.setHeader("Cache-Control", "no-store");
-  res.json(GetRandomCuratedLinkResponse.parse({ link: link ?? null }));
+  if (!link) {
+    res.json(GetRandomCuratedLinkResponse.parse({ link: null }));
+    return;
+  }
+
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - RANDOM_LINK_COOLDOWN_MS);
+  const [claim] = await db
+    .insert(randomLinkClaimsTable)
+    .values({ identityKey, lastClaimedAt: now })
+    .onConflictDoUpdate({
+      target: randomLinkClaimsTable.identityKey,
+      set: { lastClaimedAt: now },
+      setWhere: sql`${randomLinkClaimsTable.lastClaimedAt} <= ${cutoff}`,
+    })
+    .returning({ lastClaimedAt: randomLinkClaimsTable.lastClaimedAt });
+
+  if (!claim) {
+    const [previousClaim] = await db
+      .select({ lastClaimedAt: randomLinkClaimsTable.lastClaimedAt })
+      .from(randomLinkClaimsTable)
+      .where(eq(randomLinkClaimsTable.identityKey, identityKey))
+      .limit(1);
+    const nextAvailableAt = new Date(
+      (previousClaim?.lastClaimedAt ?? now).getTime() + RANDOM_LINK_COOLDOWN_MS,
+    );
+    const retryAfterSeconds = Math.max(1, Math.ceil((nextAvailableAt.getTime() - now.getTime()) / 1000));
+    res.setHeader("Retry-After", String(retryAfterSeconds));
+    res.setHeader("X-Random-Link-Next-Available-At", nextAvailableAt.toISOString());
+    res.status(429).json({
+      error: "You have already received a random link in the last 24 hours.",
+      dailyLimit: true,
+      availableAt: nextAvailableAt.toISOString(),
+      retryAfterSeconds,
+    });
+    return;
+  }
+
+  const nextAvailableAt = new Date(now.getTime() + RANDOM_LINK_COOLDOWN_MS);
+  res.setHeader("X-Random-Link-Next-Available-At", nextAvailableAt.toISOString());
+  res.json(GetRandomCuratedLinkResponse.parse({ link }));
 });
 
 router.get(

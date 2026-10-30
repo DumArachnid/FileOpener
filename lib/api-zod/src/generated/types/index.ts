@@ -46,6 +46,7 @@ export * from './extensionSummaryApprovalStatus';
 export * from './extensionTakedownInput';
 export * from './findDeveloperManagedAccountParams';
 export * from './findModerationUserParams';
+export * from './getRandomCuratedLink429';
 export * from './healthStatus';
 export * from './loginInput';
 export * from './logOutDeveloperParams';
