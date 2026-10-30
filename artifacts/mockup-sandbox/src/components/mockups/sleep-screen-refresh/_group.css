@@ -1,0 +1,74 @@
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&display=swap");
+
+:root {
+  --bg: #ffffff;
+  --panel: #ebebeb;
+  --text: #000000;
+  --accent: #333333;
+  --muted: #707070;
+  --border: #dedede;
+  --border-strong: #bdbdbd;
+  --input-bg: #f7f7f7;
+  --danger: #b3261e;
+  --main-font: "Bricolage Grotesque", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { min-height: 100%; margin: 0; }
+body { font-family: var(--main-font); }
+.sleep-mock-root {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: #000;
+  color: #fff;
+}
+.screen-sleep-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 20px;
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  border: 0;
+  background: #000;
+  color: #fff;
+}
+.screen-sleep-overlay::backdrop { background: #000; }
+.screen-sleep-panel {
+  width: min(380px, calc(100vw - 32px));
+  padding: 24px;
+  border: 1px solid #333;
+  border-radius: 16px;
+  background: #111;
+  color: #fff;
+  box-shadow: 0 24px 80px #000;
+}
+.screen-sleep-panel h2 { margin: 0 0 8px; color: #fff; font-size: 1.35rem; }
+.screen-sleep-panel p { margin: 0 0 14px; color: #c8c8c8; line-height: 1.5; }
+.screen-sleep-panel label { display: block; margin-bottom: 6px; color: #e8e8e8; }
+.screen-sleep-panel input {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid #555;
+  border-radius: 8px;
+  background: #222;
+  color: #fff;
+}
+.screen-sleep-panel button {
+  width: 100%;
+  min-height: 42px;
+  margin-top: 10px;
+  border: 1px solid #555;
+  border-radius: 8px;
+  background: #333;
+  color: #fff;
+  font-weight: 600;
+}
+.screen-sleep-panel .screen-sleep-error { min-height: 1.4em; margin: 8px 0 0; color: #ffaaa5; }

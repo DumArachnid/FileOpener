@@ -274,15 +274,62 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .session-restore-settings p { margin: 0; line-height: 1.45; }
 .screen-sleep-password-form { display: flex; flex-direction: column; gap: 8px; }
 .screen-sleep-password-form input { width: 100%; }
-.screen-sleep-overlay { position: fixed; inset: 0; z-index: 100000; display: grid; place-items: center; margin: 0; padding: 20px; width: 100vw; height: 100dvh; max-width: none; max-height: none; border: 0; background: #000; color: #fff; }
+.screen-sleep-overlay { position: fixed; inset: 0; z-index: 100000; display: grid; place-items: center; margin: 0; padding: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none; border: 0; background: #000; color: #fff; }
 .screen-sleep-overlay::backdrop { background: #000; }
-.screen-sleep-overlay:not([open]), .screen-sleep-panel[hidden] { display: none !important; }
-.screen-sleep-panel { width: min(380px, calc(100vw - 32px)); padding: 24px; border: 1px solid #333; border-radius: 16px; background: #111; color: #fff; box-shadow: 0 24px 80px #000; }
-.screen-sleep-panel h2 { margin: 0 0 8px; color: #fff; }
-.screen-sleep-panel p { margin: 0 0 14px; color: #c8c8c8; line-height: 1.5; }
-.screen-sleep-panel label { color: #e8e8e8; }
-.screen-sleep-panel input { width: 100%; background: #222; border-color: #555; color: #fff; }
-.screen-sleep-panel .screen-sleep-error { min-height: 1.4em; margin: 8px 0 0; color: #ffaaa5; }
+.screen-sleep-overlay:not([open]), .screen-sleep-panel[hidden], .screen-sleep-rest[hidden] { display: none !important; }
+.screen-sleep-shell { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; width: 100%; height: 100%; min-height: 0; overflow-y: auto; padding: clamp(20px, 4vw, 52px) clamp(20px, 5vw, 72px) 24px; background: #000; }
+.screen-sleep-topline, .screen-sleep-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; color: color-mix(in srgb, var(--accent) 18%, #898989); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+.screen-sleep-wordmark { display: inline-flex; align-items: center; gap: 10px; color: color-mix(in srgb, var(--accent) 35%, #c8c8c8); font-size: 12px; font-weight: 600; letter-spacing: .08em; }
+.screen-sleep-mark { width: 9px; height: 9px; border: 1px solid currentColor; border-radius: 3px; transform: rotate(45deg); }
+.screen-sleep-status { display: inline-flex; align-items: center; gap: 9px; }
+.screen-sleep-status-dot { width: 5px; height: 5px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 55%, #999); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 12%, transparent); }
+.screen-sleep-rest { align-self: center; justify-self: center; display: flex; width: min(500px, 100%); flex-direction: column; align-items: center; padding: 24px 18px 52px; text-align: center; animation: screen-sleep-arrive .45s ease both; }
+.screen-sleep-orbit { position: relative; display: grid; width: 66px; height: 66px; place-items: center; margin-bottom: 30px; }
+.screen-sleep-orbit-ring { position: absolute; inset: 0; border: 1px solid color-mix(in srgb, var(--accent) 24%, #343434); border-radius: 50%; }
+.screen-sleep-orbit-core { width: 9px; height: 9px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 44%, #a8a8a8); box-shadow: 0 0 0 10px color-mix(in srgb, var(--accent) 8%, transparent); }
+.screen-sleep-eyebrow { margin: 0 0 14px; color: color-mix(in srgb, var(--accent) 18%, #929292); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; }
+.screen-sleep-rest h1 { margin: 0; color: color-mix(in srgb, var(--accent) 26%, #dedede); font-size: clamp(28px, 4vw, 40px); font-weight: 500; letter-spacing: -.045em; line-height: 1.12; }
+.screen-sleep-wake-hint { max-width: 390px; margin: 16px 0 23px; color: color-mix(in srgb, var(--accent) 15%, #9b9b9b); font-size: 13px; line-height: 1.6; }
+.screen-sleep-wake-button, .screen-sleep-unlock-form button { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: 14px; border: 1px solid color-mix(in srgb, var(--accent) 32%, #444); border-radius: 8px; background: transparent; color: color-mix(in srgb, var(--accent) 36%, #dedede); font: 600 13px var(--main-font); cursor: pointer; transition: background .18s ease, border-color .18s ease, transform .18s ease; }
+.screen-sleep-wake-button { padding: 0 17px; }
+.screen-sleep-wake-button span, .screen-sleep-unlock-form button span { color: var(--accent); font-size: 16px; }
+.screen-sleep-wake-button:hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, #000); }
+.screen-sleep-wake-button:active, .screen-sleep-unlock-form button:active { transform: translateY(1px); }
+.screen-sleep-panel { align-self: center; justify-self: center; width: min(424px, 100%); padding: clamp(24px, 5vw, 38px); border: 1px solid var(--border-strong); border-radius: 15px; background: var(--panel); color: var(--text); box-shadow: 0 28px 90px rgb(0 0 0 / 58%); animation: screen-sleep-arrive .3s ease both; }
+.screen-sleep-card-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+.screen-sleep-lock-icon { display: grid; width: 38px; height: 38px; place-items: center; border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border)); border-radius: 10px; background: color-mix(in srgb, var(--accent) 9%, var(--panel)); color: var(--accent); }
+.screen-sleep-lock-icon svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.screen-sleep-card-kicker { color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: .13em; text-transform: uppercase; }
+.screen-sleep-panel h2 { margin: 0 0 9px; color: var(--text); font-size: clamp(23px, 4vw, 28px); font-weight: 600; letter-spacing: -.04em; line-height: 1.15; }
+.screen-sleep-panel p { margin: 0; color: var(--muted); line-height: 1.55; }
+.screen-sleep-description { margin-bottom: 23px !important; font-size: 13px; }
+.screen-sleep-unlock-form { display: flex; flex-direction: column; }
+.screen-sleep-unlock-form label { margin-bottom: 8px; color: var(--text); font-size: 12px; font-weight: 600; }
+.screen-sleep-unlock-form input { width: 100%; min-height: 46px; padding: 0 13px; border: 1px solid var(--border-strong); border-radius: 7px; outline: none; background: var(--input-bg); color: var(--text); font: 14px var(--main-font); }
+.screen-sleep-unlock-form input::placeholder { color: var(--muted); opacity: .8; }
+.screen-sleep-unlock-form input:focus-visible { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+.screen-sleep-unlock-form button { width: 100%; margin-top: 11px; padding: 0 15px; border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+.screen-sleep-unlock-form button:hover { background: var(--accent-hover); }
+.screen-sleep-unlock-form button span { margin-left: auto; color: var(--on-accent); }
+.screen-sleep-local-note { margin: 18px 0 0 !important; padding-top: 14px; border-top: 1px solid var(--border); font-size: 11px; line-height: 1.55; }
+.screen-sleep-panel .screen-sleep-error { min-height: 1.4em; margin: 8px 0 0; color: var(--danger); font-size: 12px; }
+.screen-sleep-footer { justify-content: center; gap: 12px; color: color-mix(in srgb, var(--accent) 12%, #6d6d6d); font-size: 9px; letter-spacing: .12em; }
+.screen-sleep-footer-rule { width: 24px; height: 1px; background: color-mix(in srgb, var(--accent) 18%, #333); }
+.screen-sleep-overlay :focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 65%, #bbb); outline-offset: 3px; }
+@keyframes screen-sleep-arrive { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 520px) {
+  .screen-sleep-shell { padding: 18px 18px 20px; }
+  .screen-sleep-topline { font-size: 9px; letter-spacing: .08em; }
+  .screen-sleep-wordmark { font-size: 10px; }
+  .screen-sleep-rest { padding-bottom: 32px; }
+  .screen-sleep-orbit { margin-bottom: 26px; }
+  .screen-sleep-footer { gap: 9px; font-size: 8px; }
+  .screen-sleep-panel { border-radius: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .screen-sleep-rest, .screen-sleep-panel { animation: none; }
+  .screen-sleep-wake-button, .screen-sleep-unlock-form button { transition: none; }
+}
 .account-panel { display: flex; flex-direction: column; padding: clamp(22px, 5vw, 32px); }
 .account-topbar { display: flex; align-items: center; justify-content: space-between; min-height: 36px; }
 .account-brand { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .11em; }
@@ -1018,6 +1065,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div>
 <label for="screenSleepMinutes">Sleep after</label>
 <select id="screenSleepMinutes">
+<option value="0.5">30 seconds</option>
 <option value="1">1 minute</option>
 <option value="5">5 minutes</option>
 <option value="10">10 minutes</option>
@@ -1442,16 +1490,35 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </aside>
 <dialog class="screen-sleep-overlay" id="screenSleepOverlay" aria-label="Study Desk screen asleep" tabindex="-1">
 <p class="sr-only" id="screenSleepAccessibleStatus" role="status" aria-live="polite">The screen is asleep. Use a key or click to wake it.</p>
-<section class="screen-sleep-panel" id="screenSleepPanel" hidden>
-<h2 id="screenSleepTitle">Study Desk is asleep</h2>
-<p>Enter your screen-sleep password to return to your workspace.</p>
-<form id="screenSleepUnlockForm">
-<label for="screenSleepUnlockPassword">Password</label>
-<input id="screenSleepUnlockPassword" name="screen-sleep-password" type="password" autocomplete="off" required>
-<button class="btn primary" type="submit" style="width:100%;margin-top:10px">Unlock workspace</button>
+<div class="screen-sleep-shell">
+<header class="screen-sleep-topline" aria-hidden="true">
+<span class="screen-sleep-wordmark"><span class="screen-sleep-mark"></span>Study Desk</span>
+<span class="screen-sleep-status"><span class="screen-sleep-status-dot"></span>Screen asleep</span>
+</header>
+<section class="screen-sleep-rest" id="screenSleepRestState" aria-labelledby="screenSleepRestTitle">
+<div class="screen-sleep-orbit" aria-hidden="true"><span class="screen-sleep-orbit-core"></span><span class="screen-sleep-orbit-ring"></span></div>
+<p class="screen-sleep-eyebrow">A quiet moment</p>
+<h1 id="screenSleepRestTitle">Your desk is resting.</h1>
+<p class="screen-sleep-wake-hint" id="screenSleepWakeHint" role="status" aria-live="polite">Press any key or click anywhere to wake the screen.</p>
+<button class="screen-sleep-wake-button" id="screenSleepWakeBtn" type="button">Wake screen <span aria-hidden="true">↗</span></button>
+</section>
+<section class="screen-sleep-panel" id="screenSleepPanel" aria-labelledby="screenSleepTitle" hidden>
+<div class="screen-sleep-card-heading">
+<span class="screen-sleep-lock-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7.5 10V7.5a4.5 4.5 0 0 1 9 0V10"></path><rect x="5" y="10" width="14" height="11" rx="2.5"></rect><circle cx="12" cy="15.5" r="1"></circle><path d="M12 16.5v1.2"></path></svg></span>
+<span class="screen-sleep-card-kicker">Local privacy lock</span>
+</div>
+<h2 id="screenSleepTitle">Study Desk is asleep.</h2>
+<p class="screen-sleep-description">Your workspace is hidden. Enter your screen-sleep password to return.</p>
+<form class="screen-sleep-unlock-form" id="screenSleepUnlockForm">
+<label for="screenSleepUnlockPassword">Screen-sleep password</label>
+<input id="screenSleepUnlockPassword" name="screen-sleep-password" type="password" autocomplete="off" placeholder="Enter password" aria-describedby="screenSleepLocalNote screenSleepError" required>
+<button type="submit">Unlock workspace <span aria-hidden="true">→</span></button>
 </form>
+<p class="screen-sleep-local-note" id="screenSleepLocalNote">This password stays in this browser. It is a local privacy lock, not account security.</p>
 <p class="screen-sleep-error" id="screenSleepError" role="status" aria-live="polite"></p>
 </section>
+<footer class="screen-sleep-footer" aria-hidden="true"><span>Workspace concealed</span><span class="screen-sleep-footer-rule"></span><span>Only this screen is visible</span></footer>
+</div>
 </dialog>
 <aside id="accountNudge" class="account-nudge" role="region" aria-label="Account recommendation" hidden>
 <div class="row-between"><h3>Keep your Study Desk in sync</h3><button class="icon-btn" id="accountNudgeClose" type="button" aria-label="Dismiss account recommendation">×</button></div>
@@ -5168,6 +5235,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     var encoder = new TextEncoder();
     var overlay = document.getElementById('screenSleepOverlay');
     var panel = document.getElementById('screenSleepPanel');
+    var restState = document.getElementById('screenSleepRestState');
+    var wakeHint = document.getElementById('screenSleepWakeHint');
+    var wakeButton = document.getElementById('screenSleepWakeBtn');
     var appRoot = document.getElementById('app');
     var sleepButton = document.getElementById('screenSleepBtn');
     var autoToggle = document.getElementById('screenSleepAutoEnabled');
@@ -5235,7 +5305,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
     function sleepDuration() {
       var chosen = Number(minuteSelect.value);
-      return (chosen === 1 || chosen === 5 || chosen === 10 || chosen === 15 || chosen === 30 ? chosen : 5) * 60000;
+      return (chosen === 0.5 || chosen === 1 || chosen === 5 || chosen === 10 || chosen === 15 || chosen === 30 ? chosen : 5) * 60000;
     }
     function clearIdleTimer() {
       if (idleTimer) clearTimeout(idleTimer);
@@ -5258,8 +5328,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
     function showUnlockPanel() {
       if (!locked || !passwordEnabled() || !panel.hidden) return;
+      restState.hidden = true;
       panel.hidden = false;
       unlockError.textContent = '';
+      accessibleStatus.textContent = 'The screen is asleep. The password prompt is open.';
       setTimeout(function () {
         if (locked && !panel.hidden) unlockInput.focus();
       }, 0);
@@ -5272,11 +5344,15 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       try { localStorage.setItem(LOCKED_KEY, 'true'); } catch (error) {}
       if (appRoot) appRoot.inert = true;
       panel.hidden = true;
+      restState.hidden = false;
       unlockInput.value = '';
       unlockError.textContent = '';
       accessibleStatus.textContent = passwordEnabled()
         ? 'The screen is asleep. Click or press a key to show the password prompt.'
         : 'The screen is asleep. Click or press a key to wake it.';
+      wakeHint.textContent = passwordEnabled()
+        ? 'Press any key or click to show the password prompt.'
+        : 'Press any key or click anywhere to wake the screen.';
       if (!overlay.open) {
         try { overlay.showModal(); }
         catch (error) { overlay.setAttribute('open', ''); }
@@ -5290,6 +5366,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       try { localStorage.removeItem(LOCKED_KEY); } catch (error) {}
       if (overlay.open) overlay.close();
       panel.hidden = true;
+      restState.hidden = false;
       if (appRoot) appRoot.inert = false;
       unlockInput.value = '';
       unlockError.textContent = '';
@@ -5359,11 +5436,16 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 
     autoToggle.checked = autoEnabled;
     minuteSelect.value = String(minutes);
-    if (!['1', '5', '10', '15', '30'].includes(minuteSelect.value)) minuteSelect.value = '5';
+    if (!['0.5', '1', '5', '10', '15', '30'].includes(minuteSelect.value)) minuteSelect.value = '5';
     updatePasswordSettings();
     NT.isScreenSleepLocked = function () { return locked; };
     NT.onWorkspaceActivity(onWorkspaceActivity);
     sleepButton.addEventListener('click', function () { enterScreenSleep('manual'); });
+    wakeButton.addEventListener('click', function (event) {
+      event.stopPropagation();
+      if (passwordEnabled()) showUnlockPanel();
+      else leaveScreenSleep();
+    });
     autoToggle.addEventListener('change', function () {
       autoEnabled = autoToggle.checked;
       try { localStorage.setItem('disguise_screen_sleep_enabled', String(autoEnabled)); } catch (error) {}
