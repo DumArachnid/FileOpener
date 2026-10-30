@@ -268,6 +268,10 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .screen-sleep-settings { display: flex; flex-direction: column; gap: 9px; padding: 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--input-bg); }
 .screen-sleep-toggle { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--text); font-size: 12px; }
 .screen-sleep-toggle input { width: auto; margin: 0; accent-color: var(--accent); }
+.session-restore-settings { display: flex; flex-direction: column; gap: 9px; padding: 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--input-bg); }
+.session-restore-toggle { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--text); font-size: 12px; }
+.session-restore-toggle input { width: auto; margin: 0; accent-color: var(--accent); }
+.session-restore-settings p { margin: 0; line-height: 1.45; }
 .screen-sleep-password-form { display: flex; flex-direction: column; gap: 8px; }
 .screen-sleep-password-form input { width: 100%; }
 .screen-sleep-overlay { position: fixed; inset: 0; z-index: 100000; display: grid; place-items: center; margin: 0; padding: 20px; width: 100vw; height: 100dvh; max-width: none; max-height: none; border: 0; background: #000; color: #fff; }
@@ -996,8 +1000,14 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </select>
 <button type="button" class="help-trigger" data-help="tabMemoryHelp" aria-label="About keeping tabs loaded" aria-describedby="tabMemoryHelp" aria-expanded="false">?</button>
 </div>
-<p id="tabMemoryHelp" class="sr-only">Keeps your most recently used pages loaded, including the current tab. Older pages reload when reopened and may lose unsaved website form entries. Uses more memory; does not survive a browser refresh. Background pages may keep playing audio.</p>
+<p id="tabMemoryHelp" class="sr-only">Keeps your most recently used pages loaded, including the current tab. Older pages reload when reopened and may lose unsaved website form entries. Uses more memory. Background pages may keep playing audio.</p>
 </div>
+<section class="session-restore-settings" aria-labelledby="tabSessionSettingsTitle">
+<strong class="small" id="tabSessionSettingsTitle">Tab session</strong>
+<label class="session-restore-toggle" for="restoreTabsEnabled"><input id="restoreTabsEnabled" type="checkbox" checked><span>Restore web tabs after refresh</span></label>
+<p class="small muted">Saved only in this browser. Websites reload, but page state and local file contents are not saved.</p>
+<button class="btn sm" id="clearSavedTabSessionBtn" type="button" disabled>Clear saved session</button>
+</section>
 <section class="screen-sleep-settings" aria-labelledby="screenSleepSettingsTitle">
 <strong class="small" id="screenSleepSettingsTitle">Screen sleep</strong>
 <label class="screen-sleep-toggle" for="screenSleepAutoEnabled"><input id="screenSleepAutoEnabled" type="checkbox"><span>Sleep automatically when inactive</span></label>
@@ -3168,6 +3178,163 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
   var memoryLimit = readMemoryLimit();
   memorySelect.value = String(memoryLimit);
+  var TAB_SESSION_KEY = 'disguise_tab_session';
+  var TAB_RESTORE_SETTING_KEY = 'disguise_restore_tabs';
+  var restoreTabsToggle = el('restoreTabsEnabled');
+  var clearSavedTabSessionButton = el('clearSavedTabSessionBtn');
+  var restoreTabsEnabled = true;
+  var sessionStorageWarningShown = false;
+  try { restoreTabsEnabled = localStorage.getItem(TAB_RESTORE_SETTING_KEY) !== 'false'; } catch (e) {}
+  restoreTabsToggle.checked = restoreTabsEnabled;
+  function updateClearSavedSessionButton() {
+    try {
+      clearSavedTabSessionButton.disabled = !restoreTabsEnabled || !localStorage.getItem(TAB_SESSION_KEY);
+    } catch (e) {
+      clearSavedTabSessionButton.disabled = true;
+    }
+  }
+  function tabSessionRecord(tab) {
+    var current = tab.id === activeId;
+    var snap = tab.snap;
+    var rawUrl = current ? V.blobURL : snap && snap.blobURL;
+    var localFile = current
+      ? !!(V.file || V.saved || (V.blobURL && !/^https?:/i.test(V.blobURL)) ||
+        (snap && snap.view === 'missing-file'))
+      : !!(snap && (snap.file || snap.saved || snap.view === 'missing-file' ||
+        (snap.blobURL && !/^https?:/i.test(snap.blobURL))));
+    var url = typeof rawUrl === 'string' && /^https?:/i.test(rawUrl) && rawUrl.length <= 8192
+      ? safeUrl(rawUrl)
+      : null;
+    if (url) return { kind: 'web', title: String(tab.title || 'Web page').slice(0, 40), url: url };
+    return {
+      kind: localFile ? 'file' : 'empty',
+      title: String(tab.title || (localFile ? 'Local file' : 'New tab')).slice(0, 40)
+    };
+  }
+  function saveTabSession() {
+    if (!restoreTabsEnabled) return;
+    var savedTabs = tabs.slice(0, MAX_TABS).map(tabSessionRecord);
+    if (!savedTabs.length || (savedTabs.length === 1 && savedTabs[0].kind === 'empty')) {
+      try { localStorage.removeItem(TAB_SESSION_KEY); } catch (e) {}
+      updateClearSavedSessionButton();
+      return;
+    }
+    var payload = {
+      version: 1,
+      activeIndex: Math.max(0, tabs.findIndex(function (tab) { return tab.id === activeId; })),
+      tabs: savedTabs
+    };
+    try {
+      localStorage.setItem(TAB_SESSION_KEY, JSON.stringify(payload));
+      sessionStorageWarningShown = false;
+    } catch (error) {
+      if (!sessionStorageWarningShown) {
+        toast('Could not save this tab session in browser storage', 'error');
+        sessionStorageWarningShown = true;
+      }
+    }
+    updateClearSavedSessionButton();
+  }
+  function restoreSavedTabSession() {
+    if (!restoreTabsEnabled) {
+      try { localStorage.removeItem(TAB_SESSION_KEY); } catch (e) {}
+      updateClearSavedSessionButton();
+      return false;
+    }
+    var stored;
+    try { stored = localStorage.getItem(TAB_SESSION_KEY); } catch (e) { return false; }
+    if (!stored) return false;
+    var parsed;
+    try { parsed = JSON.parse(stored); } catch (e) { parsed = null; }
+    if (!parsed || parsed.version !== 1 || !Array.isArray(parsed.tabs)) {
+      try { localStorage.removeItem(TAB_SESSION_KEY); } catch (e) {}
+      toast('A saved tab session could not be read and was cleared.', 'error');
+      updateClearSavedSessionButton();
+      return false;
+    }
+    var activeIndex = Number.isInteger(parsed.activeIndex) ? parsed.activeIndex : 0;
+    var restored = [];
+    var restoredActiveIndex = -1;
+    parsed.tabs.slice(0, MAX_TABS).forEach(function (item, index) {
+      if (!item || typeof item !== 'object') return;
+      var title = typeof item.title === 'string' && item.title.trim()
+        ? item.title.trim().slice(0, 40)
+        : 'New tab';
+      var entry;
+      if (item.kind === 'web' && typeof item.url === 'string' && item.url.length <= 8192) {
+        var url = safeUrl(item.url);
+        if (!url) return;
+        entry = { kind: 'web', title: title, url: url };
+      } else if (item.kind === 'file') {
+        entry = { kind: 'file', title: title };
+      } else if (item.kind === 'empty') {
+        entry = { kind: 'empty', title: title };
+      } else return;
+      if (index === activeIndex) restoredActiveIndex = restored.length;
+      restored.push(entry);
+    });
+    if (!restored.length) {
+      try { localStorage.removeItem(TAB_SESSION_KEY); } catch (e) {}
+      updateClearSavedSessionButton();
+      return false;
+    }
+    tabs = restored.map(function (entry) {
+      var snap = null;
+      if (entry.kind === 'web') {
+        snap = {
+          view: 'web', url: entry.url, blobURL: entry.url, file: null, saved: null,
+          isText: false, isHTML: false, left: 'Web: ' + entry.url, right: 'External URL',
+          html: '', draft: null
+        };
+      } else if (entry.kind === 'file') {
+        snap = {
+          view: 'missing-file', fileTitle: entry.title, url: '', blobURL: null, file: null, saved: null,
+          isText: false, isHTML: false, left: 'Local file tab', right: 'Reopen file', html: '', draft: null
+        };
+      }
+      return { id: uid(), title: entry.title, snap: snap, area: null };
+    });
+    if (restoredActiveIndex < 0 || restoredActiveIndex >= tabs.length) restoredActiveIndex = 0;
+    activeId = tabs[restoredActiveIndex].id;
+    restore(activeTab());
+    renderTabs();
+    updateClearSavedSessionButton();
+    return true;
+  }
+  restoreTabsToggle.addEventListener('change', function () {
+    var requested = restoreTabsToggle.checked;
+    try {
+      localStorage.setItem(TAB_RESTORE_SETTING_KEY, requested ? 'true' : 'false');
+      restoreTabsEnabled = requested;
+      if (requested) saveTabSession();
+      else {
+        localStorage.removeItem(TAB_SESSION_KEY);
+        updateClearSavedSessionButton();
+      }
+      toast(requested ? 'Open tabs will be saved in this browser' : 'Automatic tab restore is off; the saved session was cleared');
+    } catch (error) {
+      restoreTabsEnabled = !requested;
+      restoreTabsToggle.checked = restoreTabsEnabled;
+      toast('Could not update the tab session setting', 'error');
+    }
+  });
+  clearSavedTabSessionButton.addEventListener('click', async function () {
+    if (!restoreTabsEnabled || clearSavedTabSessionButton.disabled) return;
+    var confirmed = await NT.confirmDialog(
+      'Clear saved tab session?',
+      'This removes the saved tab list from this browser but leaves your currently open tabs alone. If automatic restore is on, future tab changes will be saved.',
+      'Clear saved session',
+      true
+    );
+    if (!confirmed) return;
+    try {
+      localStorage.removeItem(TAB_SESSION_KEY);
+      updateClearSavedSessionButton();
+      toast('Saved tab session cleared');
+    } catch (error) {
+      toast('Could not clear the saved tab session', 'error');
+    }
+  });
   function selectArea(t) {
     if (!t.area) {
       t.area = document.createElement('div');
@@ -3230,14 +3397,41 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     if (!t) return;
     findClear();
     var isTextView = !!previewArea.querySelector('[data-text-view]');
+    var missingFileNotice = previewArea.querySelector('[data-restored-local-file]');
+    var isWebView = typeof V.blobURL === 'string' && /^https?:/i.test(V.blobURL);
+    var view = missingFileNotice
+      ? 'missing-file'
+      : isWebView
+        ? 'web'
+        : isTextView
+          ? 'text'
+          : (previewArea.querySelector('.empty') ? 'empty' : 'html');
     t.snap = {
       file: V.file, blobURL: V.blobURL, saved: V.saved, isText: V.isText, isHTML: V.isHTML,
       empty: !NT.hasContent() && !!previewArea.querySelector('.empty'),
-      view: isTextView ? 'text' : (previewArea.querySelector('.empty') ? 'empty' : 'html'),
-      html: (isTextView || previewArea.querySelector('.empty')) ? '' : previewArea.innerHTML,
-      left: NT.statusLeft.textContent, right: NT.statusRight.textContent, url: urlInput.value,
+      view: view, fileTitle: missingFileNotice ? missingFileNotice.getAttribute('data-restored-local-file') : '',
+      html: (view === 'text' || view === 'empty' || view === 'web' || view === 'missing-file') ? '' : previewArea.innerHTML,
+      left: NT.statusLeft.textContent, right: NT.statusRight.textContent, url: isWebView ? V.blobURL : '',
       draft: NT.editorOpen() ? editorTextarea.value : null
     };
+  }
+  function renderMissingFileNotice(title) {
+    previewArea.replaceChildren();
+    var card = document.createElement('div');
+    card.className = 'empty';
+    card.setAttribute('data-restored-local-file', title || 'Local file');
+    var heading = document.createElement('h3');
+    heading.textContent = 'Reopen this file';
+    var message = document.createElement('p');
+    message.textContent = (title ? '“' + title + '” was open in this tab. ' : 'This local file was open in this tab. ') +
+      'Study Desk saves tab addresses, not file contents. Select the file again to continue.';
+    var openFile = document.createElement('button');
+    openFile.type = 'button';
+    openFile.className = 'btn primary';
+    openFile.textContent = 'Open a file';
+    openFile.addEventListener('click', function () { fileInput.click(); });
+    card.append(heading, message, openFile);
+    previewArea.appendChild(card);
   }
   function restore(t) {
     NT.closeEditor();
@@ -3250,11 +3444,17 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     } else {
       V.file = s.file; V.blobURL = s.blobURL; V.saved = s.saved; V.isText = s.isText; V.isHTML = s.isHTML;
       if (!live) {
-        if (s.view === 'text') NT.renderTextView(NT.savedText());
+        if (s.view === 'web' && safeUrl(s.url)) {
+          makeFrame(s.url, sandboxFor(s.url), 'Web page');
+          iframeWarning.classList.add('show');
+          setTimeout(function () { iframeWarning.classList.remove('show'); }, 6000);
+        } else if (s.view === 'missing-file') renderMissingFileNotice(s.fileTitle || t.title);
+        else if (s.view === 'text') NT.renderTextView(NT.savedText());
         else if (s.view === 'empty') NT.showEmpty();
         else previewArea.innerHTML = s.html;
-      } else if (s.view === 'empty' && NT.afterEmpty) NT.afterEmpty();
-      NT.setStatus(s.left, s.right); urlInput.value = s.url;
+      } else if (s.view === 'missing-file') renderMissingFileNotice(s.fileTitle || t.title);
+      else if (s.view === 'empty' && NT.afterEmpty) NT.afterEmpty();
+      NT.setStatus(s.left, s.right); urlInput.value = s.view === 'web' ? s.url : '';
       NT.updateActions(NT.hasContent());
       if (s.draft != null) {
         NT.openEditor(); editorTextarea.value = s.draft;
@@ -3283,6 +3483,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     });
     var a = tabStrip.querySelector('.tab.active'); if (a && a.scrollIntoView) a.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     if (typeof NT.onTabSnapshotChange === 'function') NT.onTabSnapshotChange();
+    saveTabSession();
   }
   NT.getAdminTabSnapshot = function () {
     return tabs.map(function (tab) {
@@ -4010,7 +4211,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 
   // ---------- boot ----------
   renderBookmarks(); renderRecents(); updateStar();
-  newTab(true);
+  if (!restoreSavedTabSession()) newTab(true);
   window.NT_boot();
   renderTabs();
 })();
