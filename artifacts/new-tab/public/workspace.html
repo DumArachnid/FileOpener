@@ -5131,6 +5131,12 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   var lastPointerActivity = 0;
   var backgroundSleepListeners = [];
   var workspaceActivityListeners = [];
+  function isViewerIframeFocused() {
+    var active = document.activeElement;
+    return !!(document.hasFocus() && active && active.tagName === 'IFRAME' &&
+      active.closest && active.closest('.preview-area'));
+  }
+  NT.isViewerIframeFocused = isViewerIframeFocused;
   function publishBackgroundSleepState(reason) {
     document.dispatchEvent(new CustomEvent('study-desk-background-sleep', {
       detail: { sleeping: backgroundSleeping, reason: reason }
@@ -5154,6 +5160,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       setBackgroundSleeping(true, 'hidden');
       return;
     }
+    if (isViewerIframeFocused()) return;
     var remaining = BACKGROUND_IDLE_MS - (Date.now() - lastWorkspaceActivity);
     if (remaining <= 0) {
       setBackgroundSleeping(true, 'idle');
@@ -5319,7 +5326,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
     function scheduleScreenSleep() {
       clearIdleTimer();
-      if (!autoEnabled || locked || document.hidden) return;
+      if (!autoEnabled || locked || document.hidden || isViewerIframeFocused()) return;
       var remaining = sleepDuration() - (Date.now() - lastActivity);
       if (remaining <= 0) {
         enterScreenSleep('idle');
