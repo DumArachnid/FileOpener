@@ -1836,6 +1836,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     try { cross = new URL(url, location.href).origin !== location.origin; } catch (e) {}
     return 'allow-scripts allow-forms allow-popups allow-pointer-lock' + (cross ? ' allow-same-origin' : '');
   }
+  NT.sandboxFor = sandboxFor;
   function makeFrame(src, sandbox, title) {
     previewArea.innerHTML = '';
     const f = document.createElement('iframe');
@@ -1846,6 +1847,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     previewArea.appendChild(f);
     return f;
   }
+  NT.makeFrame = makeFrame;
   function renderTextView(text) {
     previewArea.innerHTML = '';
     const pre = document.createElement('pre');
@@ -3245,7 +3247,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     try { stored = localStorage.getItem(TAB_SESSION_KEY); } catch (e) { return false; }
     if (!stored) return false;
     var parsed;
-    try { parsed = JSON.parse(stored); } catch (e) { parsed = null; }
+    try { parsed = stored.length <= 131072 ? JSON.parse(stored) : null; } catch (e) { parsed = null; }
     if (!parsed || parsed.version !== 1 || !Array.isArray(parsed.tabs)) {
       try { localStorage.removeItem(TAB_SESSION_KEY); } catch (e) {}
       toast('A saved tab session could not be read and was cleared.', 'error');
@@ -3296,6 +3298,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     });
     if (restoredActiveIndex < 0 || restoredActiveIndex >= tabs.length) restoredActiveIndex = 0;
     activeId = tabs[restoredActiveIndex].id;
+    tabs[restoredActiveIndex].area = previewArea;
+    tabs[restoredActiveIndex].area.dataset.tabId = activeId;
+    tabs[restoredActiveIndex].used = ++visitClock;
     restore(activeTab());
     renderTabs();
     updateClearSavedSessionButton();
@@ -3340,7 +3345,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       t.area = document.createElement('div');
       t.area.className = 'preview-area tab-parked';
       t.area.setAttribute('aria-live', 'polite');
-      previewHost.insertBefore(t.area, el('editorPanel'));
+      t.area.dataset.viewerLoaded = 'false';
+      previewHost.insertBefore(t.area, iframeWarning);
     }
     previewArea = t.area;
     previewArea.dataset.tabId = t.id;
@@ -3429,14 +3435,14 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     openFile.type = 'button';
     openFile.className = 'btn primary';
     openFile.textContent = 'Open a file';
-    openFile.addEventListener('click', function () { fileInput.click(); });
+    openFile.addEventListener('click', function () { el('fileInput').click(); });
     card.append(heading, message, openFile);
     previewArea.appendChild(card);
   }
   function restore(t) {
     NT.closeEditor();
     var s = t.snap;
-    var live = !!t.area;
+    var live = !!(t.area && t.area.dataset.viewerLoaded === 'true');
     selectArea(t);
     if (!s) {
       V.file = null; V.blobURL = null; V.saved = null; V.isText = false; V.isHTML = false;
@@ -3445,9 +3451,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       V.file = s.file; V.blobURL = s.blobURL; V.saved = s.saved; V.isText = s.isText; V.isHTML = s.isHTML;
       if (!live) {
         if (s.view === 'web' && safeUrl(s.url)) {
-          makeFrame(s.url, sandboxFor(s.url), 'Web page');
-          iframeWarning.classList.add('show');
-          setTimeout(function () { iframeWarning.classList.remove('show'); }, 6000);
+          NT.makeFrame(s.url, NT.sandboxFor(s.url), 'Web page');
+          var warning = el('iframeWarning');
+          warning.classList.add('show');
+          setTimeout(function () { warning.classList.remove('show'); }, 6000);
         } else if (s.view === 'missing-file') renderMissingFileNotice(s.fileTitle || t.title);
         else if (s.view === 'text') NT.renderTextView(NT.savedText());
         else if (s.view === 'empty') NT.showEmpty();
@@ -3461,6 +3468,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         if (NT.onEditorOpen) NT.onEditorOpen();
       }
     }
+    previewArea.dataset.viewerLoaded = 'true';
     trimMemory();
     updateStar();
   }
@@ -4211,8 +4219,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 
   // ---------- boot ----------
   renderBookmarks(); renderRecents(); updateStar();
-  if (!restoreSavedTabSession()) newTab(true);
   window.NT_boot();
+  if (!restoreSavedTabSession()) newTab(true);
   renderTabs();
 })();
 
