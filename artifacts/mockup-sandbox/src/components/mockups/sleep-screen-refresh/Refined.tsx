@@ -99,11 +99,6 @@ export function Refined() {
           </section>
         )}
 
-        <div className="sleep-refined-footer" aria-hidden="true">
-          <span>Workspace concealed</span>
-          <span className="sleep-footer-rule" />
-          <span>Only this screen is visible</span>
-        </div>
       </div>
 
       <style>{`
@@ -125,13 +120,13 @@ export function Refined() {
         }
         .sleep-refined-frame {
           display: grid;
-          grid-template-rows: auto 1fr auto;
+          grid-template-rows: auto minmax(0, 1fr);
           min-height: 100vh;
           min-height: 100dvh;
           padding: clamp(22px, 4vw, 54px) clamp(22px, 5vw, 72px) 28px;
           background: #000;
         }
-        .sleep-refined-topline, .sleep-refined-footer {
+        .sleep-refined-topline {
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -184,8 +179,6 @@ export function Refined() {
         .sleep-prototype-message { min-height: 1.4em; margin: 8px 0 0; color: var(--sleep-accent); font-size: 11px; line-height: 1.4; }
         .sleep-back-button { margin-top: 4px; padding: 5px 0; border: 0; background: transparent; color: var(--sleep-muted); font: 500 11px var(--main-font); cursor: pointer; }
         .sleep-back-button:hover { color: var(--sleep-ink); }
-        .sleep-refined-footer { justify-content: center; gap: 14px; color: #60615c; font-size: 9px; letter-spacing: .13em; }
-        .sleep-footer-rule { width: 24px; height: 1px; background: #343530; }
         .refined-sleep button:focus-visible { outline: 2px solid #c7bea0; outline-offset: 3px; }
         @keyframes sleep-arrive { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
         @media (max-width: 520px) {
@@ -194,7 +187,6 @@ export function Refined() {
           .sleep-wordmark { font-size: 10px; }
           .sleep-rest-state { padding-bottom: 35px; }
           .sleep-orbit { margin-bottom: 28px; }
-          .sleep-refined-footer { font-size: 8px; gap: 9px; }
           .sleep-unlock-card { border-radius: 12px; }
         }
         @media (prefers-reduced-motion: reduce) {

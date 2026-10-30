@@ -278,8 +278,8 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .screen-sleep-overlay::backdrop { background: #000; }
 .screen-sleep-active, .screen-sleep-active body { overflow: hidden !important; }
 .screen-sleep-overlay:not([open]), .screen-sleep-panel[hidden], .screen-sleep-rest[hidden] { display: none !important; }
-.screen-sleep-shell { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; width: 100%; height: 100%; min-height: 0; overflow-y: auto; padding: clamp(20px, 4vw, 52px) clamp(20px, 5vw, 72px) 24px; background: #000; }
-.screen-sleep-topline, .screen-sleep-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; color: color-mix(in srgb, var(--accent) 18%, #898989); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+.screen-sleep-shell { display: grid; grid-template-rows: auto minmax(0, 1fr); width: 100%; height: 100%; min-height: 0; overflow-y: auto; padding: clamp(20px, 4vw, 52px) clamp(20px, 5vw, 72px) 24px; background: #000; }
+.screen-sleep-topline { display: flex; align-items: center; justify-content: space-between; gap: 16px; color: color-mix(in srgb, var(--accent) 18%, #898989); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
 .screen-sleep-wordmark { display: inline-flex; align-items: center; gap: 10px; color: color-mix(in srgb, var(--accent) 35%, #c8c8c8); font-size: 12px; font-weight: 600; letter-spacing: .08em; }
 .screen-sleep-mark { width: 9px; height: 9px; border: 1px solid currentColor; border-radius: 3px; transform: rotate(45deg); }
 .screen-sleep-status { display: inline-flex; align-items: center; gap: 9px; }
@@ -314,8 +314,6 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .screen-sleep-unlock-form button span { margin-left: auto; color: var(--on-accent); }
 .screen-sleep-local-note { margin: 18px 0 0 !important; padding-top: 14px; border-top: 1px solid var(--border); font-size: 11px; line-height: 1.55; }
 .screen-sleep-panel .screen-sleep-error { min-height: 1.4em; margin: 8px 0 0; color: var(--danger); font-size: 12px; }
-.screen-sleep-footer { justify-content: center; gap: 12px; color: color-mix(in srgb, var(--accent) 12%, #6d6d6d); font-size: 9px; letter-spacing: .12em; }
-.screen-sleep-footer-rule { width: 24px; height: 1px; background: color-mix(in srgb, var(--accent) 18%, #333); }
 .screen-sleep-overlay :focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 65%, #bbb); outline-offset: 3px; }
 @keyframes screen-sleep-arrive { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 520px) {
@@ -324,7 +322,6 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
   .screen-sleep-wordmark { font-size: 10px; }
   .screen-sleep-rest { padding-bottom: 32px; }
   .screen-sleep-orbit { margin-bottom: 26px; }
-  .screen-sleep-footer { gap: 9px; font-size: 8px; }
   .screen-sleep-panel { border-radius: 12px; }
 }
 @media (max-height: 560px) {
@@ -1528,7 +1525,6 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <p class="screen-sleep-local-note" id="screenSleepLocalNote">This password stays in this browser. It is a local privacy lock, not account security.</p>
 <p class="screen-sleep-error" id="screenSleepError" role="status" aria-live="polite"></p>
 </section>
-<footer class="screen-sleep-footer" aria-hidden="true"><span>Workspace concealed</span><span class="screen-sleep-footer-rule"></span><span>Only this screen is visible</span></footer>
 </div>
 </dialog>
 <aside id="accountNudge" class="account-nudge" role="region" aria-label="Account recommendation" hidden>
