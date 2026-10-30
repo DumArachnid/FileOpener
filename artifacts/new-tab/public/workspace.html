@@ -3003,7 +3003,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       if (!response.ok) {
         if (response.status === 429 && result && result.dailyLimit && result.availableAt) {
           setRandomLinkCooldown(result.availableAt);
-          throw new Error('You already received a random link in the last 24 hours. Try again after ' + new Date(result.availableAt).toLocaleString() + '.');
+          throw new Error('You’ve reached the limit of 2 random links in the last 24 hours. Try again after ' + new Date(result.availableAt).toLocaleString() + '.');
         }
         if (response.status === 429) {
           var retryAfter = Number(response.headers.get('Retry-After'));

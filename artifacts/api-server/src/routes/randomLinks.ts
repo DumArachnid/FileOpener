@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { desc, eq, ne, sql } from "drizzle-orm";
+import { desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { Router, type IRouter, type Request, type Response } from "express";
 import {
   CreateCuratedRandomLinkBody,
@@ -23,6 +23,7 @@ const randomLinkRateLimit = createReadRateLimit({
 });
 const MAX_CATALOG_SIZE = 500;
 const RANDOM_LINK_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+const RANDOM_LINK_LIMIT = 2;
 const RANDOM_LINK_VISITOR_COOKIE = "study_desk_random_link_visitor";
 
 function getRandomLinkIdentity(req: Request, res: Response): string {
@@ -103,30 +104,45 @@ router.get("/random-links/random", randomLinkRateLimit, async (req, res): Promis
 
   const now = new Date();
   const cutoff = new Date(now.getTime() - RANDOM_LINK_COOLDOWN_MS);
-  const [claim] = await db
-    .insert(randomLinkClaimsTable)
-    .values({ identityKey, lastClaimedAt: now })
-    .onConflictDoUpdate({
-      target: randomLinkClaimsTable.identityKey,
-      set: { lastClaimedAt: now },
-      setWhere: sql`${randomLinkClaimsTable.lastClaimedAt} <= ${cutoff}`,
-    })
-    .returning({ lastClaimedAt: randomLinkClaimsTable.lastClaimedAt });
+  // The unsuffixed identity key remains the first slot, preserving existing
+  // one-claim records. A second slot allows one additional request per window.
+  const claimKeys = [identityKey, `${identityKey}:slot:2`];
+  let claim: { lastClaimedAt: Date } | undefined;
+  for (const claimKey of claimKeys) {
+    const [slotClaim] = await db
+      .insert(randomLinkClaimsTable)
+      .values({ identityKey: claimKey, lastClaimedAt: now })
+      .onConflictDoUpdate({
+        target: randomLinkClaimsTable.identityKey,
+        set: { lastClaimedAt: now },
+        setWhere: sql`${randomLinkClaimsTable.lastClaimedAt} <= ${cutoff}`,
+      })
+      .returning({ lastClaimedAt: randomLinkClaimsTable.lastClaimedAt });
+    if (slotClaim) {
+      claim = slotClaim;
+      break;
+    }
+  }
 
-  if (!claim) {
-    const [previousClaim] = await db
+  const claims = await db
       .select({ lastClaimedAt: randomLinkClaimsTable.lastClaimedAt })
       .from(randomLinkClaimsTable)
-      .where(eq(randomLinkClaimsTable.identityKey, identityKey))
-      .limit(1);
-    const nextAvailableAt = new Date(
-      (previousClaim?.lastClaimedAt ?? now).getTime() + RANDOM_LINK_COOLDOWN_MS,
+      .where(inArray(randomLinkClaimsTable.identityKey, claimKeys));
+  const activeClaims = claims
+    .map((row) => row.lastClaimedAt)
+    .filter((claimedAt) => claimedAt.getTime() > cutoff.getTime());
+
+  if (!claim) {
+    const oldestClaim = activeClaims.reduce(
+      (oldest, claimedAt) => Math.min(oldest, claimedAt.getTime()),
+      now.getTime(),
     );
+    const nextAvailableAt = new Date(oldestClaim + RANDOM_LINK_COOLDOWN_MS);
     const retryAfterSeconds = Math.max(1, Math.ceil((nextAvailableAt.getTime() - now.getTime()) / 1000));
     res.setHeader("Retry-After", String(retryAfterSeconds));
     res.setHeader("X-Random-Link-Next-Available-At", nextAvailableAt.toISOString());
     res.status(429).json({
-      error: "You have already received a random link in the last 24 hours.",
+      error: `You have already received ${RANDOM_LINK_LIMIT} random links in the last 24 hours.`,
       dailyLimit: true,
       availableAt: nextAvailableAt.toISOString(),
       retryAfterSeconds,
@@ -134,8 +150,11 @@ router.get("/random-links/random", randomLinkRateLimit, async (req, res): Promis
     return;
   }
 
-  const nextAvailableAt = new Date(now.getTime() + RANDOM_LINK_COOLDOWN_MS);
-  res.setHeader("X-Random-Link-Next-Available-At", nextAvailableAt.toISOString());
+  if (activeClaims.length >= RANDOM_LINK_LIMIT) {
+    const oldestClaim = Math.min(...activeClaims.map((claimedAt) => claimedAt.getTime()));
+    const nextAvailableAt = new Date(oldestClaim + RANDOM_LINK_COOLDOWN_MS);
+    res.setHeader("X-Random-Link-Next-Available-At", nextAvailableAt.toISOString());
+  }
   res.json(GetRandomCuratedLinkResponse.parse({ link }));
 });
 

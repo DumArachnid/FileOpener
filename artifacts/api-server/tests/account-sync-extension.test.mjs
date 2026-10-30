@@ -188,9 +188,10 @@ after(async () => {
     );
   }
   if (fixtureRandomLinkClaimKeys.length) {
+    const claimKeys = fixtureRandomLinkClaimKeys.flatMap((key) => [key, `${key}:slot:2`]);
     await cleanupPool.query(
       "DELETE FROM study_desk_random_link_claims WHERE identity_key = ANY($1::text[])",
-      [fixtureRandomLinkClaimKeys],
+      [claimKeys],
     );
   }
   if (fixtureUsernames.length) {
@@ -748,27 +749,41 @@ test("random curated links are public to request and moderator-managed", async (
     assert.equal(invalid.status, 400);
   }
 
+  const guestWindowStartedAt = Date.now();
   const randomWithCreatedLink = await request("/random-links/random");
   assert.equal(randomWithCreatedLink.status, 200);
   assert.ok(randomWithCreatedLink.randomVisitorCookie);
   assert.ok(randomWithCreatedLink.data.link);
-  assert.ok(Date.parse(randomWithCreatedLink.randomLinkNextAvailableAt) > Date.now());
   assert.match(
     randomWithCreatedLink.data.link.url,
     /^https?:\/\//,
   );
+  assert.equal(randomWithCreatedLink.randomLinkNextAvailableAt, null);
+  const guestSecond = await request("/random-links/random", {
+    cookie: randomWithCreatedLink.randomVisitorCookie,
+  });
+  assert.equal(guestSecond.status, 200);
+  assert.ok(guestSecond.data.link);
+  const guestNextAvailableAt = Date.parse(guestSecond.randomLinkNextAvailableAt);
+  assert.ok(guestNextAvailableAt > Date.now());
+  assert.ok(Math.abs(guestNextAvailableAt - (guestWindowStartedAt + 24 * 60 * 60 * 1000)) < 10_000);
   const guestRepeat = await request("/random-links/random", {
     cookie: randomWithCreatedLink.randomVisitorCookie,
   });
   assert.equal(guestRepeat.status, 429);
   assert.equal(guestRepeat.data.dailyLimit, true);
-  assert.ok(Date.parse(guestRepeat.data.availableAt) > Date.now());
+  assert.match(guestRepeat.data.error, /2 random links/);
+  assert.equal(Date.parse(guestRepeat.data.availableAt), guestNextAvailableAt);
   assert.ok(Number(guestRepeat.data.retryAfterSeconds) > 0);
 
   const accountRandom = await request("/random-links/random", {
     cookie: regularAccount.cookie,
   });
   assert.equal(accountRandom.status, 200);
+  const accountSecond = await request("/random-links/random", {
+    cookie: regularAccount.cookie,
+  });
+  assert.equal(accountSecond.status, 200);
   const accountRepeat = await request("/random-links/random", {
     cookie: regularAccount.cookie,
   });
