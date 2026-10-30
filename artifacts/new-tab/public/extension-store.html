@@ -454,6 +454,15 @@
       }
       catch (error) { return null; }
     }
+    function trackEvent(name, data) {
+      try {
+        var app = desk();
+        if (app && typeof app.trackEvent === 'function') app.trackEvent(name, data);
+        else if (window.umami && typeof window.umami.track === 'function') window.umami.track(name, data);
+      } catch (error) {
+        // Analytics must never interfere with store actions.
+      }
+    }
     function request(path, options) {
       options = options || {};
       var headers = Object.assign({ Accept: 'application/json' }, options.headers || {});
@@ -635,8 +644,12 @@
       catch (error) { state.owned = []; }
       renderOwned();
     }
-    function openDetails(item, source, permissions) {
-      state.selected = { item: item, source: source || '', permissions: permissions || '' };
+    function openDetails(item, source, permissions, listingType) {
+      state.selected = { item: item, source: source || '', permissions: permissions || '', listingType: listingType || 'community' };
+      trackEvent('store_extension_details_opened', {
+        listing: state.selected.listingType,
+        category: categoryForExtension(item).key
+      });
       $('detailsTitle').textContent = item.name;
       $('detailsDescription').textContent = item.description || '';
       $('detailsPermissions').textContent = permissions || '';
@@ -652,7 +665,7 @@
     async function reviewPublic(item) {
       try {
         var detail = await request('/store/extensions/' + encodeURIComponent(item.id));
-        openDetails(item, detail.code, 'Published by ' + detail.publisherUsername + '. Review the source before enabling this extension.');
+        openDetails(item, detail.code, 'Published by ' + detail.publisherUsername + '. Review the source before enabling this extension.', 'community');
       } catch (error) { setStatus(error.message, true); }
     }
     function categoryForExtension(item) {
@@ -843,7 +856,7 @@
         head.append(text('strong', 'card-title', item.name), text('span', 'badge', installed ? 'INSTALLED' : 'AVAILABLE'));
         card.append(head, text('p', '', item.description));
         card.appendChild(button(installed ? 'View details' : 'Review details', function () {
-          openDetails(item, item.source, item.permissions);
+          openDetails(item, item.source, item.permissions, 'demo');
         }));
         host.appendChild(card);
       });
@@ -879,7 +892,11 @@
         if (publish) {
           await request('/store/extensions/' + encodeURIComponent(item.id) + '/publish', { method: 'POST' });
           setStatus('Extension submitted for moderator approval.', false);
-        } else setStatus('Private draft saved.', false);
+          trackEvent('store_extension_submitted', { editing: !!state.editing });
+        } else {
+          setStatus('Private draft saved.', false);
+          trackEvent('store_extension_draft_saved', { editing: !!state.editing });
+        }
         editorDialog.close();
         await refreshLists();
       } catch (error) { $('editorStatus').textContent = error.message; }
@@ -970,6 +987,10 @@
       if (!app || typeof app.installStoreExtension !== 'function') return;
       var item = Object.assign({}, state.selected.item, { source: state.selected.source, code: state.selected.source });
       if (app.installStoreExtension(item)) {
+          trackEvent('store_extension_installed', {
+            listing: state.selected.listingType,
+            category: categoryForExtension(state.selected.item).key
+          });
         $('installBtn').classList.add('hidden');
         $('installedBtn').classList.remove('hidden');
         if (detailsDialog.open) detailsDialog.close();

@@ -1470,6 +1470,16 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 (function () {
   'use strict';
   var NT = (window.NT = window.NT || {});
+  NT.trackEvent = function (name, data) {
+    if (typeof window === 'undefined') return;
+    try {
+      if (window.umami && typeof window.umami.track === 'function') {
+        window.umami.track(name, data);
+      }
+    } catch (error) {
+      // Analytics must never interfere with workspace actions.
+    }
+  };
 
   var P = {
     x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
@@ -2435,6 +2445,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     makeFrame(url, sandboxFor(url), 'Web page');
     setStatus('Web: ' + url, 'External URL');
     updateActions(true);
+    NT.trackEvent('workspace_page_opened');
     if (NT.onUrlLoaded) NT.onUrlLoaded(url);
     return true;
   }
@@ -2605,6 +2616,16 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
 
   function handleFileOpen(file) {
+    var fileKind = file.type.startsWith('image/')
+      ? 'image'
+      : file.type === 'application/pdf'
+        ? 'pdf'
+        : isLargeHtmlFile(file) || /\.html?$/i.test(file.name)
+          ? 'html'
+          : file.type.startsWith('text/') || /\.(js|css|json|md|txt|py|java|c|cpp|csv)$/i.test(file.name)
+            ? 'text'
+            : 'other';
+    NT.trackEvent('workspace_file_opened', { file_kind: fileKind });
     revokeCurrent();
     V.file = file; V.isText = false; V.isHTML = false; V.saved = null;
     editorPanel.classList.add('hidden');
@@ -2889,7 +2910,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   function extensionBookmarkCount() {
     return bookmarks.filter(function (bookmark) { return typeof bookmark.sourceExtensionId === 'string' && bookmark.sourceExtensionId; }).length;
   }
-  function addBookmark(raw, name, sourceExtensionId, silent) {
+  function addBookmark(raw, name, sourceExtensionId, silent, analyticsSource) {
     var u = safeUrl(raw);
     if (!u) { toast('Enter a valid http or https address', 'error'); return false; }
     if (isBookmarked(u)) { toast('Already bookmarked'); return false; }
@@ -2908,6 +2929,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       return false;
     }
     if (!silent) toast('Bookmarked ' + hostOf(u));
+    NT.trackEvent('bookmark_added', { source: analyticsSource || (sourceExtensionId ? 'extension' : 'manual') });
     return true;
   }
   var randomLinkButton = el('randomLinkBtn');
@@ -2973,7 +2995,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       if (typeof result.link.title !== 'string' || typeof result.link.url !== 'string') {
         throw new Error('The server returned an invalid link.');
       }
-      addBookmark(result.link.url, result.link.title);
+      addBookmark(result.link.url, result.link.title, null, false, 'random');
     } catch (error) {
       toast(error && error.message ? error.message : 'Could not get a random link. Check your connection.', 'error');
     } finally {
