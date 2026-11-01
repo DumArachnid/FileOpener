@@ -4,6 +4,7 @@ import { spawn } from "node:child_process";
 import { createServer } from "node:net";
 import { createRequire } from "node:module";
 import { createHash, randomUUID } from "node:crypto";
+import { runInNewContext } from "node:vm";
 import { after, before, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -19,6 +20,8 @@ const fixtureRandomLinkIds = [];
 const fixtureRandomLinkClaimKeys = [];
 const fixtureDeveloperSessionIds = [];
 const fixtureVisitorHashes = [];
+const workspaceHtmlPath = path.resolve(apiDirectory, "../new-tab/public/workspace.html");
+let visitorLifecycleSource;
 const developerTestEmail = `developer-${randomUUID()}@example.test`;
 const unverifiedDeveloperEmail = `unverified-${randomUUID()}@example.test`;
 const missingAccountDeveloperEmail = `missing-${randomUUID()}@example.test`;
@@ -94,6 +97,50 @@ async function request(route, { method = "GET", cookie, body, headers: additiona
     randomLinkNextAvailableAt: response.headers.get("X-Random-Link-Next-Available-At"),
     cacheControl: response.headers.get("Cache-Control"),
   };
+}
+
+async function createVisitorLifecycleHarness({
+  storage = new Map(),
+  isOfflineCopy = false,
+  api = () => Promise.resolve(),
+} = {}) {
+  if (!visitorLifecycleSource) {
+    const workspaceHtml = await readFile(workspaceHtmlPath, "utf8");
+    const start = workspaceHtml.indexOf("  var VISITOR_ID_KEY = 'study_desk_visitor_id_v1';");
+    const end = workspaceHtml.indexOf("  var BACKGROUND_IDLE_MS =", start);
+    assert.notEqual(start, -1, "visitor lifecycle code should exist in workspace.html");
+    assert.notEqual(end, -1, "visitor lifecycle block should have a stable end marker");
+    visitorLifecycleSource = workspaceHtml.slice(start, end);
+  }
+  const context = {
+    isOfflineCopy,
+    hostedHandoffState: null,
+    accountUser: null,
+    localStorage: {
+      getItem(key) {
+        return storage.has(key) ? storage.get(key) : null;
+      },
+      setItem(key, value) {
+        storage.set(key, String(value));
+      },
+    },
+    window: {
+      crypto: {
+        randomUUID: () => "test-visitor-id",
+      },
+    },
+    api,
+  };
+  runInNewContext(
+    `${visitorLifecycleSource}
+      this.visitorLifecycle = {
+        recordAnonymousVisitorOnce: recordAnonymousVisitorOnce,
+        markVisitorLinked: markVisitorLinked,
+        visitorIdForAccountRequest: visitorIdForAccountRequest
+      };`,
+    context,
+  );
+  return { storage, ...context.visitorLifecycle };
 }
 
 async function signUp(username = uniqueUsername()) {
@@ -550,6 +597,83 @@ test("anonymous first visits are deduplicated, linked on account auth, and count
   });
   assert.equal(afterLogin.data.registeredAccountCount, baseline.registeredAccountCount + 1);
   assert.equal(afterLogin.data.anonymousVisitorCount, baseline.anonymousVisitorCount);
+});
+
+test("a recorded browser profile does not report another anonymous visit after reload", async () => {
+  const storage = new Map();
+  let postCount = 0;
+  const api = () => {
+    postCount += 1;
+    return Promise.resolve();
+  };
+  const firstPage = await createVisitorLifecycleHarness({ storage, api });
+
+  firstPage.recordAnonymousVisitorOnce();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(storage.get("study_desk_visitor_state_v1"), "recorded");
+  assert.equal(postCount, 1);
+
+  const reloadedPage = await createVisitorLifecycleHarness({ storage, api });
+  reloadedPage.recordAnonymousVisitorOnce();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(postCount, 1, "reloading a recorded browser profile must not POST again");
+});
+
+test("successful account linking prevents future anonymous visit reports", async () => {
+  const storage = new Map();
+  let postCount = 0;
+  const page = await createVisitorLifecycleHarness({
+    storage,
+    api: () => {
+      postCount += 1;
+      return Promise.resolve();
+    },
+  });
+
+  page.markVisitorLinked({ visitorLinked: true });
+  page.recordAnonymousVisitorOnce();
+
+  assert.equal(storage.get("study_desk_visitor_state_v1"), "linked");
+  assert.equal(page.visitorIdForAccountRequest(), undefined);
+  assert.equal(postCount, 0, "a linked account must not report an anonymous visit");
+});
+
+test("offline file copies do not report anonymous visits", async () => {
+  let postCount = 0;
+  const page = await createVisitorLifecycleHarness({
+    isOfflineCopy: true,
+    api: () => {
+      postCount += 1;
+      return Promise.resolve();
+    },
+  });
+
+  page.recordAnonymousVisitorOnce();
+
+  assert.equal(postCount, 0);
+});
+
+test("a delayed first-visit response cannot replace linked visitor state", async () => {
+  const storage = new Map();
+  let resolveFirstVisit;
+  const firstVisitResponse = new Promise((resolve) => {
+    resolveFirstVisit = resolve;
+  });
+  const page = await createVisitorLifecycleHarness({
+    storage,
+    api: () => firstVisitResponse,
+  });
+
+  page.recordAnonymousVisitorOnce();
+  page.markVisitorLinked({ visitorLinked: true });
+  resolveFirstVisit();
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.equal(
+    storage.get("study_desk_visitor_state_v1"),
+    "linked",
+    "the late response must preserve the account-linked state",
+  );
 });
 
 test("offline account handoff verifies credentials without issuing a session", async () => {
