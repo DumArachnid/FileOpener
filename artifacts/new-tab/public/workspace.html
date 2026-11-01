@@ -1996,7 +1996,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
   }
   NT.openDeveloperControls = openDeveloperControlsFromAdmin;
-  storeButton.addEventListener('click', function () { openExtensionStore(true); });
+  storeButton.addEventListener('click', function () {
+    NT.trackEvent('extension_store_opened', { entry: 'workspace_toolbar' });
+    openExtensionStore(true);
+  });
   window.addEventListener('message', function (event) {
     if (event.origin !== location.origin || !event.data || event.data.type !== 'study-desk-close-store') return;
     closeExtensionStore(true);
@@ -3813,7 +3816,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   // -----------------------------------------------------
   var CIRC = 276.46;
   var tMin = Math.min(360, Math.max(1, parseInt(localStorage.getItem('disguise_timer_minutes') || '25', 10) || 25));
-  var tTotal = tMin * 60000, tLeft = tTotal, tEnd = 0, tRun = false, tInt = null;
+  var tTotal = tMin * 60000, tLeft = tTotal, tEnd = 0, tRun = false, tInt = null, tSessionMinutes = tMin;
   var timerBox = el('timerBox'), tDisp = el('timerDisplay'), tRing = el('timerRing'), tLabel = el('timerLabel');
   var tStart = el('timerStartBtn'), tMinInput = el('timerMinutes'), tPill = el('timerPill');
   tMinInput.value = tMin;
@@ -3846,6 +3849,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       tRun = false; clearInterval(tInt); tInt = null; tLeft = 0; drawTimer();
       timerBox.classList.remove('done'); void timerBox.offsetWidth; timerBox.classList.add('done');
       tPill.classList.remove('hidden'); el('timerPillText').textContent = 'Done';
+      NT.trackEvent('focus_timer_completed', { duration_minutes: tSessionMinutes });
       beep(); toast('Focus session complete. Nice work.');
       NT.setStatus(NT.statusLeft.textContent, 'Focus session complete');
       return;
@@ -3854,12 +3858,15 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
   function timerToggle() {
     if (tRun) { tRun = false; clearInterval(tInt); tInt = null; tLeft = Math.max(0, tEnd - Date.now()); drawTimer(); return; }
+    var resumed = tLeft > 0 && tLeft < tTotal;
     if (tLeft <= 0) tLeft = tTotal;
+    if (!resumed) tSessionMinutes = tMin;
     timerBox.classList.remove('done');
     tRun = true; tEnd = Date.now() + tLeft; clearInterval(tInt); tInt = setInterval(timerTick, 250); timerTick();
+    NT.trackEvent('focus_timer_started', { duration_minutes: tSessionMinutes, resumed: resumed });
   }
   function timerReset() {
-    tRun = false; clearInterval(tInt); tInt = null; tLeft = tTotal; timerBox.classList.remove('done'); drawTimer();
+    tRun = false; clearInterval(tInt); tInt = null; tLeft = tTotal; tSessionMinutes = tMin; timerBox.classList.remove('done'); drawTimer();
   }
   tMinInput.addEventListener('change', function () {
     var v = parseInt(tMinInput.value, 10);
@@ -6187,6 +6194,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       var result = await syncRequestBody(allowedCloudUpdates(local));
       if (!accountUser || accountUser.username !== username) return;
       revision = result.revision || 0;
+      NT.trackEvent('workspace_sync_completed', {
+        direction: 'push',
+        outcome: skippedLarge.length ? 'partial' : 'complete'
+      });
       setCloudStatus(
         skippedLarge.length
           ? 'Workspace pushed. Large notes or bookmarks stayed on this device.'
@@ -6224,6 +6235,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         keys.push(key);
       });
       if (!keys.length) {
+        NT.trackEvent('workspace_sync_completed', {
+          direction: 'pull',
+          outcome: skippedLarge.length ? 'oversized_data' : 'empty'
+        });
         setCloudStatus(
           skippedLarge.length
             ? 'The account has notes or bookmarks too large to pull; this device was not changed.'
@@ -6255,6 +6270,11 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       });
       dispatchCloudChange(changed);
       updateTabShareControl();
+      NT.trackEvent('workspace_sync_completed', {
+        direction: 'pull',
+        outcome: failed.length ? 'partial' : (changed.length ? 'applied' : 'unchanged'),
+        fields_changed: changed.length
+      });
       var details = 'Pulled ' + keys.length + ' account field(s); ' + changed.length + ' changed on this device.';
       if (skippedLarge.length) details += ' Large notes or bookmarks were skipped.';
       if (failed.length) details += ' Some values could not be saved in browser storage.';
@@ -6335,6 +6355,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       });
       $('loginPassword').value = '';
       markVisitorLinked(result);
+      NT.trackEvent('account_signed_in', { method: 'password' });
       if (hostedHandoffState) {
         showHostedHandoffConfirmation(result.user);
         return;
@@ -6362,6 +6383,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       });
       $('signupPassword').value = '';
       markVisitorLinked(result);
+      NT.trackEvent('account_created', { method: 'password' });
       await finishSignIn(result.user, true);
       displayRecoveryCode(result.recoveryCode);
     } catch (error) {
@@ -6387,6 +6409,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       $('recoveryCode').value = '';
       $('recoveryNewPassword').value = '';
       markVisitorLinked(result);
+      NT.trackEvent('account_signed_in', { method: 'recovery' });
       await finishSignIn(result.user, true);
       displayRecoveryCode(result.recoveryCode);
     } catch (error) {
@@ -6461,6 +6484,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       });
       if (!result || !result.user) throw new Error('No linked Study Desk account was returned.');
       markVisitorLinked(result);
+      NT.trackEvent('account_signed_in', { method: 'developer_identity' });
       await finishSignIn(result.user, false);
       NT.toast('Signed in securely with your developer identity.');
     } catch (error) {
