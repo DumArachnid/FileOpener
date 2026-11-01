@@ -4,6 +4,7 @@ import {
   FindDeveloperManagedAccountQueryParams,
   FindDeveloperManagedAccountResponse,
   GetDeveloperAuthStateResponse,
+  CreateDeveloperStudyDeskSessionBody,
   CreateDeveloperStudyDeskSessionResponse,
   SetDeveloperManagedAccountRoleBody,
   SetDeveloperManagedAccountRoleParams,
@@ -29,6 +30,7 @@ import {
 } from "../lib/developerAuth";
 import { requireAuthorizedDeveloper } from "../middlewares/developerAuth";
 import { expireSuspensionForUser, isSuspensionActive } from "../lib/suspensions";
+import { associateVisitorWithAccount } from "../lib/visitorProfiles";
 import {
   hashOpaqueValue,
   newSessionToken,
@@ -119,6 +121,11 @@ router.post(
   "/developer/auth/study-desk-session",
   requireAuthorizedDeveloper,
   async (req, res): Promise<void> => {
+    const body = CreateDeveloperStudyDeskSessionBody.safeParse(req.body ?? {});
+    if (!body.success) {
+      res.status(400).json({ error: "The browser profile could not be verified." });
+      return;
+    }
     const developer = req.replitDeveloper;
     if (!developer || developer.emailVerified !== true) {
       res.status(403).json({ error: "Sign in again with a verified developer email." });
@@ -157,6 +164,15 @@ router.post(
       return;
     }
 
+    let visitorLinked = false;
+    if (body.data.visitorId) {
+      try {
+        visitorLinked = await associateVisitorWithAccount(body.data.visitorId, user.id);
+      } catch (error) {
+        req.log.warn({ err: error }, "Could not associate the browser profile with the developer account");
+      }
+    }
+
     const token = newSessionToken();
     await db.insert(studySessionsTable).values({
       tokenHash: hashOpaqueValue(token),
@@ -166,6 +182,7 @@ router.post(
     setSessionCookie(res, token);
     res.json(CreateDeveloperStudyDeskSessionResponse.parse({
       user: { username: user.username, role: user.role },
+      visitorLinked,
     }));
   },
 );

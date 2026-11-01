@@ -265,11 +265,27 @@ paths:
           description: Presence recorded
         "401":
           description: Sign in required
+  /visitor/first-visit:
+    post:
+      operationId: recordAnonymousVisitor
+      tags: [analytics]
+      summary: Record one first visit from an anonymous browser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnonymousVisitorInput"
+      responses:
+        "204":
+          description: Anonymous browser profile recorded once
+        "400":
+          description: Invalid visitor identifier
   /developer/online-count:
     get:
       operationId: getDeveloperOnlineCount
       tags: [developer]
-      summary: Get the number of recently active accounts
+      summary: Get developer-only account and activity metrics
       responses:
         "200":
           description: Aggregate active account count; no account identities are returned
@@ -1052,6 +1068,12 @@ paths:
       operationId: createDeveloperStudyDeskSession
       tags: [developer]
       summary: Sign in to a linked Study Desk account using the authorized developer session
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeveloperSessionInput"
       responses:
         "200":
           description: A Study Desk account session was created without changing the account role
@@ -1059,10 +1081,12 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [user]
+                required: [user, visitorLinked]
                 properties:
                   user:
                     $ref: "#/components/schemas/UserSummary"
+                  visitorLinked:
+                    type: boolean
         "401":
           description: A developer sign-in is required
         "403":
@@ -1191,6 +1215,9 @@ components:
           type: string
           minLength: 10
           maxLength: 128
+        visitorId:
+          type: string
+          format: uuid
     LoginInput:
       type: object
       required: [username, password]
@@ -1203,6 +1230,9 @@ components:
           type: string
           minLength: 1
           maxLength: 128
+        visitorId:
+          type: string
+          format: uuid
     OfflineHandoffInput:
       type: object
       required: [state, username, password]
@@ -1235,6 +1265,22 @@ components:
           type: string
           minLength: 10
           maxLength: 128
+        visitorId:
+          type: string
+          format: uuid
+    AnonymousVisitorInput:
+      type: object
+      required: [visitorId]
+      properties:
+        visitorId:
+          type: string
+          format: uuid
+    DeveloperSessionInput:
+      type: object
+      properties:
+        visitorId:
+          type: string
+          format: uuid
     UserSummary:
       type: object
       required: [username, role]
@@ -1246,12 +1292,14 @@ components:
           enum: [user, moderator, dev]
     AuthResult:
       type: object
-      required: [user, recoveryCode]
+      required: [user, recoveryCode, visitorLinked]
       properties:
         user:
           $ref: "#/components/schemas/UserSummary"
         recoveryCode:
           type: ["string", "null"]
+        visitorLinked:
+          type: boolean
     CurrentUser:
       type: object
       required: [user]
@@ -1738,7 +1786,7 @@ components:
           enum: [user, moderator, dev]
     DeveloperOnlineCount:
       type: object
-      required: [count, activityWindowSeconds]
+      required: [count, activityWindowSeconds, registeredAccountCount, anonymousVisitorCount]
       properties:
         count:
           type: integer
@@ -1746,6 +1794,12 @@ components:
         activityWindowSeconds:
           type: integer
           const: 90
+        registeredAccountCount:
+          type: integer
+          minimum: 0
+        anonymousVisitorCount:
+          type: integer
+          minimum: 0
     AnnouncementInput:
       type: object
       required: [message, durationSeconds]

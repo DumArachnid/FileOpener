@@ -11,4 +11,5 @@ export interface AuthResult {
   user: UserSummary;
   /** @nullable */
   recoveryCode: string | null;
+  visitorLinked: boolean;
 }

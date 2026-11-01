@@ -9,4 +9,5 @@ import type { UserSummary } from './userSummary';
 
 export type CreateDeveloperStudyDeskSession200 = {
   user: UserSummary;
+  visitorLinked: boolean;
 };

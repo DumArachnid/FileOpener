@@ -133,6 +133,7 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .btn:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 0 0 var(--ink-shadow); }
 .btn:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
 .btn.sm { padding: 6px 10px; font-size: 12px; }
+.dev-user-metrics { display: inline-flex; align-items: center; min-height: 28px; padding: 0 9px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--muted); font-size: 11px; font-weight: 600; white-space: nowrap; }
 .btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent-hover); box-shadow: 0 2px 0 var(--accent-hover); }
 .btn.primary:hover:not(:disabled) { background: var(--accent-hover); color: var(--on-accent-hover); box-shadow: 0 3px 0 var(--ink-shadow); }
 .btn.danger { background: var(--danger); color: #fff; border-color: var(--danger-hover); box-shadow: 0 2px 0 var(--danger-hover); }
@@ -1130,6 +1131,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <button class="btn sm hide-in-focus" id="storeBtn" type="button" title="Open the Extension Store" aria-label="Open the Extension Store"><i data-ic="cart"></i></button>
 <button class="btn sm hide-in-focus hidden" id="adminPanelBtn" type="button" title="Open admin panel" aria-label="Open admin panel"><i data-ic="shield"></i></button>
 <button class="btn sm hide-in-focus hidden" id="devOnlineBtn" type="button" title="Signed-in accounts active within the last 90 seconds" aria-live="polite">Online: …</button>
+<span class="dev-user-metrics hide-in-focus hidden" id="devUserMetrics" role="status" aria-live="polite">Accounts: — · No account: —</span>
 <button class="btn sm hide-in-focus" id="accountBtn" type="button" title="Sign in to manually sync your workspace"><i data-ic="user"></i><span id="accountBtnText">Account</span></button>
 <button class="btn sm hide-in-focus" id="paletteBtn" title="Command palette (Ctrl/Cmd+K)"><i data-ic="command"></i></button>
 <button class="btn sm" id="screenSleepBtn" type="button" title="Put the screen to sleep" aria-label="Put the screen to sleep"><i data-ic="moon"></i><span>Sleep</span></button>
@@ -5124,6 +5126,49 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     });
   }
 
+  var VISITOR_ID_KEY = 'study_desk_visitor_id_v1';
+  var VISITOR_STATE_KEY = 'study_desk_visitor_state_v1';
+  function visitorIdForAccountRequest() {
+    if (isOfflineCopy) return undefined;
+    try {
+      if (localStorage.getItem(VISITOR_STATE_KEY) === 'linked') return undefined;
+      var visitorId = localStorage.getItem(VISITOR_ID_KEY);
+      if (!visitorId && window.crypto && typeof window.crypto.randomUUID === 'function') {
+        visitorId = window.crypto.randomUUID();
+        localStorage.setItem(VISITOR_ID_KEY, visitorId);
+      }
+      return visitorId || undefined;
+    } catch (error) {
+      return undefined;
+    }
+  }
+  function markVisitorLinked(result) {
+    if (!result || result.visitorLinked !== true) return;
+    try { localStorage.setItem(VISITOR_STATE_KEY, 'linked'); } catch (error) {}
+  }
+  function recordAnonymousVisitorOnce() {
+    if (isOfflineCopy || hostedHandoffState || accountUser) return;
+    try {
+      var state = localStorage.getItem(VISITOR_STATE_KEY);
+      if (state === 'recorded' || state === 'linked') return;
+    } catch (error) {
+      return;
+    }
+    var visitorId = visitorIdForAccountRequest();
+    if (!visitorId) return;
+    api('/visitor/first-visit', { method: 'POST', body: { visitorId: visitorId } })
+      .then(function () {
+        try {
+          if (localStorage.getItem(VISITOR_STATE_KEY) !== 'linked') {
+            localStorage.setItem(VISITOR_STATE_KEY, 'recorded');
+          }
+        } catch (error) {}
+      })
+      .catch(function () {
+        // Retry only on a later page load; never poll or repeatedly contact the server.
+      });
+  }
+
   var BACKGROUND_IDLE_MS = 5 * 60 * 1000;
   var backgroundSleeping = document.hidden;
   var lastWorkspaceActivity = Date.now();
@@ -5738,9 +5783,14 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       $('devOnlineBtn').textContent = 'Online: ' + result.count;
       $('devOnlineBtn').title = result.count + ' signed-in accounts active within the last ' +
         result.activityWindowSeconds + ' seconds. Click to refresh.';
+      $('devUserMetrics').textContent = 'Accounts: ' + result.registeredAccountCount +
+        ' · No account: ' + result.anonymousVisitorCount;
+      $('devUserMetrics').title = 'Registered accounts and anonymous browser profiles recorded once on first visit.';
     } catch (error) {
       $('devOnlineBtn').textContent = 'Online: —';
       $('devOnlineBtn').title = 'Could not load the active account count. Click to retry.';
+      $('devUserMetrics').textContent = 'Accounts: — · No account: —';
+      $('devUserMetrics').title = 'Could not load account and visitor totals.';
     }
   }
   function updatePresenceTracking() {
@@ -5750,6 +5800,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       presenceHeartbeatTimer = null;
       developerOnlineCountTimer = null;
       $('devOnlineBtn').classList.add('hidden');
+      $('devUserMetrics').classList.add('hidden');
       return;
     }
     if (!accountUser) {
@@ -5758,10 +5809,12 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       if (developerOnlineCountTimer) clearInterval(developerOnlineCountTimer);
       developerOnlineCountTimer = null;
       $('devOnlineBtn').classList.add('hidden');
+      $('devUserMetrics').classList.add('hidden');
       return;
     }
     var isDev = accountUser.role === 'dev';
     $('devOnlineBtn').classList.toggle('hidden', !isDev);
+    $('devUserMetrics').classList.toggle('hidden', !isDev);
     if (backgroundSleeping) {
       if (presenceHeartbeatTimer) clearInterval(presenceHeartbeatTimer);
       if (developerOnlineCountTimer) clearInterval(developerOnlineCountTimer);
@@ -6274,9 +6327,14 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     try {
       var result = await api('/auth/login', {
         method: 'POST',
-        body: { username: $('loginUsername').value.trim(), password: $('loginPassword').value }
+        body: {
+          username: $('loginUsername').value.trim(),
+          password: $('loginPassword').value,
+          visitorId: visitorIdForAccountRequest()
+        }
       });
       $('loginPassword').value = '';
+      markVisitorLinked(result);
       if (hostedHandoffState) {
         showHostedHandoffConfirmation(result.user);
         return;
@@ -6296,9 +6354,14 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     try {
       var result = await api('/auth/signup', {
         method: 'POST',
-        body: { username: $('signupUsername').value.trim(), password: $('signupPassword').value }
+        body: {
+          username: $('signupUsername').value.trim(),
+          password: $('signupPassword').value,
+          visitorId: visitorIdForAccountRequest()
+        }
       });
       $('signupPassword').value = '';
+      markVisitorLinked(result);
       await finishSignIn(result.user, true);
       displayRecoveryCode(result.recoveryCode);
     } catch (error) {
@@ -6317,11 +6380,13 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         body: {
           username: $('recoveryUsername').value.trim(),
           recoveryCode: $('recoveryCode').value.trim(),
-          newPassword: $('recoveryNewPassword').value
+          newPassword: $('recoveryNewPassword').value,
+          visitorId: visitorIdForAccountRequest()
         }
       });
       $('recoveryCode').value = '';
       $('recoveryNewPassword').value = '';
+      markVisitorLinked(result);
       await finishSignIn(result.user, true);
       displayRecoveryCode(result.recoveryCode);
     } catch (error) {
@@ -6389,8 +6454,13 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     button.disabled = true;
     accountError.textContent = 'Signing in to the linked Study Desk account…';
     try {
-      var result = await api('/developer/auth/study-desk-session', { method: 'POST' });
+      var visitorId = visitorIdForAccountRequest();
+      var result = await api('/developer/auth/study-desk-session', {
+        method: 'POST',
+        body: visitorId ? { visitorId: visitorId } : undefined
+      });
       if (!result || !result.user) throw new Error('No linked Study Desk account was returned.');
+      markVisitorLinked(result);
       await finishSignIn(result.user, false);
       NT.toast('Signed in securely with your developer identity.');
     } catch (error) {
@@ -7486,6 +7556,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     } catch (error) {
       if (!accountUser) {
         setAccountUser(null);
+        if (error && error.status === 401) recordAnonymousVisitorOnce();
         if (hostedHandoffState) {
           openAccount('login');
           return;

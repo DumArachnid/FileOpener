@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { Router, type IRouter, type Response } from "express";
 import {
   GetCurrentUserResponse,
@@ -18,6 +18,7 @@ import {
   studySessionsTable,
   suspensionAppealsTable,
   studyUsersTable,
+  visitorProfilesTable,
 } from "@workspace/db";
 import { authRateLimit } from "../middlewares/authRateLimit";
 import {
@@ -35,6 +36,7 @@ import {
   verifySuspensionAppealCookie,
 } from "../lib/accountSecurity";
 import { expireSuspensionForUser, isSuspensionActive } from "../lib/suspensions";
+import { associateVisitorWithAccount, hashVisitorId } from "../lib/visitorProfiles";
 
 const router: IRouter = Router();
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,24}$/;
@@ -289,18 +291,40 @@ router.post("/auth/signup", authRateLimit, async (req, res): Promise<void> => {
 
   const recoveryCode = newRecoveryCode();
   try {
-    const [user] = await db
-      .insert(studyUsersTable)
-      .values({
-        username,
-        passwordHash: await hashPassword(parsed.data.password),
-        recoveryCodeHash: hashOpaqueValue(recoveryCode),
-      })
-      .returning({ id: studyUsersTable.id, username: studyUsersTable.username, role: studyUsersTable.role });
+    const visitorKeyHash = parsed.data.visitorId ? hashVisitorId(parsed.data.visitorId) : null;
+    const [user] = await db.transaction(async (tx) => {
+      const [createdUser] = await tx
+        .insert(studyUsersTable)
+        .values({
+          username,
+          passwordHash: await hashPassword(parsed.data.password),
+          recoveryCodeHash: hashOpaqueValue(recoveryCode),
+        })
+        .returning({
+          id: studyUsersTable.id,
+          username: studyUsersTable.username,
+          role: studyUsersTable.role,
+        });
+      if (visitorKeyHash) {
+        const now = new Date();
+        await tx
+          .insert(visitorProfilesTable)
+          .values({ visitorKeyHash, accountId: createdUser.id, linkedAt: now })
+          .onConflictDoUpdate({
+            target: visitorProfilesTable.visitorKeyHash,
+            set: {
+              accountId: createdUser.id,
+              linkedAt: sql`coalesce(${visitorProfilesTable.linkedAt}, excluded.linked_at)`,
+            },
+          });
+      }
+      return [createdUser];
+    });
     await createSession(user.id, res);
     const response = SignUpResponse.parse({
       user: { username: user.username, role: user.role },
       recoveryCode,
+      visitorLinked: !!visitorKeyHash,
     });
     res.status(201).json(response);
   } catch (error) {
@@ -401,12 +425,21 @@ router.post("/auth/login", authRateLimit, async (req, res): Promise<void> => {
     return;
   }
 
+  let visitorLinked = false;
+  if (parsed.data.visitorId) {
+    try {
+      visitorLinked = await associateVisitorWithAccount(parsed.data.visitorId, user.id);
+    } catch (error) {
+      req.log.warn({ err: error }, "Could not associate the browser profile with the signed-in account");
+    }
+  }
   clearSuspensionAppealCookie(res);
   await createSession(user.id, res);
   res.json(
     LogInResponse.parse({
       user: { username: user.username, role: user.role },
       recoveryCode: null,
+      visitorLinked,
     }),
   );
 });
@@ -629,11 +662,20 @@ router.post("/auth/recover", authRateLimit, async (req, res): Promise<void> => {
     res.status(400).json({ error: "Username or recovery code is incorrect." });
     return;
   }
+  let visitorLinked = false;
+  if (parsed.data.visitorId) {
+    try {
+      visitorLinked = await associateVisitorWithAccount(parsed.data.visitorId, user.id);
+    } catch (error) {
+      req.log.warn({ err: error }, "Could not associate the browser profile with the recovered account");
+    }
+  }
   await createSession(user.id, res);
   res.json(
     RecoverAccountResponse.parse({
       user: { username: user.username, role: user.role },
       recoveryCode: nextRecoveryCode,
+      visitorLinked,
     }),
   );
 });

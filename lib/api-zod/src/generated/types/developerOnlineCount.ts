@@ -10,4 +10,8 @@ export interface DeveloperOnlineCount {
   /** @minimum 0 */
   count: number;
   activityWindowSeconds: 90;
+  /** @minimum 0 */
+  registeredAccountCount: number;
+  /** @minimum 0 */
+  anonymousVisitorCount: number;
 }

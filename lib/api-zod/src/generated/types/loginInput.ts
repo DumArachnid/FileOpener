@@ -17,4 +17,5 @@ export interface LoginInput {
      * @maxLength 128
      */
   password: string;
+  visitorId?: string;
 }

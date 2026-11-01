@@ -18,4 +18,5 @@ export interface SignUpInput {
      * @maxLength 128
      */
   password: string;
+  visitorId?: string;
 }

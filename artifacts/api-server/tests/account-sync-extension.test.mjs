@@ -18,6 +18,7 @@ const fixtureUsernames = [];
 const fixtureRandomLinkIds = [];
 const fixtureRandomLinkClaimKeys = [];
 const fixtureDeveloperSessionIds = [];
+const fixtureVisitorHashes = [];
 const developerTestEmail = `developer-${randomUUID()}@example.test`;
 const unverifiedDeveloperEmail = `unverified-${randomUUID()}@example.test`;
 const missingAccountDeveloperEmail = `missing-${randomUUID()}@example.test`;
@@ -193,6 +194,12 @@ after(async () => {
     await cleanupPool.query(
       "DELETE FROM study_desk_random_link_claims WHERE identity_key = ANY($1::text[])",
       [claimKeys],
+    );
+  }
+  if (fixtureVisitorHashes.length) {
+    await cleanupPool.query(
+      "DELETE FROM study_desk_visitor_profiles WHERE visitor_key_hash = ANY($1::text[])",
+      [fixtureVisitorHashes],
     );
   }
   if (fixtureUsernames.length) {
@@ -416,13 +423,24 @@ test("an allowlisted verified developer signs in to an explicitly linked existin
 
   const targetAccount = await signUp(developerTargetUsername);
   const developerCookie = await createDeveloperTestSession(developerTestEmail);
+  const developerVisitorId = randomUUID();
+  fixtureVisitorHashes.push(createHash("sha256").update(developerVisitorId).digest("hex"));
+  assert.equal(
+    (await request("/visitor/first-visit", {
+      method: "POST",
+      body: { visitorId: developerVisitorId },
+    })).status,
+    204,
+  );
   const result = await request("/developer/auth/study-desk-session", {
     method: "POST",
     cookie: developerCookie,
+    body: { visitorId: developerVisitorId },
   });
   assert.equal(result.status, 200);
   assert.equal(result.data.user.username, developerTargetUsername);
   assert.equal(result.data.user.role, "user", "Replit sign-in must not promote account roles");
+  assert.equal(result.data.visitorLinked, true);
   assert.ok(result.cookie, "linked sign-in should establish a regular Study Desk session");
 
   const currentAccount = await request("/auth/me", { cookie: result.cookie });
@@ -455,6 +473,83 @@ test("an allowlisted verified developer signs in to an explicitly linked existin
     })).status,
     403,
   );
+});
+
+test("anonymous first visits are deduplicated, linked on account auth, and counted for developers only", async () => {
+  const developer = await signUp();
+  await cleanupPool.query("UPDATE study_desk_users SET role = 'dev' WHERE username = $1", [
+    developer.username,
+  ]);
+  const baselineResponse = await request("/developer/online-count", {
+    cookie: developer.cookie,
+  });
+  assert.equal(baselineResponse.status, 200);
+  const baseline = baselineResponse.data;
+
+  const visitorId = randomUUID();
+  fixtureVisitorHashes.push(createHash("sha256").update(visitorId).digest("hex"));
+  assert.equal(
+    (await request("/visitor/first-visit", {
+      method: "POST",
+      body: { visitorId },
+    })).status,
+    204,
+  );
+  assert.equal(
+    (await request("/visitor/first-visit", {
+      method: "POST",
+      body: { visitorId },
+    })).status,
+    204,
+    "repeated first-visit reports should be idempotent",
+  );
+
+  const anonymousMetrics = await request("/developer/online-count", {
+    cookie: developer.cookie,
+  });
+  assert.equal(anonymousMetrics.data.anonymousVisitorCount, baseline.anonymousVisitorCount + 1);
+  assert.equal(anonymousMetrics.data.registeredAccountCount, baseline.registeredAccountCount);
+
+  const targetUsername = uniqueUsername();
+  const password = "fixture-password-123";
+  const signup = await request("/auth/signup", {
+    method: "POST",
+    body: { username: targetUsername, password, visitorId },
+  });
+  assert.equal(signup.status, 201);
+  assert.equal(signup.data.visitorLinked, true);
+
+  const afterSignup = await request("/developer/online-count", {
+    cookie: developer.cookie,
+  });
+  assert.equal(afterSignup.data.registeredAccountCount, baseline.registeredAccountCount + 1);
+  assert.equal(afterSignup.data.anonymousVisitorCount, baseline.anonymousVisitorCount);
+  assert.equal(
+    (await request("/developer/online-count", { cookie: signup.cookie })).status,
+    403,
+    "account totals must not be visible to regular users",
+  );
+
+  const loginVisitorId = randomUUID();
+  fixtureVisitorHashes.push(createHash("sha256").update(loginVisitorId).digest("hex"));
+  assert.equal(
+    (await request("/visitor/first-visit", {
+      method: "POST",
+      body: { visitorId: loginVisitorId },
+    })).status,
+    204,
+  );
+  const login = await request("/auth/login", {
+    method: "POST",
+    body: { username: targetUsername, password, visitorId: loginVisitorId },
+  });
+  assert.equal(login.status, 200);
+  assert.equal(login.data.visitorLinked, true);
+  const afterLogin = await request("/developer/online-count", {
+    cookie: developer.cookie,
+  });
+  assert.equal(afterLogin.data.registeredAccountCount, baseline.registeredAccountCount + 1);
+  assert.equal(afterLogin.data.anonymousVisitorCount, baseline.anonymousVisitorCount);
 });
 
 test("offline account handoff verifies credentials without issuing a session", async () => {

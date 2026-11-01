@@ -22,4 +22,5 @@ export interface RecoveryInput {
      * @maxLength 128
      */
   newPassword: string;
+  visitorId?: string;
 }

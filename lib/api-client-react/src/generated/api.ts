@@ -29,6 +29,7 @@ import type {
   AdminUnlockFeaturesResult,
   Announcement,
   AnnouncementInput,
+  AnonymousVisitorInput,
   AuthResult,
   BeginDeveloperLoginParams,
   CommunityExtension,
@@ -40,6 +41,7 @@ import type {
   DeveloperAuthState,
   DeveloperOnlineCount,
   DeveloperRoleInput,
+  DeveloperSessionInput,
   ExtensionInput,
   ExtensionList,
   ExtensionReportCreated,
@@ -1247,6 +1249,94 @@ export const useHeartbeatPresence = <TError = ErrorType<void>,
       return useMutation(getHeartbeatPresenceMutationOptions(options));
     }
 
+export const getRecordAnonymousVisitorUrl = () => {
+
+
+
+
+  return `/api/visitor/first-visit`
+}
+
+/**
+ * @summary Record one first visit from an anonymous browser
+ */
+export const recordAnonymousVisitor = async (anonymousVisitorInput: AnonymousVisitorInput, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<void>(getRecordAnonymousVisitorUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(anonymousVisitorInput)
+  }
+);}
+
+
+
+
+
+export const getRecordAnonymousVisitorMutationKey = () => ['recordAnonymousVisitor'] as const;
+
+export const getRecordAnonymousVisitorMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordAnonymousVisitor>>, TError,RecordAnonymousVisitorMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recordAnonymousVisitor>>, TError,RecordAnonymousVisitorMutationVariables, TContext> => {
+
+const mutationKey = getRecordAnonymousVisitorMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recordAnonymousVisitor>>, RecordAnonymousVisitorMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  recordAnonymousVisitor(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecordAnonymousVisitorMutationResult = NonNullable<Awaited<ReturnType<typeof recordAnonymousVisitor>>>
+    export type RecordAnonymousVisitorMutationBody = BodyType<AnonymousVisitorInput>
+    export type RecordAnonymousVisitorMutationError = ErrorType<void>
+    export type RecordAnonymousVisitorMutationVariables = {data: BodyType<AnonymousVisitorInput>}
+
+    /**
+ * @summary Record one first visit from an anonymous browser
+ */
+export const useRecordAnonymousVisitor = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordAnonymousVisitor>>, TError,RecordAnonymousVisitorMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof recordAnonymousVisitor>>,
+        TError,
+        RecordAnonymousVisitorMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRecordAnonymousVisitorMutationOptions(options));
+    }
+
 export const getGetDeveloperOnlineCountUrl = () => {
 
 
@@ -1256,7 +1346,7 @@ export const getGetDeveloperOnlineCountUrl = () => {
 }
 
 /**
- * @summary Get the number of recently active accounts
+ * @summary Get developer-only account and activity metrics
  */
 export const getDeveloperOnlineCount = async ( options?: Parameters<typeof customFetch>[1]): Promise<DeveloperOnlineCount> => {
 
@@ -1303,7 +1393,7 @@ export type GetDeveloperOnlineCountQueryError = ErrorType<void>
 
 
 /**
- * @summary Get the number of recently active accounts
+ * @summary Get developer-only account and activity metrics
  */
 
 export function useGetDeveloperOnlineCount<TData = Awaited<ReturnType<typeof getDeveloperOnlineCount>>, TError = ErrorType<void>>(
@@ -4098,14 +4188,28 @@ export const getCreateDeveloperStudyDeskSessionUrl = () => {
 /**
  * @summary Sign in to a linked Study Desk account using the authorized developer session
  */
-export const createDeveloperStudyDeskSession = async ( options?: Parameters<typeof customFetch>[1]): Promise<CreateDeveloperStudyDeskSession200> => {
+export const createDeveloperStudyDeskSession = async (developerSessionInput?: DeveloperSessionInput, options?: Parameters<typeof customFetch>[1]): Promise<CreateDeveloperStudyDeskSession200> => {
 
-  return customFetch<CreateDeveloperStudyDeskSession200>(getCreateDeveloperStudyDeskSessionUrl(),
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CreateDeveloperStudyDeskSession200>(getCreateDeveloperStudyDeskSessionUrl(),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(developerSessionInput)
   }
 );}
 
@@ -4116,8 +4220,8 @@ export const createDeveloperStudyDeskSession = async ( options?: Parameters<type
 export const getCreateDeveloperStudyDeskSessionMutationKey = () => ['createDeveloperStudyDeskSession'] as const;
 
 export const getCreateDeveloperStudyDeskSessionMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDeveloperStudyDeskSession>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof createDeveloperStudyDeskSession>>, TError,void, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDeveloperStudyDeskSession>>, TError,CreateDeveloperStudyDeskSessionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createDeveloperStudyDeskSession>>, TError,CreateDeveloperStudyDeskSessionMutationVariables, TContext> => {
 
 const mutationKey = getCreateDeveloperStudyDeskSessionMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -4129,10 +4233,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDeveloperStudyDeskSession>>, void> = () => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDeveloperStudyDeskSession>>, CreateDeveloperStudyDeskSessionMutationVariables> = (props) => {
+          const {data} = props ?? {};
 
-
-          return  createDeveloperStudyDeskSession(requestOptions)
+          return  createDeveloperStudyDeskSession(data,requestOptions)
         }
 
 
@@ -4143,19 +4247,19 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type CreateDeveloperStudyDeskSessionMutationResult = NonNullable<Awaited<ReturnType<typeof createDeveloperStudyDeskSession>>>
-
+    export type CreateDeveloperStudyDeskSessionMutationBody = BodyType<DeveloperSessionInput> | undefined
     export type CreateDeveloperStudyDeskSessionMutationError = ErrorType<void>
-
+    export type CreateDeveloperStudyDeskSessionMutationVariables = {data?: BodyType<DeveloperSessionInput>}
 
     /**
  * @summary Sign in to a linked Study Desk account using the authorized developer session
  */
 export const useCreateDeveloperStudyDeskSession = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDeveloperStudyDeskSession>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDeveloperStudyDeskSession>>, TError,CreateDeveloperStudyDeskSessionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof createDeveloperStudyDeskSession>>,
         TError,
-        void,
+        CreateDeveloperStudyDeskSessionMutationVariables,
         TContext
       > => {
       return useMutation(getCreateDeveloperStudyDeskSessionMutationOptions(options));

@@ -82,7 +82,8 @@ export const signUpBodyPasswordMax = 128;
 
 export const SignUpBody = zod.object({
   "username": zod.string().min(signUpBodyUsernameMin).max(signUpBodyUsernameMax).regex(signUpBodyUsernameRegExp),
-  "password": zod.string().min(signUpBodyPasswordMin).max(signUpBodyPasswordMax)
+  "password": zod.string().min(signUpBodyPasswordMin).max(signUpBodyPasswordMax),
+  "visitorId": zod.string().uuid().optional()
 })
 
 export const SignUpResponse = zod.object({
@@ -90,7 +91,8 @@ export const SignUpResponse = zod.object({
   "username": zod.string(),
   "role": zod.enum(['user', 'moderator', 'dev'])
 }),
-  "recoveryCode": zod.string().nullable()
+  "recoveryCode": zod.string().nullable(),
+  "visitorLinked": zod.boolean()
 })
 
 
@@ -106,7 +108,8 @@ export const logInBodyPasswordMax = 128;
 
 export const LogInBody = zod.object({
   "username": zod.string().min(logInBodyUsernameMin).max(logInBodyUsernameMax),
-  "password": zod.string().min(1).max(logInBodyPasswordMax)
+  "password": zod.string().min(1).max(logInBodyPasswordMax),
+  "visitorId": zod.string().uuid().optional()
 })
 
 export const LogInResponse = zod.object({
@@ -114,7 +117,8 @@ export const LogInResponse = zod.object({
   "username": zod.string(),
   "role": zod.enum(['user', 'moderator', 'dev'])
 }),
-  "recoveryCode": zod.string().nullable()
+  "recoveryCode": zod.string().nullable(),
+  "visitorLinked": zod.boolean()
 })
 
 
@@ -207,7 +211,8 @@ export const recoverAccountBodyNewPasswordMax = 128;
 export const RecoverAccountBody = zod.object({
   "username": zod.string().min(recoverAccountBodyUsernameMin).max(recoverAccountBodyUsernameMax),
   "recoveryCode": zod.string().min(recoverAccountBodyRecoveryCodeMin).max(recoverAccountBodyRecoveryCodeMax),
-  "newPassword": zod.string().min(recoverAccountBodyNewPasswordMin).max(recoverAccountBodyNewPasswordMax)
+  "newPassword": zod.string().min(recoverAccountBodyNewPasswordMin).max(recoverAccountBodyNewPasswordMax),
+  "visitorId": zod.string().uuid().optional()
 })
 
 export const RecoverAccountResponse = zod.object({
@@ -215,7 +220,8 @@ export const RecoverAccountResponse = zod.object({
   "username": zod.string(),
   "role": zod.enum(['user', 'moderator', 'dev'])
 }),
-  "recoveryCode": zod.string().nullable()
+  "recoveryCode": zod.string().nullable(),
+  "visitorLinked": zod.boolean()
 })
 
 
@@ -226,15 +232,31 @@ export const HeartbeatPresenceResponse = zod.void()
 
 
 /**
- * @summary Get the number of recently active accounts
+ * @summary Record one first visit from an anonymous browser
+ */
+export const RecordAnonymousVisitorBody = zod.object({
+  "visitorId": zod.string().uuid()
+})
+
+export const RecordAnonymousVisitorResponse = zod.void()
+
+
+/**
+ * @summary Get developer-only account and activity metrics
  */
 export const getDeveloperOnlineCountResponseCountMin = 0;
+
+export const getDeveloperOnlineCountResponseRegisteredAccountCountMin = 0;
+
+export const getDeveloperOnlineCountResponseAnonymousVisitorCountMin = 0;
 
 
 
 export const GetDeveloperOnlineCountResponse = zod.object({
   "count": zod.number().int().min(getDeveloperOnlineCountResponseCountMin),
-  "activityWindowSeconds": zod.literal(90)
+  "activityWindowSeconds": zod.literal(90),
+  "registeredAccountCount": zod.number().int().min(getDeveloperOnlineCountResponseRegisteredAccountCountMin),
+  "anonymousVisitorCount": zod.number().int().min(getDeveloperOnlineCountResponseAnonymousVisitorCountMin)
 })
 
 
@@ -1037,11 +1059,16 @@ export const GetDeveloperAuthStateResponse = zod.object({
 /**
  * @summary Sign in to a linked Study Desk account using the authorized developer session
  */
+export const CreateDeveloperStudyDeskSessionBody = zod.object({
+  "visitorId": zod.string().uuid().optional()
+})
+
 export const CreateDeveloperStudyDeskSessionResponse = zod.object({
   "user": zod.object({
   "username": zod.string(),
   "role": zod.enum(['user', 'moderator', 'dev'])
-})
+}),
+  "visitorLinked": zod.boolean()
 })
 
 

@@ -21,6 +21,7 @@ export interface SignUpInput {
      * @maxLength 128
      */
   password: string;
+  visitorId?: string;
 }
 
 export interface LoginInput {
@@ -34,6 +35,7 @@ export interface LoginInput {
      * @maxLength 128
      */
   password: string;
+  visitorId?: string;
 }
 
 export interface OfflineHandoffInput {
@@ -68,6 +70,15 @@ export interface RecoveryInput {
      * @maxLength 128
      */
   newPassword: string;
+  visitorId?: string;
+}
+
+export interface AnonymousVisitorInput {
+  visitorId: string;
+}
+
+export interface DeveloperSessionInput {
+  visitorId?: string;
 }
 
 export type UserSummaryRole = typeof UserSummaryRole[keyof typeof UserSummaryRole];
@@ -88,6 +99,7 @@ export interface AuthResult {
   user: UserSummary;
   /** @nullable */
   recoveryCode: string | null;
+  visitorLinked: boolean;
 }
 
 export interface CurrentUser {
@@ -526,6 +538,10 @@ export interface DeveloperOnlineCount {
   /** @minimum 0 */
   count: number;
   activityWindowSeconds: 90;
+  /** @minimum 0 */
+  registeredAccountCount: number;
+  /** @minimum 0 */
+  anonymousVisitorCount: number;
 }
 
 export interface AnnouncementInput {
@@ -577,6 +593,7 @@ export type GetRandomCuratedLink429 = {
 
 export type CreateDeveloperStudyDeskSession200 = {
   user: UserSummary;
+  visitorLinked: boolean;
 };
 
 export type BeginDeveloperLoginParams = {
