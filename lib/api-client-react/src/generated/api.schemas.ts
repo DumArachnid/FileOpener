@@ -534,6 +534,16 @@ export interface DeveloperRoleInput {
   role: DeveloperRoleInputRole;
 }
 
+export type DeveloperOnlineCountDailyMetricsItem = {
+  date: string;
+  /** @minimum 0 */
+  visitorCount: number;
+  /** @minimum 0 */
+  registrationCount: number;
+  /** @minimum 0 */
+  conversionCount: number;
+};
+
 export interface DeveloperOnlineCount {
   /** @minimum 0 */
   count: number;
@@ -542,6 +552,8 @@ export interface DeveloperOnlineCount {
   registeredAccountCount: number;
   /** @minimum 0 */
   anonymousVisitorCount: number;
+  /** Daily totals for the last 30 UTC calendar days, with no identifiers. */
+  dailyMetrics: DeveloperOnlineCountDailyMetricsItem[];
 }
 
 export interface AnnouncementInput {

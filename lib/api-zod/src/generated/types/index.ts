@@ -30,6 +30,7 @@ export * from './currentUser';
 export * from './developerAuthState';
 export * from './developerAuthUser';
 export * from './developerOnlineCount';
+export * from './developerOnlineCountDailyMetricsItem';
 export * from './developerRoleInput';
 export * from './developerRoleInputRole';
 export * from './developerSessionInput';

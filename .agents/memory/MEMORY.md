@@ -6,3 +6,4 @@
 - [Wrapped database errors](wrapped-database-errors.md) — Drizzle may expose PostgreSQL error codes on a nested cause, not the outer query error.
 - [Workflow stale child processes](workflow-stale-processes.md) — if an app responds while its workflow reports EADDRINUSE, stop the exact managed workflow before a single restart.
 - [Random-link daily limits](random-link-daily-limits.md) — use account/browser identity for daily quotas, not shared school IP addresses.
+- [UTC cohort test clocks](utc-cohort-test-clocks.md) — date-bucket tests should use the database/API range, not assume the app host clock matches it.

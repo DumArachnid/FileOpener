@@ -288,7 +288,7 @@ paths:
       summary: Get developer-only account and activity metrics
       responses:
         "200":
-          description: Aggregate active account count; no account identities are returned
+          description: Aggregate account and daily growth metrics; no account identities are returned
           content:
             application/json:
               schema:
@@ -1786,7 +1786,7 @@ components:
           enum: [user, moderator, dev]
     DeveloperOnlineCount:
       type: object
-      required: [count, activityWindowSeconds, registeredAccountCount, anonymousVisitorCount]
+      required: [count, activityWindowSeconds, registeredAccountCount, anonymousVisitorCount, dailyMetrics]
       properties:
         count:
           type: integer
@@ -1800,6 +1800,25 @@ components:
         anonymousVisitorCount:
           type: integer
           minimum: 0
+        dailyMetrics:
+          type: array
+          description: Daily totals for the last 30 UTC calendar days, with no identifiers.
+          items:
+            type: object
+            required: [date, visitorCount, registrationCount, conversionCount]
+            properties:
+              date:
+                type: string
+                format: date
+              visitorCount:
+                type: integer
+                minimum: 0
+              registrationCount:
+                type: integer
+                minimum: 0
+              conversionCount:
+                type: integer
+                minimum: 0
     AnnouncementInput:
       type: object
       required: [message, durationSeconds]

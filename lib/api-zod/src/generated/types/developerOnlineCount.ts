@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { DeveloperOnlineCountDailyMetricsItem } from './developerOnlineCountDailyMetricsItem';
 
 export interface DeveloperOnlineCount {
   /** @minimum 0 */
@@ -14,4 +15,6 @@ export interface DeveloperOnlineCount {
   registeredAccountCount: number;
   /** @minimum 0 */
   anonymousVisitorCount: number;
+  /** Daily totals for the last 30 UTC calendar days, with no identifiers. */
+  dailyMetrics: DeveloperOnlineCountDailyMetricsItem[];
 }

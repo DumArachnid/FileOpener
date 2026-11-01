@@ -250,13 +250,25 @@ export const getDeveloperOnlineCountResponseRegisteredAccountCountMin = 0;
 
 export const getDeveloperOnlineCountResponseAnonymousVisitorCountMin = 0;
 
+export const getDeveloperOnlineCountResponseDailyMetricsItemVisitorCountMin = 0;
+
+export const getDeveloperOnlineCountResponseDailyMetricsItemRegistrationCountMin = 0;
+
+export const getDeveloperOnlineCountResponseDailyMetricsItemConversionCountMin = 0;
+
 
 
 export const GetDeveloperOnlineCountResponse = zod.object({
   "count": zod.number().int().min(getDeveloperOnlineCountResponseCountMin),
   "activityWindowSeconds": zod.literal(90),
   "registeredAccountCount": zod.number().int().min(getDeveloperOnlineCountResponseRegisteredAccountCountMin),
-  "anonymousVisitorCount": zod.number().int().min(getDeveloperOnlineCountResponseAnonymousVisitorCountMin)
+  "anonymousVisitorCount": zod.number().int().min(getDeveloperOnlineCountResponseAnonymousVisitorCountMin),
+  "dailyMetrics": zod.array(zod.object({
+  "date": zod.coerce.date(),
+  "visitorCount": zod.number().int().min(getDeveloperOnlineCountResponseDailyMetricsItemVisitorCountMin),
+  "registrationCount": zod.number().int().min(getDeveloperOnlineCountResponseDailyMetricsItemRegistrationCountMin),
+  "conversionCount": zod.number().int().min(getDeveloperOnlineCountResponseDailyMetricsItemConversionCountMin)
+})).describe('Daily totals for the last 30 UTC calendar days, with no identifiers.')
 })
 
 

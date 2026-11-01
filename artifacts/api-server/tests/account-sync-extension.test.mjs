@@ -532,6 +532,17 @@ test("anonymous first visits are deduplicated, linked on account auth, and count
   });
   assert.equal(baselineResponse.status, 200);
   const baseline = baselineResponse.data;
+  assert.equal(baseline.dailyMetrics.length, 30);
+  assert.ok(baseline.dailyMetrics.every((metric, index) =>
+    index === 0 || baseline.dailyMetrics[index - 1].date < metric.date));
+  assert.deepEqual(
+    Object.keys(baseline.dailyMetrics[0]).sort(),
+    ["conversionCount", "date", "registrationCount", "visitorCount"],
+    "daily metrics must contain aggregate counts only",
+  );
+  const todayUtc = baseline.dailyMetrics.at(-1).date;
+  const baselineToday = baseline.dailyMetrics.find((metric) => metric.date === todayUtc);
+  assert.ok(baselineToday, "daily metrics include the current UTC day");
 
   const visitorId = randomUUID();
   fixtureVisitorHashes.push(createHash("sha256").update(visitorId).digest("hex"));
@@ -556,6 +567,8 @@ test("anonymous first visits are deduplicated, linked on account auth, and count
   });
   assert.equal(anonymousMetrics.data.anonymousVisitorCount, baseline.anonymousVisitorCount + 1);
   assert.equal(anonymousMetrics.data.registeredAccountCount, baseline.registeredAccountCount);
+  const anonymousToday = anonymousMetrics.data.dailyMetrics.find((metric) => metric.date === todayUtc);
+  assert.equal(anonymousToday.visitorCount, baselineToday.visitorCount + 1);
 
   const targetUsername = uniqueUsername();
   const password = "fixture-password-123";
@@ -571,6 +584,9 @@ test("anonymous first visits are deduplicated, linked on account auth, and count
   });
   assert.equal(afterSignup.data.registeredAccountCount, baseline.registeredAccountCount + 1);
   assert.equal(afterSignup.data.anonymousVisitorCount, baseline.anonymousVisitorCount);
+  const signupToday = afterSignup.data.dailyMetrics.find((metric) => metric.date === todayUtc);
+  assert.equal(signupToday.registrationCount, baselineToday.registrationCount + 1);
+  assert.equal(signupToday.conversionCount, baselineToday.conversionCount + 1);
   assert.equal(
     (await request("/developer/online-count", { cookie: signup.cookie })).status,
     403,

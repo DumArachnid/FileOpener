@@ -76,11 +76,66 @@ router.get(
       .from(studyUsersTable)
       .where(eq(studyUsersTable.id, req.studyDeskUser!.id))
       .limit(1);
+    const dailyMetricsResult = await db.execute<{
+      date: string;
+      visitorCount: number;
+      registrationCount: number;
+      conversionCount: number;
+    }>(sql`
+      with days as (
+        select generate_series(
+          date_trunc('day', now() at time zone 'UTC') - interval '29 days',
+          date_trunc('day', now() at time zone 'UTC'),
+          interval '1 day'
+        ) as day
+      ),
+      daily_counts as (
+        select
+          date_trunc('day', ${visitorProfilesTable.firstSeenAt} at time zone 'UTC') as day,
+          count(*)::int as "visitorCount",
+          0::int as "registrationCount",
+          0::int as "conversionCount"
+        from ${visitorProfilesTable}
+        group by 1
+        union all
+        select
+          date_trunc('day', ${studyUsersTable.createdAt} at time zone 'UTC') as day,
+          0::int as "visitorCount",
+          count(*)::int as "registrationCount",
+          0::int as "conversionCount"
+        from ${studyUsersTable}
+        group by 1
+        union all
+        select
+          date_trunc('day', ${visitorProfilesTable.linkedAt} at time zone 'UTC') as day,
+          0::int as "visitorCount",
+          0::int as "registrationCount",
+          count(*)::int as "conversionCount"
+        from ${visitorProfilesTable}
+        where ${visitorProfilesTable.linkedAt} is not null
+        group by 1
+      )
+      select
+        to_char(days.day, 'YYYY-MM-DD') as date,
+        coalesce(sum(daily_counts."visitorCount"), 0)::int as "visitorCount",
+        coalesce(sum(daily_counts."registrationCount"), 0)::int as "registrationCount",
+        coalesce(sum(daily_counts."conversionCount"), 0)::int as "conversionCount"
+      from days
+      left join daily_counts on daily_counts.day = days.day
+      group by days.day
+      order by days.day
+    `);
     res.json(GetDeveloperOnlineCountResponse.parse({
       count: Number(result?.count ?? 0),
       activityWindowSeconds: ONLINE_WINDOW_SECONDS,
       registeredAccountCount: Number(result?.registeredAccountCount ?? 0),
       anonymousVisitorCount: Number(result?.anonymousVisitorCount ?? 0),
+      dailyMetrics: dailyMetricsResult.rows.map((row) => ({
+        date: row.date,
+        visitorCount: Number(row.visitorCount),
+        registrationCount: Number(row.registrationCount),
+        conversionCount: Number(row.conversionCount),
+      })),
     }));
   },
 );

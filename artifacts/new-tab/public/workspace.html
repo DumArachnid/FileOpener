@@ -134,6 +134,18 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .btn:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
 .btn.sm { padding: 6px 10px; font-size: 12px; }
 .dev-user-metrics { display: inline-flex; align-items: center; min-height: 28px; padding: 0 9px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--muted); font-size: 11px; font-weight: 600; white-space: nowrap; }
+.dev-growth-dialog { width: min(760px, calc(100% - 28px)); max-width: 760px; max-height: 88vh; padding: 0; overflow: hidden; border: 1.5px solid var(--border-strong); border-radius: 14px; background: var(--panel); color: var(--text); box-shadow: 5px 5px 0 var(--ink-shadow); }
+.dev-growth-dialog::backdrop { background: color-mix(in srgb, var(--text) 45%, transparent); backdrop-filter: blur(3px); }
+.dev-growth-panel { display: flex; flex-direction: column; gap: 12px; max-height: 88vh; padding: 20px; }
+.dev-growth-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.dev-growth-heading h2 { margin: 0; font-size: 20px; }
+.dev-growth-heading p { margin: 5px 0 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+.dev-growth-table-wrap { overflow: auto; border: 1px solid var(--border); border-radius: 9px; }
+.dev-growth-table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
+.dev-growth-table th, .dev-growth-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); text-align: right; }
+.dev-growth-table th:first-child, .dev-growth-table td:first-child { text-align: left; }
+.dev-growth-table th { position: sticky; top: 0; background: var(--input-bg); color: var(--muted); font-size: 11px; }
+.dev-growth-table tbody tr:last-child td { border-bottom: 0; }
 .btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent-hover); box-shadow: 0 2px 0 var(--accent-hover); }
 .btn.primary:hover:not(:disabled) { background: var(--accent-hover); color: var(--on-accent-hover); box-shadow: 0 3px 0 var(--ink-shadow); }
 .btn.danger { background: var(--danger); color: #fff; border-color: var(--danger-hover); box-shadow: 0 2px 0 var(--danger-hover); }
@@ -1132,6 +1144,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <button class="btn sm hide-in-focus hidden" id="adminPanelBtn" type="button" title="Open admin panel" aria-label="Open admin panel"><i data-ic="shield"></i></button>
 <button class="btn sm hide-in-focus hidden" id="devOnlineBtn" type="button" title="Signed-in accounts active within the last 90 seconds" aria-live="polite">Online: …</button>
 <span class="dev-user-metrics hide-in-focus hidden" id="devUserMetrics" role="status" aria-live="polite">Accounts: — · No account: —</span>
+<button class="btn sm hide-in-focus hidden" id="devGrowthBtn" type="button">Growth</button>
 <button class="btn sm hide-in-focus" id="accountBtn" type="button" title="Sign in to manually sync your workspace"><i data-ic="user"></i><span id="accountBtnText">Account</span></button>
 <button class="btn sm hide-in-focus" id="paletteBtn" title="Command palette (Ctrl/Cmd+K)"><i data-ic="command"></i></button>
 <button class="btn sm" id="screenSleepBtn" type="button" title="Put the screen to sleep" aria-label="Put the screen to sleep"><i data-ic="moon"></i><span>Sleep</span></button>
@@ -1302,6 +1315,22 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </section>
 </section>
 </div>
+</dialog>
+
+<dialog id="devGrowthDialog" class="dev-growth-dialog" aria-labelledby="devGrowthTitle" aria-describedby="devGrowthDescription">
+<section class="dev-growth-panel">
+<header class="dev-growth-heading">
+<div><h2 id="devGrowthTitle">Community growth</h2><p id="devGrowthDescription">Daily first-seen browser profiles, new registrations, and profiles linked to an account for the last 30 UTC days. No identities are shown.</p></div>
+<button class="icon-btn" id="devGrowthCloseBtn" type="button" aria-label="Close community growth">×</button>
+</header>
+<div class="online-store-status" id="devGrowthStatus" role="status" aria-live="polite">Loading daily totals…</div>
+<div class="dev-growth-table-wrap">
+<table class="dev-growth-table">
+<thead><tr><th scope="col">Date</th><th scope="col">New profiles</th><th scope="col">Registrations</th><th scope="col">Conversions</th></tr></thead>
+<tbody id="devGrowthRows"></tbody>
+</table>
+</div>
+</section>
 </dialog>
 
 <dialog id="extensionInputDialog" class="extension-input-dialog" aria-labelledby="extensionInputTitle" aria-describedby="extensionInputHint">
@@ -5779,6 +5808,39 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
   var presenceHeartbeatTimer = null;
   var developerOnlineCountTimer = null;
+  function renderDeveloperGrowth(dailyMetrics) {
+    var rows = $('devGrowthRows');
+    rows.replaceChildren();
+    dailyMetrics.slice().reverse().forEach(function (metric) {
+      var row = document.createElement('tr');
+      var dateCell = document.createElement('td');
+      var date = new Date(metric.date + 'T00:00:00Z');
+      dateCell.textContent = new Intl.DateTimeFormat(undefined, {
+        month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'
+      }).format(date);
+      row.appendChild(dateCell);
+      ['visitorCount', 'registrationCount', 'conversionCount'].forEach(function (key) {
+        var cell = document.createElement('td');
+        cell.textContent = String(metric[key]);
+        row.appendChild(cell);
+      });
+      rows.appendChild(row);
+    });
+    $('devGrowthStatus').textContent = dailyMetrics.length
+      ? 'Showing ' + dailyMetrics.length + ' days of aggregate activity.'
+      : 'No daily totals are available.';
+  }
+  async function refreshDeveloperGrowth() {
+    if (!accountUser || accountUser.role !== 'dev') return;
+    $('devGrowthStatus').textContent = 'Loading daily totals…';
+    try {
+      var result = await api('/developer/online-count');
+      renderDeveloperGrowth(result.dailyMetrics);
+    } catch (error) {
+      $('devGrowthRows').replaceChildren();
+      $('devGrowthStatus').textContent = 'Could not load daily totals. Close this view and try again.';
+    }
+  }
   async function sendPresenceHeartbeat() {
     if (!accountUser || backgroundSleeping) return;
     try { await api('/presence/heartbeat', { method: 'POST' }); } catch (error) {}
@@ -5793,14 +5855,21 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       $('devUserMetrics').textContent = 'Accounts: ' + result.registeredAccountCount +
         ' · No account: ' + result.anonymousVisitorCount;
       $('devUserMetrics').title = 'Registered accounts and anonymous browser profiles recorded once on first visit.';
+      if ($('devGrowthDialog').open) renderDeveloperGrowth(result.dailyMetrics);
     } catch (error) {
       $('devOnlineBtn').textContent = 'Online: —';
       $('devOnlineBtn').title = 'Could not load the active account count. Click to retry.';
       $('devUserMetrics').textContent = 'Accounts: — · No account: —';
       $('devUserMetrics').title = 'Could not load account and visitor totals.';
+      if ($('devGrowthDialog').open) $('devGrowthStatus').textContent = 'Could not load daily totals. Close this view and try again.';
     }
   }
   function updatePresenceTracking() {
+    function clearDeveloperGrowthView() {
+      var dialog = $('devGrowthDialog');
+      if (dialog.open) dialog.close();
+      $('devGrowthRows').replaceChildren();
+    }
     if (isOfflineCopy) {
       if (presenceHeartbeatTimer) clearInterval(presenceHeartbeatTimer);
       if (developerOnlineCountTimer) clearInterval(developerOnlineCountTimer);
@@ -5808,6 +5877,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       developerOnlineCountTimer = null;
       $('devOnlineBtn').classList.add('hidden');
       $('devUserMetrics').classList.add('hidden');
+      $('devGrowthBtn').classList.add('hidden');
+      clearDeveloperGrowthView();
       return;
     }
     if (!accountUser) {
@@ -5817,11 +5888,15 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       developerOnlineCountTimer = null;
       $('devOnlineBtn').classList.add('hidden');
       $('devUserMetrics').classList.add('hidden');
+      $('devGrowthBtn').classList.add('hidden');
+      clearDeveloperGrowthView();
       return;
     }
     var isDev = accountUser.role === 'dev';
     $('devOnlineBtn').classList.toggle('hidden', !isDev);
     $('devUserMetrics').classList.toggle('hidden', !isDev);
+    $('devGrowthBtn').classList.toggle('hidden', !isDev);
+    if (!isDev) clearDeveloperGrowthView();
     if (backgroundSleeping) {
       if (presenceHeartbeatTimer) clearInterval(presenceHeartbeatTimer);
       if (developerOnlineCountTimer) clearInterval(developerOnlineCountTimer);
@@ -5847,6 +5922,12 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
   NT.onBackgroundSleepChange(function () { updatePresenceTracking(); });
   $('devOnlineBtn').addEventListener('click', refreshDeveloperOnlineCount);
+  $('devGrowthBtn').addEventListener('click', function () {
+    if (!accountUser || accountUser.role !== 'dev') return;
+    $('devGrowthDialog').showModal();
+    refreshDeveloperGrowth();
+  });
+  $('devGrowthCloseBtn').addEventListener('click', function () { $('devGrowthDialog').close(); });
   function setAccountUser(user) {
     var previousModerator = !isOfflineCopy && hasModeratorAccess(accountUser);
     var previousUsername = accountUser && accountUser.username;
