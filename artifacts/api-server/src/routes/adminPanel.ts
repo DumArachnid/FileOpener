@@ -365,26 +365,25 @@ router.get(
   "/rewards/admin-grants",
   requireAccount,
   async (req, res): Promise<void> => {
-    const [totals] = await db
+    const [grants] = await db
       .select({
-        points: adminRewardTotalsTable.points,
-        shards: adminRewardTotalsTable.shards,
+        points: sql<number>`coalesce(${adminRewardTotalsTable.points}, 0)::int`,
+        shards: sql<number>`coalesce(${adminRewardTotalsTable.shards}, 0)::int`,
+        allFeaturesUnlocked: sql<boolean>`exists (
+          select 1
+          from ${adminAuditTable}
+          where ${adminAuditTable.targetUsername} = ${req.studyDeskUser!.username}
+            and ${adminAuditTable.action} = 'features.unlocked'
+        )`,
       })
-      .from(adminRewardTotalsTable)
-      .where(eq(adminRewardTotalsTable.userId, req.studyDeskUser!.id))
-      .limit(1);
-    const [featureGrant] = await db
-      .select({ id: adminAuditTable.id })
-      .from(adminAuditTable)
-      .where(and(
-        eq(adminAuditTable.targetUsername, req.studyDeskUser!.username),
-        eq(adminAuditTable.action, "features.unlocked"),
-      ))
+      .from(studyUsersTable)
+      .leftJoin(adminRewardTotalsTable, eq(adminRewardTotalsTable.userId, studyUsersTable.id))
+      .where(eq(studyUsersTable.id, req.studyDeskUser!.id))
       .limit(1);
     res.json(GetCurrentAccountAdminRewardGrantsResponse.parse({
-      points: totals?.points ?? 0,
-      shards: totals?.shards ?? 0,
-      allFeaturesUnlocked: !!featureGrant,
+      points: grants?.points ?? 0,
+      shards: grants?.shards ?? 0,
+      allFeaturesUnlocked: !!grants?.allFeaturesUnlocked,
     }));
   },
 );
