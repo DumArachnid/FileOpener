@@ -14,3 +14,17 @@ mtime_ms = 1793141075095
 storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:577cd84b-fdd9-4ce2-a885-1a83b1059f15/a74c8a2a-0381-4dde-ae53-51ece791eecd/c88856f5-1432-4f05-b659-68ecbbb126a1"
 storage_version_token = "1793141152586434"
 content_type = "text/html"
+
+[[outputs]]
+id = "qcnpAyRDDpMnOzv5MLgTU"
+uri = "file://.local/outputs/study-desk-page-views.chart.html"
+type = "text"
+title = "The workspace draws more pageviews than the store."
+description = "Pageviews by route from the last seven days of available analytics."
+logical_id = "5e951411-252b-40b1-b2b7-38a170fe8718"
+content_hash = "sha256:07852cbd632236e8b397ccd0761fec074635c7dc6ee952317292cdbce9127c48"
+size = 3590
+mtime_ms = 1793500898571
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:577cd84b-fdd9-4ce2-a885-1a83b1059f15/5e951411-252b-40b1-b2b7-38a170fe8718/d409045f-7116-49c9-af40-1e6bccf21ac2"
+storage_version_token = "1793500899047848"
+content_type = "text/html;profile=replit-chart"
