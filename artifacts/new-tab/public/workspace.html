@@ -1143,7 +1143,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <button class="btn sm hide-in-focus" id="storeBtn" type="button" title="Open the Extension Store" aria-label="Open the Extension Store"><i data-ic="cart"></i></button>
 <button class="btn sm hide-in-focus hidden" id="adminPanelBtn" type="button" title="Open admin panel" aria-label="Open admin panel"><i data-ic="shield"></i></button>
 <button class="btn sm hide-in-focus hidden" id="devOnlineBtn" type="button" title="Signed-in accounts active within the last 90 seconds" aria-live="polite">Online: …</button>
-<span class="dev-user-metrics hide-in-focus hidden" id="devUserMetrics" role="status" aria-live="polite">Accounts: — · No account: —</span>
+<span class="dev-user-metrics hide-in-focus hidden" id="devUserMetrics" role="status" aria-live="polite">Ac: — · No ac: —</span>
 <button class="btn sm hide-in-focus hidden" id="devGrowthBtn" type="button">Growth</button>
 <button class="btn sm hide-in-focus" id="accountBtn" type="button" title="Sign in to manually sync your workspace"><i data-ic="user"></i><span id="accountBtnText">Account</span></button>
 <button class="btn sm hide-in-focus" id="paletteBtn" title="Command palette (Ctrl/Cmd+K)"><i data-ic="command"></i></button>
@@ -5859,7 +5859,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     } catch (error) {
       $('devOnlineBtn').textContent = 'Online: —';
       $('devOnlineBtn').title = 'Could not load the active account count. Click to retry.';
-      $('devUserMetrics').textContent = 'Accounts: — · No account: —';
+      $('devUserMetrics').textContent = 'Ac: — · No ac: —';
       $('devUserMetrics').title = 'Could not load account and visitor totals.';
       if ($('devGrowthDialog').open) $('devGrowthStatus').textContent = 'Could not load daily totals. Close this view and try again.';
     }
