@@ -133,7 +133,7 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .btn:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 0 0 var(--ink-shadow); }
 .btn:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
 .btn.sm { padding: 6px 10px; font-size: 12px; }
-.dev-user-metrics { display: inline-flex; align-items: center; min-height: 28px; padding: 0 9px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--muted); font-size: 11px; font-weight: 600; white-space: nowrap; }
+.dev-user-metrics { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; min-width: 64px; max-width: 88px; min-height: 24px; padding: 0 6px; overflow: hidden; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--muted); font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .dev-growth-dialog { width: min(760px, calc(100% - 28px)); max-width: 760px; max-height: 88vh; padding: 0; overflow: hidden; border: 1.5px solid var(--border-strong); border-radius: 14px; background: var(--panel); color: var(--text); box-shadow: 5px 5px 0 var(--ink-shadow); }
 .dev-growth-dialog::backdrop { background: color-mix(in srgb, var(--text) 45%, transparent); backdrop-filter: blur(3px); }
 .dev-growth-panel { display: flex; flex-direction: column; gap: 12px; max-height: 88vh; padding: 20px; }
@@ -5852,15 +5852,29 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       $('devOnlineBtn').textContent = 'Online: ' + result.count;
       $('devOnlineBtn').title = result.count + ' signed-in accounts active within the last ' +
         result.activityWindowSeconds + ' seconds. Click to refresh.';
-      $('devUserMetrics').textContent = 'Accounts: ' + result.registeredAccountCount +
-        ' · No account: ' + result.anonymousVisitorCount;
-      $('devUserMetrics').title = 'Registered accounts and anonymous browser profiles recorded once on first visit.';
+      function compactMetricCount(value) {
+        var count = Number(value);
+        if (!Number.isFinite(count) || count < 0) return '—';
+        if (count < 1000) return String(Math.round(count));
+        var divisor = count < 1000000 ? 1000 : 1000000;
+        var suffix = divisor === 1000 ? 'k' : 'm';
+        return (count / divisor).toFixed(count >= divisor * 10 ? 0 : 1).replace(/\.0$/, '') + suffix;
+      }
+      var accountCount = Number(result.registeredAccountCount);
+      var anonymousCount = Number(result.anonymousVisitorCount);
+      var fullMetricsLabel = 'Accounts: ' + (Number.isFinite(accountCount) ? accountCount.toLocaleString() : '—') +
+        ' · No-account profiles: ' + (Number.isFinite(anonymousCount) ? anonymousCount.toLocaleString() : '—');
+      $('devUserMetrics').textContent = 'A ' + compactMetricCount(result.registeredAccountCount) +
+        ' · N ' + compactMetricCount(result.anonymousVisitorCount);
+      $('devUserMetrics').title = fullMetricsLabel;
+      $('devUserMetrics').setAttribute('aria-label', fullMetricsLabel);
       if ($('devGrowthDialog').open) renderDeveloperGrowth(result.dailyMetrics);
     } catch (error) {
       $('devOnlineBtn').textContent = 'Online: —';
       $('devOnlineBtn').title = 'Could not load the active account count. Click to retry.';
-      $('devUserMetrics').textContent = 'Ac: — · No ac: —';
+      $('devUserMetrics').textContent = 'A — · N —';
       $('devUserMetrics').title = 'Could not load account and visitor totals.';
+      $('devUserMetrics').setAttribute('aria-label', 'Could not load account and visitor totals.');
       if ($('devGrowthDialog').open) $('devGrowthStatus').textContent = 'Could not load daily totals. Close this view and try again.';
     }
   }
