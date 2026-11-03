@@ -374,6 +374,7 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .admin-panel .moderator-tools { border-top: 0; padding-top: 0; }
 .admin-panel .moderator-tools.admin-section-card, .admin-panel .moderator-tools.admin-account-management { border-top: 1px solid var(--border); }
 .admin-panel-topbar { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 2px 0 12px; border-bottom: 1px solid var(--border); }
+.admin-panel-actions { display: flex; align-items: center; gap: 8px; }
 .admin-panel-brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .admin-panel-mark { display: grid; width: 38px; height: 38px; flex: none; place-items: center; border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border)); border-radius: 12px 12px 12px 4px; background: var(--accent-soft); color: var(--accent-ink); }
 .admin-panel-title-wrap { display: grid; gap: 4px; min-width: 0; }
@@ -1144,7 +1145,6 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <button class="btn sm hide-in-focus hidden" id="adminPanelBtn" type="button" title="Open admin panel" aria-label="Open admin panel"><i data-ic="shield"></i></button>
 <button class="btn sm hide-in-focus hidden" id="devOnlineBtn" type="button" title="Signed-in accounts active within the last 90 seconds" aria-live="polite">Online: …</button>
 <span class="dev-user-metrics hide-in-focus hidden" id="devUserMetrics" role="status" aria-live="polite">Ac: — · No ac: —</span>
-<button class="btn sm hide-in-focus hidden" id="devGrowthBtn" type="button">Growth</button>
 <button class="btn sm hide-in-focus" id="accountBtn" type="button" title="Sign in to manually sync your workspace"><i data-ic="user"></i><span id="accountBtnText">Account</span></button>
 <button class="btn sm hide-in-focus" id="paletteBtn" title="Command palette (Ctrl/Cmd+K)"><i data-ic="command"></i></button>
 <button class="btn sm" id="screenSleepBtn" type="button" title="Put the screen to sleep" aria-label="Put the screen to sleep"><i data-ic="moon"></i><span>Sleep</span></button>
@@ -1189,7 +1189,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div class="admin-panel">
 <header class="admin-panel-topbar">
 <div class="admin-panel-brand"><span class="admin-panel-mark"><i data-ic="shield"></i></span><div class="admin-panel-title-wrap"><span class="admin-panel-eyebrow">STUDY DESK / TRUST &amp; SAFETY</span><h2 id="adminDialogTitle">Admin workspace</h2></div></div>
+<div class="admin-panel-actions">
+<button class="btn sm hidden" id="devGrowthBtn" type="button">Community growth</button>
 <button class="icon-btn" id="adminCloseBtn" type="button" aria-label="Close admin panel">×</button>
+</div>
 </header>
 <p class="admin-panel-intro">Manage community extensions, account access, and site announcements. Admin actions are recorded, and tab details remain private unless a learner opts in.</p>
 <section class="moderator-tools hidden" id="moderatorTools" aria-labelledby="moderatorToolsTitle">
