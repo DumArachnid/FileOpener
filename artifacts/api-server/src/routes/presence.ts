@@ -84,14 +84,14 @@ router.get(
     }>(sql`
       with days as (
         select generate_series(
-          date_trunc('day', now() at time zone 'UTC') - interval '29 days',
-          date_trunc('day', now() at time zone 'UTC'),
+          date_trunc('day', now() at time zone 'America/Chicago') - interval '29 days',
+          date_trunc('day', now() at time zone 'America/Chicago'),
           interval '1 day'
         ) as day
       ),
       daily_counts as (
         select
-          date_trunc('day', ${visitorProfilesTable.firstSeenAt} at time zone 'UTC') as day,
+          date_trunc('day', ${visitorProfilesTable.firstSeenAt} at time zone 'America/Chicago') as day,
           count(*)::int as "visitorCount",
           0::int as "registrationCount",
           0::int as "conversionCount"
@@ -99,7 +99,7 @@ router.get(
         group by 1
         union all
         select
-          date_trunc('day', ${studyUsersTable.createdAt} at time zone 'UTC') as day,
+          date_trunc('day', ${studyUsersTable.createdAt} at time zone 'America/Chicago') as day,
           0::int as "visitorCount",
           count(*)::int as "registrationCount",
           0::int as "conversionCount"
@@ -107,7 +107,7 @@ router.get(
         group by 1
         union all
         select
-          date_trunc('day', ${visitorProfilesTable.linkedAt} at time zone 'UTC') as day,
+          date_trunc('day', ${visitorProfilesTable.linkedAt} at time zone 'America/Chicago') as day,
           0::int as "visitorCount",
           0::int as "registrationCount",
           count(*)::int as "conversionCount"

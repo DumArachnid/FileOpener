@@ -95,7 +95,11 @@ function sendOfflineHandoffPage(
           ? "A previous appeal was approved, but this account has since been suspended again."
           : "";
     const expiryCopy = suspension.endsAt
-      ? `This suspension is scheduled to end ${escapeHtml(suspension.endsAt.toLocaleString())}.`
+      ? `This suspension is scheduled to end ${escapeHtml(new Intl.DateTimeFormat("en-US", {
+          timeZone: "America/Chicago",
+          dateStyle: "medium",
+          timeStyle: "short",
+        }).format(suspension.endsAt))}.`
       : "This suspension has no automatic end date.";
     content = `
       <h1>Account suspended</h1>

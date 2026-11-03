@@ -454,6 +454,33 @@
       }
       catch (error) { return null; }
     }
+    function isServerQuietHours() {
+      var app = desk();
+      if (app && typeof app.isServerQuietHours === 'function') return app.isServerQuietHours();
+      var parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Chicago',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23'
+      }).formatToParts(new Date());
+      var hour = Number(parts.find(function (part) { return part.type === 'hour'; }).value);
+      var minute = Number(parts.find(function (part) { return part.type === 'minute'; }).value);
+      var minuteOfDay = hour * 60 + minute;
+      return minuteOfDay >= 14 * 60 + 30 || minuteOfDay < 6 * 60;
+    }
+    function serverQuietHoursMessage() {
+      var app = desk();
+      return app && typeof app.serverQuietHoursMessage === 'function'
+        ? app.serverQuietHoursMessage()
+        : 'Study Desk server features are paused daily from 2:30 PM to 6:00 AM Chicago time.';
+    }
+    function quietHoursError() {
+      var app = desk();
+      if (app && typeof app.createQuietHoursError === 'function') return app.createQuietHoursError();
+      var error = new Error(serverQuietHoursMessage());
+      error.code = 'STUDY_DESK_QUIET_HOURS';
+      return error;
+    }
     function trackEvent(name, data) {
       try {
         var app = desk();
@@ -464,6 +491,7 @@
       }
     }
     function request(path, options) {
+      if (isServerQuietHours()) return Promise.reject(quietHoursError());
       options = options || {};
       var headers = Object.assign({ Accept: 'application/json' }, options.headers || {});
       var body = options.body;
@@ -918,18 +946,32 @@
         : auth.user ? 'This account is not authorized to manage Study Desk roles.'
         : developerNotice || 'Sign in with an authorized developer account to assign or remove admin and developer ranks.';
     }
+    var developerSignInPopup = null;
     function beginDeveloperSignIn() {
+      if (isServerQuietHours()) {
+        $('developerStatus').textContent = serverQuietHoursMessage();
+        return;
+      }
       developerNotice = '';
       var loginUrl = '/api/developer/login?returnTo=' + encodeURIComponent('/api/developer/auth/complete');
       var popup = window.open(loginUrl, 'studyDeskDeveloperLogin', 'popup,width=560,height=720');
+      developerSignInPopup = popup;
       if (!popup) { $('developerStatus').textContent = 'Allow the developer sign-in popup, then try again.'; return; }
       $('developerStatus').textContent = 'Complete Replit sign-in in the new window…';
       var attempts = 0;
       var timer = setInterval(async function () {
+        if (isServerQuietHours()) {
+          try { popup.close(); } catch (error) {}
+          developerSignInPopup = null;
+          clearInterval(timer);
+          $('developerStatus').textContent = serverQuietHoursMessage();
+          return;
+        }
         attempts += 1;
         await loadDeveloperAuth();
         if ((state.developer && state.developer.authorized) || popup.closed || attempts >= 90) {
           clearInterval(timer);
+          developerSignInPopup = null;
           if (state.developer && state.developer.authorized && !popup.closed) popup.close();
         }
       }, 1500);
@@ -1005,6 +1047,10 @@
     });
     $('developerLoginBtn').addEventListener('click', beginDeveloperSignIn);
     $('developerLogoutBtn').addEventListener('click', function () {
+      if (isServerQuietHours()) {
+        $('developerStatus').textContent = serverQuietHoursMessage();
+        return;
+      }
       location.href = '/api/developer/logout?returnTo=' + encodeURIComponent(location.pathname);
     });
     $('roleSearchForm').addEventListener('submit', async function (event) {
@@ -1038,7 +1084,7 @@
     });
     async function renderBuildUpdate() {
       var current = new URLSearchParams(location.search).get('build');
-      if (!current) return;
+      if (!current || isServerQuietHours()) return;
       try {
         var response = await fetch(new URL('index.html', location.href).href, { cache: 'no-store' });
         if (!response.ok) return;
@@ -1049,14 +1095,38 @@
     }
     var buildCheck = setInterval(renderBuildUpdate, 60000);
     document.addEventListener('visibilitychange', function () {
-      if (!document.hidden) { loadAccount(); renderDemos(); renderBuildUpdate(); }
+      if (!document.hidden && !isServerQuietHours()) { loadAccount(); renderDemos(); renderBuildUpdate(); }
     });
-    window.addEventListener('beforeunload', function () { clearInterval(buildCheck); if (storeChannel) storeChannel.close(); });
+    window.addEventListener('beforeunload', function () {
+      clearInterval(buildCheck);
+      if (storeChannel) storeChannel.close();
+      if (quietHoursUnsubscribe) quietHoursUnsubscribe();
+    });
     applyDeskTheme();
     renderDemos();
-    Promise.all([loadPublic(), loadAccount(), loadDeveloperAuth()]);
-    renderBuildUpdate();
-    setInterval(function () { loadAccount(); loadPublic(); }, 30000);
+    if (isServerQuietHours()) setStatus(serverQuietHoursMessage(), true);
+    else {
+      Promise.all([loadPublic(), loadAccount(), loadDeveloperAuth()]);
+      renderBuildUpdate();
+    }
+    setInterval(function () {
+      if (isServerQuietHours()) return;
+      loadAccount();
+      loadPublic();
+    }, 30000);
+    var parentDesk = desk();
+    var quietHoursUnsubscribe = null;
+    if (parentDesk && typeof parentDesk.onServerQuietHoursChange === 'function') {
+      quietHoursUnsubscribe = parentDesk.onServerQuietHoursChange(function (quiet) {
+        if (quiet) {
+          setStatus(serverQuietHoursMessage(), true);
+          return;
+        }
+        setStatus('Study Desk server is available again. Refreshing the store…', false);
+        Promise.all([loadPublic(), loadAccount(), loadDeveloperAuth()]);
+        renderBuildUpdate();
+      });
+    }
   })();
   </script>
 </body>

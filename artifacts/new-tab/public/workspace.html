@@ -581,6 +581,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 .toggle-toolbar { align-self: flex-end; opacity: .8; }
 .file-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 8px; width: 100%; }
 .statusbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 7px 12px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--input-bg); flex: none; }
+.server-quiet-hours-status { flex: 1 1 auto; min-width: 0; color: var(--accent-ink); font-weight: 700; text-align: center; }
+.server-quiet-hours-status[hidden] { display: none !important; }
 .status-left { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .status-mid { flex: none; }
 .status-right { flex: none; }
@@ -1323,7 +1325,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <dialog id="devGrowthDialog" class="dev-growth-dialog" aria-labelledby="devGrowthTitle" aria-describedby="devGrowthDescription">
 <section class="dev-growth-panel">
 <header class="dev-growth-heading">
-<div><h2 id="devGrowthTitle">Community growth</h2><p id="devGrowthDescription">Daily first-seen browser profiles, new registrations, and profiles linked to an account for the last 30 UTC days. No identities are shown.</p></div>
+<div><h2 id="devGrowthTitle">Community growth</h2><p id="devGrowthDescription">Daily first-seen browser profiles, new registrations, and profiles linked to an account for the last 30 days in Chicago time. No identities are shown.</p></div>
 <button class="icon-btn" id="devGrowthCloseBtn" type="button" aria-label="Close community growth">×</button>
 </header>
 <div class="online-store-status" id="devGrowthStatus" role="status" aria-live="polite">Loading daily totals…</div>
@@ -1461,6 +1463,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 
 <div class="statusbar" id="statusBar">
 <div class="small status-left" id="statusLeft">No source</div>
+<div class="small server-quiet-hours-status" id="serverQuietHoursStatus" role="status" aria-live="polite" hidden></div>
 <div class="small muted mono status-mid" id="statusCounts"></div>
 <div class="small muted status-right" id="statusRight">Not saved</div>
 </div>
@@ -1598,6 +1601,66 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 (function () {
   'use strict';
   var NT = (window.NT = window.NT || {});
+  var chicagoClockFormatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Chicago',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23'
+  });
+  var serverQuietHoursListeners = [];
+  var lastQuietHoursState = false;
+  NT.isServerQuietHours = function (at) {
+    var clockDate = at instanceof Date ? at : at == null ? new Date() : new Date(at);
+    var parts = chicagoClockFormatter.formatToParts(clockDate);
+    var hour = Number(parts.find(function (part) { return part.type === 'hour'; }).value);
+    var minute = Number(parts.find(function (part) { return part.type === 'minute'; }).value);
+    var minuteOfDay = hour * 60 + minute;
+    return minuteOfDay >= 14 * 60 + 30 || minuteOfDay < 6 * 60;
+  };
+  NT.serverQuietHoursMessage = function () {
+    return 'Study Desk server features are paused daily from 2:30 PM to 6:00 AM Chicago time. Local workspace tools remain available.';
+  };
+  NT.createQuietHoursError = function () {
+    var error = new Error(NT.serverQuietHoursMessage());
+    error.code = 'STUDY_DESK_QUIET_HOURS';
+    return error;
+  };
+  NT.formatChicagoDateTime = function (value, options) {
+    var date = value instanceof Date ? value : new Date(value == null ? Date.now() : value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return new Intl.DateTimeFormat(undefined, Object.assign({}, options || {}, {
+      timeZone: 'America/Chicago'
+    })).format(date);
+  };
+  NT.onServerQuietHoursChange = function (listener) {
+    if (typeof listener !== 'function') return function () {};
+    serverQuietHoursListeners.push(listener);
+    return function () {
+      serverQuietHoursListeners = serverQuietHoursListeners.filter(function (current) { return current !== listener; });
+    };
+  };
+  NT.refreshServerQuietHours = function () {
+    var current = NT.isServerQuietHours();
+    if (current === lastQuietHoursState) return current;
+    lastQuietHoursState = current;
+    serverQuietHoursListeners.slice().forEach(function (listener) {
+      try { listener(current); } catch (error) {}
+    });
+    return current;
+  };
+  lastQuietHoursState = NT.isServerQuietHours();
+  window.setInterval(NT.refreshServerQuietHours, 15000);
+  window.addEventListener('focus', NT.refreshServerQuietHours);
+  document.addEventListener('visibilitychange', NT.refreshServerQuietHours);
+  function updateServerQuietHoursStatus(active) {
+    var status = document.getElementById('serverQuietHoursStatus');
+    if (!status) return;
+    status.hidden = !active;
+    status.textContent = active ? 'Server paused · resumes at 6:00 AM Chicago time' : '';
+    status.title = active ? NT.serverQuietHoursMessage() : '';
+  }
+  NT.onServerQuietHoursChange(updateServerQuietHoursStatus);
+  updateServerQuietHoursStatus(lastQuietHoursState);
   NT.trackEvent = function (name, data) {
     if (typeof window === 'undefined') return;
     try {
@@ -2334,7 +2397,11 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     if (NT.onContentChanged) NT.onContentChanged('Saved text');
   }
 
-  function updateClock() { clockDisplay.textContent = new Date().toLocaleTimeString(); }
+  function updateClock() {
+    clockDisplay.textContent = NT.formatChicagoDateTime(new Date(), {
+      hour: 'numeric', minute: '2-digit', second: '2-digit'
+    });
+  }
   setInterval(updateClock, 1000); updateClock();
   const batteryNavigator = TOP.navigator && typeof TOP.navigator.getBattery === 'function' ? TOP.navigator : navigator;
   if (typeof batteryNavigator.getBattery === 'function') {
@@ -3074,7 +3141,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     if (!Number.isFinite(time) || time <= Date.now()) return false;
     randomLinkCooldownUntil = time;
     randomLinkButton.disabled = true;
-    var availableLabel = new Date(time).toLocaleString();
+    var availableLabel = NT.formatChicagoDateTime(new Date(time));
     randomLinkButton.title = 'Your next random link is available ' + availableLabel;
     randomLinkButton.setAttribute('aria-label', randomLinkButton.title);
     if (randomLinkCooldownTimer) clearTimeout(randomLinkCooldownTimer);
@@ -3094,6 +3161,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
   randomLinkButton.addEventListener('click', async function () {
     var button = randomLinkButton;
+    if (NT.isServerQuietHours()) {
+      toast(NT.serverQuietHoursMessage(), 'error');
+      return;
+    }
     if (window.location.protocol === 'file:') {
       toast('Random link suggestions require the online Study Desk page.', 'error');
       return;
@@ -3113,7 +3184,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       if (!response.ok) {
         if (response.status === 429 && result && result.dailyLimit && result.availableAt) {
           setRandomLinkCooldown(result.availableAt);
-          throw new Error('You’ve reached the limit of 2 random links in the last 24 hours. Try again after ' + new Date(result.availableAt).toLocaleString() + '.');
+          throw new Error('You’ve reached the limit of 2 random links in the last 24 hours. Try again after ' + NT.formatChicagoDateTime(new Date(result.availableAt)) + '.');
         }
         if (response.status === 429) {
           var retryAfter = Number(response.headers.get('Retry-After'));
@@ -3821,7 +3892,11 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   notes.addEventListener('input', function () {
     notesState.textContent = 'Saving...'; notesCount();
     clearTimeout(notesT);
-    notesT = setTimeout(function () { if (NT.setItem('disguise_notes', notes.value)) notesState.textContent = 'Saved ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }, 350);
+    notesT = setTimeout(function () {
+      if (NT.setItem('disguise_notes', notes.value)) {
+        notesState.textContent = 'Saved ' + NT.formatChicagoDateTime(new Date(), { hour: '2-digit', minute: '2-digit' });
+      }
+    }, 350);
   });
   function flushNotes() {
     if (!notesT) return;
@@ -4514,7 +4589,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       }
       var reviewText = highlights.map(function (highlight, index) {
         var date = new Date(highlight.savedAt);
-        var dateLabel = Number.isNaN(date.getTime()) ? '' : date.toLocaleString();
+        var dateLabel = Number.isNaN(date.getTime()) ? '' : NT.formatChicagoDateTime(date);
         return (index + 1) + '. ' + dateLabel + (dateLabel ? '\n' : '') + highlight.text;
       }).join('\n\n');
       return NewTabExtension.requestInput('Saved reading highlights', 'Select and copy your notes if needed.', reviewText, true);
@@ -5109,6 +5184,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   var accountUser = null;
   var pendingHandoffUser = null;
   var offlineAuthPopup = null;
+  var developerAccountLoginPopup = null;
   var offlineAuthState = null;
   var offlineAuthWatcher = null;
   var pendingModerationExtensions = [];
@@ -5139,6 +5215,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
 
   function api(path, options) {
+    if (NT.isServerQuietHours()) return Promise.reject(NT.createQuietHoursError());
     options = options || {};
     var headers = Object.assign({ Accept: 'application/json' }, options.headers || {});
     var body = options.body;
@@ -5649,7 +5726,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
     var expires = new Date(announcement.expiresAt);
     status.textContent = 'Live · posted by ' + announcement.createdByUsername +
-      ' · expires ' + expires.toLocaleString();
+      ' · expires ' + NT.formatChicagoDateTime(expires);
     clearButton.hidden = false;
   }
   function showSiteAnnouncement(announcement) {
@@ -5677,7 +5754,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }, expiresAt - Date.now());
   }
   function refreshSiteAnnouncement() {
-    if (backgroundSleeping) return Promise.resolve();
+    if (backgroundSleeping || NT.isServerQuietHours()) return Promise.resolve();
     return api('/announcements/active')
       .then(function (state) { showSiteAnnouncement(state && state.announcement); })
       .catch(function () {});
@@ -5694,7 +5771,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
   }
   function startAnnouncementUpdates() {
-    if (backgroundSleeping || (window.location.protocol !== 'http:' && window.location.protocol !== 'https:')) return;
+    if (backgroundSleeping || NT.isServerQuietHours() ||
+        (window.location.protocol !== 'http:' && window.location.protocol !== 'https:')) return;
     if (announcementPollTimer) return;
     refreshSiteAnnouncement();
     announcementPollTimer = setInterval(refreshSiteAnnouncement, 30_000);
@@ -5738,7 +5816,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     status.style.color = isError ? 'var(--danger)' : '';
   }
   function updateManualSyncControls() {
-    var available = !!accountUser && !isOfflineCopy && !backgroundSleeping && !syncBusy;
+    var available = !!accountUser && !isOfflineCopy && !backgroundSleeping &&
+      !NT.isServerQuietHours() && !syncBusy;
     $('accountSyncActions').classList.toggle('hidden', isOfflineCopy || !accountUser);
     $('accountSyncPushBtn').disabled = !available;
     $('accountSyncPullBtn').disabled = !available;
@@ -5817,10 +5896,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     dailyMetrics.slice().reverse().forEach(function (metric) {
       var row = document.createElement('tr');
       var dateCell = document.createElement('td');
-      var date = new Date(metric.date + 'T00:00:00Z');
-      dateCell.textContent = new Intl.DateTimeFormat(undefined, {
-        month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC'
-      }).format(date);
+      var date = new Date(metric.date + 'T12:00:00Z');
+      dateCell.textContent = NT.formatChicagoDateTime(date, {
+        month: 'short', day: 'numeric', year: 'numeric'
+      });
       row.appendChild(dateCell);
       ['visitorCount', 'registrationCount', 'conversionCount'].forEach(function (key) {
         var cell = document.createElement('td');
@@ -5841,15 +5920,17 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       renderDeveloperGrowth(result.dailyMetrics);
     } catch (error) {
       $('devGrowthRows').replaceChildren();
-      $('devGrowthStatus').textContent = 'Could not load daily totals. Close this view and try again.';
+      $('devGrowthStatus').textContent = error && error.code === 'STUDY_DESK_QUIET_HOURS'
+        ? readError(error)
+        : 'Could not load daily totals. Close this view and try again.';
     }
   }
   async function sendPresenceHeartbeat() {
-    if (!accountUser || backgroundSleeping) return;
+    if (!accountUser || backgroundSleeping || NT.isServerQuietHours()) return;
     try { await api('/presence/heartbeat', { method: 'POST' }); } catch (error) {}
   }
   async function refreshDeveloperOnlineCount() {
-    if (!accountUser || accountUser.role !== 'dev' || backgroundSleeping) return;
+    if (!accountUser || accountUser.role !== 'dev' || backgroundSleeping || NT.isServerQuietHours()) return;
     try {
       var result = await api('/developer/online-count');
       $('devOnlineBtn').textContent = 'Online: ' + result.count;
@@ -5914,11 +5995,12 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     $('devUserMetrics').classList.toggle('hidden', !isDev);
     $('devGrowthBtn').classList.toggle('hidden', !isDev);
     if (!isDev) clearDeveloperGrowthView();
-    if (backgroundSleeping) {
+    if (backgroundSleeping || NT.isServerQuietHours()) {
       if (presenceHeartbeatTimer) clearInterval(presenceHeartbeatTimer);
       if (developerOnlineCountTimer) clearInterval(developerOnlineCountTimer);
       presenceHeartbeatTimer = null;
       developerOnlineCountTimer = null;
+      updateManualSyncControls();
       return;
     }
     var firstHeartbeat = null;
@@ -6167,6 +6249,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
   function startOfflineAccountVerification() {
     accountError.textContent = '';
+    if (NT.isServerQuietHours()) {
+      accountError.textContent = NT.serverQuietHoursMessage();
+      return;
+    }
     if (!window.crypto || typeof window.crypto.getRandomValues !== 'function') {
       accountError.textContent = 'This browser cannot create a secure verification request. Try a current version of Chrome.';
       return;
@@ -6269,7 +6355,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   });
 
   async function pushWorkspaceSync() {
-    if (isOfflineCopy || !accountUser || syncBusy || backgroundSleeping) return;
+    if (isOfflineCopy || !accountUser || syncBusy || backgroundSleeping || NT.isServerQuietHours()) return;
     var username = accountUser.username;
     syncBusy = true;
     updateManualSyncControls();
@@ -6311,7 +6397,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
 
   async function pullWorkspaceSync() {
-    if (isOfflineCopy || !accountUser || syncBusy || backgroundSleeping) return;
+    if (isOfflineCopy || !accountUser || syncBusy || backgroundSleeping || NT.isServerQuietHours()) return;
     var username = accountUser.username;
     syncBusy = true;
     updateManualSyncControls();
@@ -6387,7 +6473,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 
   var adminGrantsBusy = false;
   async function applyAdminRewardGrants() {
-    if (isOfflineCopy || !accountUser || typeof NT.applyAdminRewardGrant !== 'function' || adminGrantsBusy || backgroundSleeping) return;
+    if (isOfflineCopy || !accountUser || typeof NT.applyAdminRewardGrant !== 'function' ||
+        adminGrantsBusy || backgroundSleeping || NT.isServerQuietHours()) return;
     var username = accountUser.username;
     adminGrantsBusy = true;
     try {
@@ -6548,6 +6635,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   });
   $('developerAccountLoginBtn').addEventListener('click', function () {
     accountError.textContent = '';
+    if (NT.isServerQuietHours()) {
+      accountError.textContent = NT.serverQuietHoursMessage();
+      return;
+    }
     var returnTo = '/api/developer/auth/complete';
     var loginUrl = '/api/developer/login?returnTo=' + encodeURIComponent(returnTo);
     var popup = window.open(
@@ -6555,6 +6646,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       'study-desk-developer-login',
       'popup,width=520,height=720,resizable=yes,scrollbars=yes',
     );
+    developerAccountLoginPopup = popup;
     if (!popup) {
       accountError.textContent = 'The sign-in window was blocked. Allow popups for Study Desk and try again.';
       return;
@@ -6564,6 +6656,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   window.addEventListener('message', async function (event) {
     if (event.origin !== window.location.origin || !event.data ||
       event.data.type !== 'study-desk-developer-auth') return;
+    developerAccountLoginPopup = null;
     if (event.data.error) {
       accountError.textContent = event.data.error === 'unauthorized'
         ? 'This identity is not on the approved developer list.'
@@ -7260,7 +7353,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   function formatSuspensionEnd(value) {
     if (!value) return 'Permanent';
     var date = new Date(value);
-    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+    return Number.isNaN(date.getTime()) ? String(value) : NT.formatChicagoDateTime(date);
   }
   function renderSuspensionAppeals() {
     var container = $('suspensionAppealsQueue');
@@ -7286,7 +7379,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       meta.className = 'review-meta';
       var start = appeal.suspensionStartedAt || appeal.startedAt || appeal.banStartedAt || appeal.createdAt || appeal.suspendedAt;
       var end = appeal.endsAt || appeal.suspensionEndsAt || appeal.banEndsAt || null;
-      meta.textContent = 'Started ' + (start ? new Date(start).toLocaleString() : 'Unknown') +
+      meta.textContent = 'Started ' + (start ? NT.formatChicagoDateTime(new Date(start)) : 'Unknown') +
         ' · Ends ' + formatSuspensionEnd(end);
       var decisionReason = document.createElement('input');
       decisionReason.type = 'text';
@@ -7535,7 +7628,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         if (details && details.extensionName) text += ' · ' + String(details.extensionName);
         if (entry.reason) text += ' · ' + entry.reason;
         var date = new Date(entry.createdAt);
-        if (!Number.isNaN(date.getTime())) text += ' · ' + date.toLocaleString();
+        if (!Number.isNaN(date.getTime())) text += ' · ' + NT.formatChicagoDateTime(date);
         detail.textContent = text;
         label.append(title, detail);
         row.appendChild(label);
@@ -7668,6 +7761,11 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       setCloudStatus('Downloaded copy. Account verification is available while the Study Desk server can be reached.', false);
       return;
     }
+    if (NT.isServerQuietHours()) {
+      setAccountUser(null);
+      setCloudStatus('Study Desk server features resume at 6:00 AM Chicago time. Local workspace tools remain available.', false);
+      return;
+    }
     try {
       var result = await api('/auth/me');
       if (hostedHandoffState) {
@@ -7694,14 +7792,42 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     adminGrantTimer = null;
   }
   function startCloudBackgroundTasks() {
-    if (isOfflineCopy || backgroundSleeping) return;
+    if (isOfflineCopy || backgroundSleeping || NT.isServerQuietHours()) return;
     if (!adminGrantTimer) adminGrantTimer = setInterval(applyAdminRewardGrants, 30000);
     if (accountUser) applyAdminRewardGrants();
   }
   NT.onBackgroundSleepChange(function (sleeping) {
     updateManualSyncControls();
     if (sleeping) stopCloudBackgroundTasks();
-    else startCloudBackgroundTasks();
+    else {
+      startCloudBackgroundTasks();
+      if (sessionRestoreStarted && !NT.isServerQuietHours() && !isOfflineCopy && !accountUser) restoreSession();
+    }
+  });
+  NT.onServerQuietHoursChange(function (quiet) {
+    updateManualSyncControls();
+    if (quiet) {
+      if (offlineAuthPopup && !offlineAuthPopup.closed) {
+        try { offlineAuthPopup.close(); } catch (error) {}
+        clearOfflineAuthWatcher();
+        offlineAuthPopup = null;
+        offlineAuthState = null;
+        accountError.textContent = NT.serverQuietHoursMessage();
+      }
+      if (developerAccountLoginPopup && !developerAccountLoginPopup.closed) {
+        try { developerAccountLoginPopup.close(); } catch (error) {}
+        developerAccountLoginPopup = null;
+        accountError.textContent = NT.serverQuietHoursMessage();
+      }
+      stopAnnouncementUpdates();
+      updatePresenceTracking();
+      stopCloudBackgroundTasks();
+      return;
+    }
+    if (!backgroundSleeping && !isOfflineCopy && !accountUser) restoreSession();
+    updatePresenceTracking();
+    startAnnouncementUpdates();
+    startCloudBackgroundTasks();
   });
   var sessionRestoreStarted = false;
   function startSessionRestore() {
@@ -7731,7 +7857,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   if (!loadedBuild || !notice) return;
 
   async function checkForNewerBuild() {
-    if (document.hidden || !loadedBuild || NT.isBackgroundSleeping()) return;
+    if (document.hidden || !loadedBuild || NT.isBackgroundSleeping() || NT.isServerQuietHours()) return;
     try {
       var indexUrl = new URL('./index.html', window.location.href);
       indexUrl.searchParams.set('_study_desk_version_check', String(Date.now()));
@@ -7756,12 +7882,16 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     updateCheckInterval = null;
   }
   function startUpdateChecks() {
-    if (NT.isBackgroundSleeping() || updateCheckInterval) return;
+    if (NT.isBackgroundSleeping() || NT.isServerQuietHours() || updateCheckInterval) return;
     updateCheckTimeout = window.setTimeout(checkForNewerBuild, 15000);
     updateCheckInterval = window.setInterval(checkForNewerBuild, 60000);
   }
   NT.onBackgroundSleepChange(function (sleeping) {
     if (sleeping) stopUpdateChecks();
+    else startUpdateChecks();
+  });
+  NT.onServerQuietHoursChange(function (quiet) {
+    if (quiet) stopUpdateChecks();
     else startUpdateChecks();
   });
 })();
