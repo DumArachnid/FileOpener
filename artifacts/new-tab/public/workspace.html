@@ -333,6 +333,13 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .screen-sleep-unlock-form button span { margin-left: auto; color: var(--on-accent); }
 .screen-sleep-local-note { margin: 18px 0 0 !important; padding-top: 14px; border-top: 1px solid var(--border); font-size: 11px; line-height: 1.55; }
 .screen-sleep-panel .screen-sleep-error { min-height: 1.4em; margin: 8px 0 0; color: var(--danger); font-size: 12px; }
+.screen-sleep-recovery { margin-top: 10px; text-align: center; }
+.screen-sleep-recovery-trigger { border: 0; padding: 4px 8px; background: transparent; color: var(--muted); font: 12px var(--main-font); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.screen-sleep-recovery-trigger:hover { color: var(--text); }
+.screen-sleep-recovery-details { margin-top: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); text-align: left; }
+.screen-sleep-recovery-details p { font-size: 12px; }
+.screen-sleep-recovery-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin-top: 11px; }
+.screen-sleep-recovery-actions button { min-height: 36px; }
 .screen-sleep-overlay :focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 65%, #bbb); outline-offset: 3px; }
 @keyframes screen-sleep-arrive { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 520px) {
@@ -1118,7 +1125,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <button class="btn sm danger-ghost hidden" id="clearScreenSleepPasswordBtn" type="button" style="margin-top:8px">Remove password</button>
 <p class="small muted tight" id="screenSleepPasswordStatus" role="status" aria-live="polite">No password set. Click or press a key to wake the screen.</p>
 <p class="tiny muted tight" style="margin-top:6px">This password stays in this browser and is not your account password. It is a local privacy lock, not account security.</p>
-<p class="tiny muted tight" style="margin-top:6px">If you forget it, clearing this browser’s Study Desk site data removes it and the other local settings.</p>
+<p class="tiny muted tight" style="margin-top:6px">Forgot it? Choose “Forgot password?” on the sleep screen to remove the lock without clearing your other saved settings.</p>
 </div>
 </section>
 <button class="btn" id="helpOpenBtn"><i data-ic="keyboard"></i>Keyboard shortcuts</button>
@@ -1581,6 +1588,16 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </form>
 <p class="screen-sleep-local-note" id="screenSleepLocalNote">This password stays in this browser. It is a local privacy lock, not account security.</p>
 <p class="screen-sleep-error" id="screenSleepError" role="status" aria-live="polite"></p>
+<div class="screen-sleep-recovery">
+<button class="screen-sleep-recovery-trigger" id="screenSleepRecoveryToggle" type="button" aria-controls="screenSleepRecoveryDetails" aria-expanded="false">Forgot password?</button>
+<div class="screen-sleep-recovery-details" id="screenSleepRecoveryDetails" hidden>
+<p>Resetting removes this browser’s sleep password and unlocks the workspace. Your notes, tabs, bookmarks, and other saved settings will stay. Anyone using this browser can reset the local privacy lock.</p>
+<div class="screen-sleep-recovery-actions">
+<button class="btn sm" id="screenSleepRecoveryCancel" type="button">Keep password</button>
+<button class="btn sm danger" id="screenSleepRecoveryConfirm" type="button">Reset password and unlock</button>
+</div>
+</div>
+</div>
 </section>
 </div>
 </dialog>
@@ -5448,6 +5465,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     var unlockForm = document.getElementById('screenSleepUnlockForm');
     var unlockInput = document.getElementById('screenSleepUnlockPassword');
     var unlockError = document.getElementById('screenSleepError');
+    var recoveryToggle = document.getElementById('screenSleepRecoveryToggle');
+    var recoveryDetails = document.getElementById('screenSleepRecoveryDetails');
+    var recoveryCancel = document.getElementById('screenSleepRecoveryCancel');
+    var recoveryConfirm = document.getElementById('screenSleepRecoveryConfirm');
     var accessibleStatus = document.getElementById('screenSleepAccessibleStatus');
     var autoEnabled = localStorage.getItem('disguise_screen_sleep_enabled') !== 'false';
     var minutes = Number(localStorage.getItem('disguise_screen_sleep_minutes')) || 5;
@@ -5505,6 +5526,12 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       var chosen = Number(minuteSelect.value);
       return (chosen === 0.5 || chosen === 1 || chosen === 5 || chosen === 10 || chosen === 15 || chosen === 30 ? chosen : 5) * 60000;
     }
+    function setRecoveryOpen(open, focusTarget) {
+      recoveryDetails.hidden = !open;
+      recoveryToggle.setAttribute('aria-expanded', String(open));
+      recoveryToggle.textContent = open ? 'Hide recovery options' : 'Forgot password?';
+      if (focusTarget) setTimeout(function () { focusTarget.focus(); }, 0);
+    }
     function clearIdleTimer() {
       if (idleTimer) clearTimeout(idleTimer);
       idleTimer = null;
@@ -5528,6 +5555,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       if (!locked || !passwordEnabled() || !panel.hidden) return;
       restState.hidden = true;
       panel.hidden = false;
+      setRecoveryOpen(false);
       unlockError.textContent = '';
       accessibleStatus.textContent = 'The screen is asleep. The password prompt is open.';
       setTimeout(function () {
@@ -5544,6 +5572,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       if (appRoot) appRoot.inert = true;
       panel.hidden = true;
       restState.hidden = false;
+      setRecoveryOpen(false);
       unlockInput.value = '';
       unlockError.textContent = '';
       accessibleStatus.textContent = passwordEnabled()
@@ -5633,6 +5662,18 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       passwordConfirm.value = '';
       updatePasswordSettings();
     }
+    function recoverForgottenPassword() {
+      unlockError.textContent = '';
+      try { localStorage.removeItem(PASSWORD_KEY); }
+      catch (error) {
+        unlockError.textContent = 'Could not reset the password in this browser.';
+        return;
+      }
+      passwordInput.value = '';
+      passwordConfirm.value = '';
+      updatePasswordSettings();
+      leaveScreenSleep();
+    }
 
     autoToggle.checked = autoEnabled;
     minuteSelect.value = String(minutes);
@@ -5660,6 +5701,12 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     });
     passwordForm.addEventListener('submit', savePassword);
     clearPasswordButton.addEventListener('click', removePassword);
+    recoveryToggle.addEventListener('click', function () {
+      var open = recoveryToggle.getAttribute('aria-expanded') !== 'true';
+      setRecoveryOpen(open, open ? recoveryCancel : recoveryToggle);
+    });
+    recoveryCancel.addEventListener('click', function () { setRecoveryOpen(false, recoveryToggle); });
+    recoveryConfirm.addEventListener('click', recoverForgottenPassword);
     overlay.addEventListener('pointerdown', function (event) {
       if (!locked || passwordEnabled()) return;
       event.preventDefault();
@@ -5695,19 +5742,20 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         return;
       }
       if (event.key !== 'Tab' || !passwordEnabled()) return;
-      var unlockButton = unlockForm.querySelector('button[type="submit"]');
       if (panel.hidden) {
         event.preventDefault();
         showUnlockPanel();
-      } else if (document.activeElement !== unlockInput && document.activeElement !== unlockButton) {
+        return;
+      }
+      var focusable = [unlockInput, unlockForm.querySelector('button[type="submit"]'), recoveryToggle];
+      if (!recoveryDetails.hidden) focusable.push(recoveryCancel, recoveryConfirm);
+      var activeIndex = focusable.indexOf(document.activeElement);
+      var nextIndex = event.shiftKey
+        ? (activeIndex <= 0 ? focusable.length - 1 : activeIndex - 1)
+        : (activeIndex < 0 || activeIndex >= focusable.length - 1 ? 0 : activeIndex + 1);
+      if (nextIndex !== activeIndex || activeIndex < 0) {
         event.preventDefault();
-        unlockInput.focus();
-      } else if (event.shiftKey && document.activeElement === unlockInput) {
-        event.preventDefault();
-        unlockButton.focus();
-      } else if (!event.shiftKey && document.activeElement === unlockButton) {
-        event.preventDefault();
-        unlockInput.focus();
+        focusable[nextIndex].focus();
       }
     }, true);
     overlay.addEventListener('wheel', function (event) {
