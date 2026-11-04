@@ -10,25 +10,75 @@ import { requireDeveloperRank } from "../middlewares/accountSession";
 
 const router: IRouter = Router();
 const ACTIVE_ANNOUNCEMENT_ID = 1;
+// The short cache coalesces polling bursts without keeping expired or replaced banners around.
+const ACTIVE_ANNOUNCEMENT_CACHE_TTL_MS = 10_000;
 
 type AnnouncementRow = typeof siteAnnouncementTable.$inferSelect;
 type ActiveAnnouncement = AnnouncementRow | null;
+type ActiveAnnouncementCache = {
+  value: ActiveAnnouncement;
+  validUntil: number;
+};
+
+let activeAnnouncementCache: ActiveAnnouncementCache | null = null;
+let activeAnnouncementRequest: Promise<ActiveAnnouncement> | null = null;
+let activeAnnouncementCacheRevision = 0;
+
+function rememberActiveAnnouncement(value: ActiveAnnouncement): void {
+  activeAnnouncementCacheRevision += 1;
+  const now = Date.now();
+  const expiresAt = value?.expiresAt.getTime() ?? now + ACTIVE_ANNOUNCEMENT_CACHE_TTL_MS;
+  activeAnnouncementCache = {
+    value,
+    validUntil: Math.min(now + ACTIVE_ANNOUNCEMENT_CACHE_TTL_MS, expiresAt),
+  };
+}
 
 async function findActiveAnnouncement(): Promise<ActiveAnnouncement> {
-  const [announcement] = await db
-    .select()
-    .from(siteAnnouncementTable)
-    .where(and(
-      eq(siteAnnouncementTable.id, ACTIVE_ANNOUNCEMENT_ID),
-      gt(siteAnnouncementTable.expiresAt, new Date()),
-    ))
-    .limit(1);
-  return announcement ?? null;
+  const now = Date.now();
+  if (activeAnnouncementCache && activeAnnouncementCache.validUntil > now) {
+    return activeAnnouncementCache.value;
+  }
+  if (activeAnnouncementRequest) return activeAnnouncementRequest;
+
+  const revisionAtStart = activeAnnouncementCacheRevision;
+  const request = (async (): Promise<ActiveAnnouncement> => {
+    const checkedAt = new Date();
+    const [announcement] = await db
+      .select()
+      .from(siteAnnouncementTable)
+      .where(and(
+        eq(siteAnnouncementTable.id, ACTIVE_ANNOUNCEMENT_ID),
+        gt(siteAnnouncementTable.expiresAt, checkedAt),
+      ))
+      .limit(1);
+    const value = announcement ?? null;
+    if (activeAnnouncementCacheRevision === revisionAtStart) {
+      const fetchedAt = Date.now();
+      const expiresAt = value?.expiresAt.getTime() ?? fetchedAt + ACTIVE_ANNOUNCEMENT_CACHE_TTL_MS;
+      activeAnnouncementCache = {
+        value,
+        validUntil: Math.min(fetchedAt + ACTIVE_ANNOUNCEMENT_CACHE_TTL_MS, expiresAt),
+      };
+    }
+    return value;
+  })();
+
+  activeAnnouncementRequest = request;
+  try {
+    return await request;
+  } finally {
+    if (activeAnnouncementRequest === request) activeAnnouncementRequest = null;
+  }
 }
 
 router.get("/announcements/active", async (_req, res): Promise<void> => {
   const announcement = await findActiveAnnouncement();
-  res.setHeader("Cache-Control", "private, max-age=5");
+  const remainingSeconds = announcement
+    ? Math.max(0, Math.floor((announcement.expiresAt.getTime() - Date.now()) / 1000))
+    : 5;
+  const cacheSeconds = Math.min(5, remainingSeconds);
+  res.setHeader("Cache-Control", `public, max-age=${cacheSeconds}, s-maxage=${cacheSeconds}`);
   res.json(GetActiveAnnouncementResponse.parse({ announcement }));
 });
 
@@ -77,6 +127,7 @@ router.post(
       .returning();
 
     const result = PublishAnnouncementResponse.parse(announcement);
+    rememberActiveAnnouncement(announcement ?? null);
     res.status(201).json(result);
   },
 );
@@ -88,6 +139,7 @@ router.delete(
     await db
       .delete(siteAnnouncementTable)
       .where(eq(siteAnnouncementTable.id, ACTIVE_ANNOUNCEMENT_ID));
+    rememberActiveAnnouncement(null);
     res.sendStatus(204);
   },
 );
