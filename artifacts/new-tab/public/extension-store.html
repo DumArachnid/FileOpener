@@ -37,6 +37,10 @@
       --danger: #b3261e;
       --shadow: color-mix(in srgb, #000000 10%, transparent);
       --elevation: 0 14px 36px var(--shadow);
+      /* Store-local stack: sticky header stays above its notice and decorative artwork. */
+      --z-store-art: 1;
+      --z-store-update: 4;
+      --z-store-header: 5;
       font-family: "Bricolage Grotesque", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
     @media (prefers-color-scheme: dark) {
@@ -69,7 +73,7 @@
     .topbar {
       position: sticky;
       top: 0;
-      z-index: 5;
+      z-index: var(--z-store-header);
       display: flex;
       align-items: center;
       gap: 10px;
@@ -133,7 +137,7 @@
     h2 { margin: 0; font-size: 21px; line-height: 1.2; letter-spacing: -.035em; }
     h3 { margin: 0; font-size: 16px; letter-spacing: -.02em; }
     p { color: var(--muted); line-height: 1.6; }
-    .hero-copy { position: relative; z-index: 1; max-width: 610px; margin: 0; padding-bottom: 42px; font-size: 15px; }
+    .hero-copy { position: relative; z-index: var(--z-store-art); max-width: 610px; margin: 0; padding-bottom: 42px; font-size: 15px; }
     .hero h1 em { color: var(--accent-ink); font-style: normal; }
     .hero-description { max-width: 490px; margin: 0; font-size: 15px; line-height: 1.65; }
     .hero-anchor { display: inline-flex; align-items: center; gap: 5px; margin-top: 21px; color: var(--accent-ink); font-weight: 700; font-size: 13px; text-decoration: none; }
@@ -206,7 +210,7 @@
     .discovery-cover::before, .discovery-cover::after { position: absolute; border-radius: 50%; background: color-mix(in srgb, var(--accent) 11%, transparent); content: ""; }
     .discovery-cover::before { top: -40px; right: -10px; width: 136px; height: 136px; }
     .discovery-cover::after { bottom: -56px; left: 13%; width: 126px; height: 126px; background: color-mix(in srgb, var(--paper) 58%, transparent); }
-    .discovery-cover svg { position: relative; z-index: 1; width: 42px; height: 42px; padding: 9px; border: 1px solid var(--border); border-radius: 13px; background: var(--paper); color: var(--accent-ink); fill: none; stroke: currentColor; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; box-shadow: 0 5px 14px var(--shadow); }
+    .discovery-cover svg { position: relative; z-index: var(--z-store-art); width: 42px; height: 42px; padding: 9px; border: 1px solid var(--border); border-radius: 13px; background: var(--paper); color: var(--accent-ink); fill: none; stroke: currentColor; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; box-shadow: 0 5px 14px var(--shadow); }
     .discovery-cover[data-category="focus"] { background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 14%, var(--panel)), var(--paper)); }
     .discovery-cover[data-category="writing"] { background: linear-gradient(135deg, var(--panel), color-mix(in srgb, var(--accent-soft) 80%, var(--paper))); }
     .discovery-card-top { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 8px; }
@@ -241,7 +245,7 @@
     input, textarea { width: 100%; padding: 11px 13px; border: 1px solid var(--border-strong); border-radius: 11px; background: var(--paper); color: var(--ink); }
     textarea { resize: vertical; line-height: 1.5; }
     label { display: block; margin: 14px 0 7px; font-size: 13px; font-weight: 700; }
-    .update-notice { position: sticky; top: 10px; z-index: 8; display: none; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; padding: 12px 14px; border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border)); border-radius: 14px; background: var(--accent-soft); box-shadow: var(--elevation); }
+    .update-notice { position: sticky; top: 76px; z-index: var(--z-store-update); display: none; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; padding: 12px 14px; border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border)); border-radius: 14px; background: var(--accent-soft); box-shadow: var(--elevation); }
     .update-notice.visible { display: flex; }
     .update-notice p { margin: 0; color: var(--ink); font-size: 13px; }
     dialog { width: min(760px, calc(100% - 24px)); max-height: min(86vh, 900px); padding: 0; border: 1px solid var(--border-strong); border-radius: 20px; background: var(--paper); color: var(--ink); box-shadow: 0 24px 80px color-mix(in srgb, #000000 26%, transparent); }
@@ -255,6 +259,7 @@
     @media (max-width: 760px) {
       .shell { width: min(100% - 28px, 1160px); padding-top: 8px; }
       .topbar { position: relative; flex-wrap: wrap; margin-bottom: 20px; }
+      .update-notice { top: 10px; }
       .brand { flex: 1 1 100%; }
       .hero { grid-template-columns: 1fr; grid-template-rows: auto auto auto; gap: 4px; padding: 34px 28px 0; }
       .hero-copy { padding-bottom: 8px; }
@@ -300,16 +305,16 @@
 </head>
 <body>
   <main class="shell">
-    <div class="update-notice" id="updateNotice" role="status">
-      <p>A newer Study Desk version is available.</p>
-      <button class="btn primary" id="refreshUpdateBtn" type="button">Refresh now</button>
-    </div>
     <header class="topbar">
       <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span>Study Desk · Extension Store</span></div>
       <div class="account-state" id="accountState" aria-live="polite">Checking account…</div>
       <button class="btn" id="accountActionBtn" type="button">Account</button>
       <button class="btn" id="backToDeskBtn" type="button">← Back to Study Desk</button>
     </header>
+    <div class="update-notice" id="updateNotice" role="status">
+      <p>A newer Study Desk version is available.</p>
+      <button class="btn primary" id="refreshUpdateBtn" type="button">Refresh now</button>
+    </div>
 
     <section class="hero">
       <div class="hero-copy">

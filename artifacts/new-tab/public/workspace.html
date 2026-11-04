@@ -35,6 +35,11 @@
   --main-font: 'Bricolage Grotesque', system-ui, -apple-system, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
   --ease: cubic-bezier(.2, .8, .2, 1);
+  /* Workspace stack: app controls < global notices < custom modal layers < contextual tooltips. */
+  --z-texture: 0; --z-app: 1; --z-warning: 10; --z-editor: 20; --z-suggestion: 40;
+  --z-app-float: 70; --z-drawer-scrim: 80; --z-drawer: 90; --z-update: 999;
+  --z-store: 1000; --z-announcement: 1200; --z-toast: 1600;
+  --z-modal: 2000; --z-tooltip: 2500;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -45,7 +50,7 @@
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; font-family: var(--main-font); color: var(--text); background: var(--bg); transition: opacity .2s; font-size: 14px; }
-body::before { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: .5; mix-blend-mode: multiply;
+body::before { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: var(--z-texture); opacity: .5; mix-blend-mode: multiply;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 .09 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>"); }
 body.hide-cursor { cursor: none !important; }
 button, input, textarea, select { font: inherit; }
@@ -72,7 +77,7 @@ kbd { font-family: var(--mono); font-size: 10.5px; padding: 2px 6px; border-radi
 .logo-mark { width: 14px; height: 14px; border-radius: 4px 4px 4px 0; background: var(--accent); display: inline-block; box-shadow: 2px 2px 0 var(--ink-shadow); flex: none; }
 
 /* layout */
-.app { position: relative; z-index: 1; display: grid; grid-template-columns: auto 1fr; gap: var(--gap); height: 100dvh; padding: var(--gap); align-items: start; transition: grid-template-columns .3s var(--ease); }
+.app { position: relative; z-index: var(--z-app); display: grid; grid-template-columns: auto 1fr; gap: var(--gap); height: 100dvh; padding: var(--gap); align-items: start; transition: grid-template-columns .3s var(--ease); }
 .sidebar, .panel { background: var(--panel); border: 1.5px solid var(--border-strong); border-radius: var(--radius); box-shadow: 3px 3px 0 var(--ink-shadow); }
 .sidebar { padding: 14px; display: flex; flex-direction: column; gap: 10px; height: calc(100dvh - var(--gap) * 2); overflow-y: auto; resize: horizontal; width: var(--sidebar-w); min-width: 290px; max-width: 70vw; animation: slideIn .5s var(--ease) both; }
 .app.sidebar-collapsed { grid-template-columns: minmax(0, 1fr); gap: 0; }
@@ -250,7 +255,7 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .urlbox .star.on { color: var(--accent); }
 .urlbox .star.on .ic { fill: var(--accent); }
 .urlbox .star.pop .ic { animation: starPop .4s var(--ease); }
-.suggest { position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 40; background: var(--panel); border: 1.5px solid var(--border-strong); border-radius: 10px; box-shadow: 3px 3px 0 var(--ink-shadow); padding: 4px; max-height: 260px; overflow-y: auto; animation: fadeDown .18s var(--ease); }
+.suggest { position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: var(--z-suggestion); background: var(--panel); border: 1.5px solid var(--border-strong); border-radius: 10px; box-shadow: 3px 3px 0 var(--ink-shadow); padding: 4px; max-height: 260px; overflow-y: auto; animation: fadeDown .18s var(--ease); }
 .suggest button { display: flex; width: 100%; gap: 8px; align-items: center; text-align: left; padding: 7px 8px; border: 0; background: none; color: var(--text); border-radius: 6px; cursor: pointer; font-size: 12.5px; }
 .suggest button .ic { color: var(--muted); width: 14px; height: 14px; }
 .suggest button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--mono); font-size: 11.5px; }
@@ -287,7 +292,8 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .session-restore-settings p { margin: 0; line-height: 1.45; }
 .screen-sleep-password-form { display: flex; flex-direction: column; gap: 8px; }
 .screen-sleep-password-form input { width: 100%; }
-.screen-sleep-overlay { position: fixed; inset: 0; z-index: 100000; display: grid; place-items: center; margin: 0; padding: 0; width: auto; height: auto; max-width: none; max-height: none; overflow: hidden; border: 0; background: #000; color: #fff; }
+/* This is a native modal dialog: showModal() places it in the browser top layer. */
+.screen-sleep-overlay { position: fixed; inset: 0; display: grid; place-items: center; margin: 0; padding: 0; width: auto; height: auto; max-width: none; max-height: none; overflow: hidden; border: 0; background: #000; color: #fff; }
 .screen-sleep-overlay::backdrop { background: #000; }
 .screen-sleep-active, .screen-sleep-active body { overflow: hidden !important; }
 .screen-sleep-overlay:not([open]), .screen-sleep-panel[hidden], .screen-sleep-rest[hidden] { display: none !important; }
@@ -503,7 +509,7 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .suspension-details strong { color: var(--text); }
 .suspension-panel textarea { min-height: 110px; }
 .suspension-panel[hidden] { display: none !important; }
-.site-announcement-banner { position: fixed; top: 8px; left: 50%; z-index: 1200; display: flex; align-items: center; gap: 12px; width: min(900px, calc(100vw - 32px)); max-height: min(180px, calc(100dvh - 20px)); overflow: auto; padding: 13px 18px; transform: translateX(-50%); border: 1.5px solid var(--accent-hover); border-radius: 12px; background: var(--accent); color: var(--on-accent); box-shadow: 4px 4px 0 var(--ink-shadow); }
+.site-announcement-banner { position: fixed; top: 8px; left: 50%; z-index: var(--z-announcement); display: flex; align-items: center; gap: 12px; width: min(900px, calc(100vw - 32px)); max-height: min(180px, calc(100dvh - 20px)); overflow: auto; padding: 13px 18px; transform: translateX(-50%); border: 1.5px solid var(--accent-hover); border-radius: 12px; background: var(--accent); color: var(--on-accent); box-shadow: 4px 4px 0 var(--ink-shadow); }
 .site-announcement-banner[hidden] { display: none !important; }
 .site-announcement-label { flex: none; font-size: 10px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
 .site-announcement-message { min-width: 0; overflow-wrap: anywhere; font-size: 13px; line-height: 1.45; }
@@ -559,7 +565,7 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .moderation-search-row input { flex: 1; min-width: 160px; }
 .moderation-source { max-height: 240px; overflow: auto; margin: 8px 0; padding: 10px; border-radius: 8px; background: var(--input-bg); font: 11px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
 #helpBtn, #randomLinkBtn, #paletteBtn, #storeBtn, #adminPanelBtn { min-width: 32px; padding-inline: 6px; }
-#extensionStoreView { position: fixed; inset: 0; z-index: 1000; background: var(--bg); }
+#extensionStoreView { position: fixed; inset: 0; z-index: var(--z-store); background: var(--bg); }
 #extensionStoreView[hidden] { display: none; }
 #extensionStoreFrame { display: block; width: 100%; height: 100%; min-height: 0; border: 0; background: var(--bg); }
 .large-html-card { width: min(620px, calc(100% - 32px)); padding: 22px; border: 1.5px solid var(--border-strong); border-radius: var(--radius); background: var(--panel); color: var(--text); text-align: center; box-shadow: 3px 3px 0 var(--ink-shadow); }
@@ -569,10 +575,10 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .preview-area:has(iframe), .preview-area:has(img), .preview-area:has(pre) { border-style: solid; border-width: 1.5px; }
 mark.hit { background: color-mix(in srgb, var(--accent) 28%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent); }
 mark.hit.cur { background: var(--accent); color: var(--on-accent); }
-.iframe-warning { position: absolute; top: 12px; right: 12px; background: var(--text); color: var(--bg); padding: 6px 10px; border-radius: 8px; font-size: 11.5px; z-index: 10; pointer-events: none; opacity: 0; transform: translateY(-6px); transition: opacity .3s, transform .3s var(--ease); }
+.iframe-warning { position: absolute; top: 12px; right: 12px; background: var(--text); color: var(--bg); padding: 6px 10px; border-radius: 8px; font-size: 11.5px; z-index: var(--z-warning); pointer-events: none; opacity: 0; transform: translateY(-6px); transition: opacity .3s, transform .3s var(--ease); }
 .iframe-warning.show { opacity: 1; transform: none; }
 
-.editor-panel { position: absolute; inset: 0; z-index: 20; background: var(--panel); border: 1.5px solid var(--border-strong); border-radius: var(--radius); box-shadow: 3px 3px 0 var(--ink-shadow); padding: 12px; display: flex; flex-direction: column; gap: 10px; animation: pop .25s var(--ease); }
+.editor-panel { position: absolute; inset: 0; z-index: var(--z-editor); background: var(--panel); border: 1.5px solid var(--border-strong); border-radius: var(--radius); box-shadow: 3px 3px 0 var(--ink-shadow); padding: 12px; display: flex; flex-direction: column; gap: 10px; animation: pop .25s var(--ease); }
 .editor-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
 .editor-foot { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size, 14px); resize: none; padding: 14px; border-radius: 8px; line-height: 1.6; }
@@ -606,8 +612,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 .chip:hover { background: var(--accent); color: var(--on-accent); transform: translateY(-2px) rotate(-1deg); }
 
 /* overlays */
-.overlay { position: fixed; inset: 0; z-index: 100; background: color-mix(in srgb, var(--text) 38%, transparent); backdrop-filter: blur(3px); display: flex; align-items: flex-start; justify-content: center; padding: 12vh 16px 16px; animation: fadeIn .15s ease both; }
-#confirmModal { align-items: center; padding-top: 16px; }
+.overlay { position: fixed; inset: 0; z-index: var(--z-modal); background: color-mix(in srgb, var(--text) 38%, transparent); backdrop-filter: blur(3px); display: flex; align-items: flex-start; justify-content: center; padding: 12vh 16px 16px; animation: fadeIn .15s ease both; }
+#confirmModal { width: min(420px, calc(100% - 32px)); max-width: 420px; max-height: calc(100dvh - 32px); padding: 0; overflow: visible; border: 0; background: transparent; color: var(--text); }
+#confirmModal::backdrop { background: color-mix(in srgb, var(--text) 38%, transparent); backdrop-filter: blur(3px); }
 .palette-box, .help-box, .confirm-box { width: 100%; background: var(--panel); border: 1.5px solid var(--ink-shadow); border-radius: 14px; box-shadow: 5px 5px 0 var(--ink-shadow); animation: pop .22s var(--ease); }
 .palette-box { max-width: 580px; overflow: hidden; display: flex; flex-direction: column; max-height: 70dvh; }
 .palette-input { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1.5px solid var(--border); color: var(--muted); }
@@ -630,16 +637,16 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 .confirm-box { max-width: 420px; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
 .confirm-box p { margin: 0; line-height: 1.5; }
 
-.toasts { position: fixed; right: 16px; bottom: 16px; z-index: 200; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; pointer-events: none; }
+.toasts { position: fixed; right: 16px; bottom: 16px; z-index: var(--z-toast); display: flex; flex-direction: column; gap: 8px; align-items: flex-end; pointer-events: none; }
 .toast { display: flex; align-items: center; gap: 8px; background: var(--text); color: var(--bg); padding: 9px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; box-shadow: 3px 3px 0 var(--accent); animation: toastIn .3s var(--ease) both; max-width: min(360px, 90vw); }
 .toast.error { box-shadow: 3px 3px 0 var(--danger); }
 .toast.out { opacity: 0; transform: translateY(8px); transition: .25s; }
-.account-nudge { position: fixed; right: 16px; bottom: 64px; z-index: 190; width: min(370px, calc(100vw - 32px)); padding: 16px; border: 1.5px solid var(--border-strong); border-radius: 14px; background: var(--panel); color: var(--text); box-shadow: 4px 4px 0 var(--ink-shadow); animation: rise .25s var(--ease) both; }
+.account-nudge { position: fixed; right: 16px; bottom: 64px; z-index: var(--z-app-float); width: min(370px, calc(100vw - 32px)); padding: 16px; border: 1.5px solid var(--border-strong); border-radius: 14px; background: var(--panel); color: var(--text); box-shadow: 4px 4px 0 var(--ink-shadow); animation: rise .25s var(--ease) both; }
 .account-nudge[hidden] { display: none; }
 .account-nudge h3 { font-size: 15px; margin: 0; }
 .account-nudge p { margin: 8px 0 12px; color: var(--muted); font-size: 12px; line-height: 1.45; }
 .account-nudge-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.update-notice { position: fixed; top: 14px; right: 14px; z-index: 999; display: flex; align-items: center; gap: 12px; width: min(560px, calc(100vw - 28px)); padding: 12px; border: 1.5px solid var(--border-strong); border-radius: 12px; background: var(--panel); color: var(--text); box-shadow: 4px 4px 0 var(--ink-shadow); }
+.update-notice { position: fixed; top: 14px; right: 14px; z-index: var(--z-update); display: flex; align-items: center; gap: 12px; width: min(560px, calc(100vw - 28px)); padding: 12px; border: 1.5px solid var(--border-strong); border-radius: 12px; background: var(--panel); color: var(--text); box-shadow: 4px 4px 0 var(--ink-shadow); }
 .update-notice p { flex: 1; margin: 0; font-size: 12px; line-height: 1.4; }
 .update-notice[hidden], .update-notice.hidden { display: none !important; }
 
@@ -668,9 +675,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   .desk-only { display: none !important; }
   .center { height: calc(100dvh - 16px); }
   .panel { padding: 10px; }
-  .sidebar { position: fixed; z-index: 90; top: 8px; bottom: 8px; left: 8px; height: auto; width: min(92vw, 380px) !important; max-width: 92vw; resize: none; transform: translateX(-110%); transition: transform .35s var(--ease); animation: none; display: flex !important; }
+  .sidebar { position: fixed; z-index: var(--z-drawer); top: 8px; bottom: 8px; left: 8px; height: auto; width: min(92vw, 380px) !important; max-width: 92vw; resize: none; transform: translateX(-110%); transition: transform .35s var(--ease); animation: none; display: flex !important; }
   .app.drawer-open .sidebar { transform: none; }
-  .app.drawer-open .scrim { display: block; position: fixed; inset: 0; z-index: 80; background: color-mix(in srgb, var(--text) 40%, transparent); animation: fadeIn .2s both; }
+  .app.drawer-open .scrim { display: block; position: fixed; inset: 0; z-index: var(--z-drawer-scrim); background: color-mix(in srgb, var(--text) 40%, transparent); animation: fadeIn .2s both; }
   .app.focus-mode .sidebar { display: none !important; }
   .brand span:last-child { display: none; }
   .hide-sm { display: none; }
@@ -692,7 +699,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 
 .compatibility-toast {
   position: fixed; right: max(20px, env(safe-area-inset-right)); bottom: max(20px, env(safe-area-inset-bottom));
-  z-index: 1000; width: min(340px, calc(100vw - 40px)); padding: 18px 20px;
+  z-index: var(--z-app-float); width: min(340px, calc(100vw - 40px)); padding: 18px 20px;
   border: 1.5px solid var(--border-strong); border-radius: 12px; background: var(--panel);
   color: var(--text); box-shadow: 4px 4px 0 var(--ink-shadow); text-align: left;
   cursor: pointer; font: inherit; line-height: 1.5;
@@ -707,7 +714,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 .control-help > select, .control-help > .btn { flex: 1; min-width: 0; }
 .help-trigger { display: inline-grid; place-items: center; flex: none; width: 26px; height: 26px; padding: 0; border: 1.5px solid var(--border-strong); border-radius: 50%; background: var(--panel); color: var(--text); font: 700 13px var(--mono); cursor: help; }
 .help-trigger:hover, .help-trigger:focus-visible, .help-trigger[aria-expanded="true"] { background: var(--accent-soft); color: var(--accent-ink); border-color: currentColor; }
-.help-tooltip { position: fixed; z-index: 1500; width: min(320px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow-y: auto; padding: 12px 14px; border: 1.5px solid var(--border-strong); border-radius: 10px; background: var(--panel); color: var(--text); box-shadow: 3px 3px 0 var(--ink-shadow); font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
+.help-tooltip { position: fixed; z-index: var(--z-tooltip); width: min(320px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow-y: auto; padding: 12px 14px; border: 1.5px solid var(--border-strong); border-radius: 10px; background: var(--panel); color: var(--text); box-shadow: 3px 3px 0 var(--ink-shadow); font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
 .help-tooltip[hidden] { display: none; }
 .shortcut-settings { margin-top: 8px; }
 .shortcut-list { display: grid; gap: 6px; max-height: 360px; overflow-y: auto; padding: 2px; }
@@ -1470,6 +1477,17 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 
 </section>
 </main>
+<aside id="accountNudge" class="account-nudge" role="region" aria-label="Account recommendation" hidden>
+<div class="row-between"><h3>Keep your Study Desk in sync</h3><button class="icon-btn" id="accountNudgeClose" type="button" aria-label="Dismiss account recommendation">×</button></div>
+<p>Create an account to manually sync your notes, bookmarks, and preferences across devices. You can keep using Study Desk without one.</p>
+<div class="account-nudge-actions"><button class="btn sm primary" id="accountNudgeCreate" type="button">Create account</button><button class="btn sm" id="accountNudgeLater" type="button">Not now</button></div>
+</aside>
+<div aria-live="polite">
+<button id="compatibilityToast" class="compatibility-toast" type="button" aria-haspopup="dialog" aria-controls="compatibilityNotice" hidden>
+<strong>Made for ChromeOS</strong>
+<span>ChromeOS + Chrome is our main target. Click for compatibility details.</span>
+</button>
+</div>
 </div>
 
 <section id="extensionStoreView" hidden aria-label="Extension Store">
@@ -1516,7 +1534,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </div>
 
 <!-- Confirm -->
-<div class="overlay hidden" id="confirmModal" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle">
+<dialog class="confirm-dialog" id="confirmModal" role="alertdialog" aria-labelledby="confirmTitle">
 <div class="confirm-box">
 <h2 id="confirmTitle">Are you sure?</h2>
 <p id="confirmBody" class="muted"></p>
@@ -1525,7 +1543,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <button class="btn danger" id="confirmOk">Confirm</button>
 </div>
 </div>
-</div>
+</dialog>
 
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <aside id="updateNotice" class="update-notice hidden" role="status" aria-live="polite">
@@ -1563,11 +1581,6 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </section>
 </div>
 </dialog>
-<aside id="accountNudge" class="account-nudge" role="region" aria-label="Account recommendation" hidden>
-<div class="row-between"><h3>Keep your Study Desk in sync</h3><button class="icon-btn" id="accountNudgeClose" type="button" aria-label="Dismiss account recommendation">×</button></div>
-<p>Create an account to manually sync your notes, bookmarks, and preferences across devices. You can keep using Study Desk without one.</p>
-<div class="account-nudge-actions"><button class="btn sm primary" id="accountNudgeCreate" type="button">Create account</button><button class="btn sm" id="accountNudgeLater" type="button">Not now</button></div>
-</aside>
 <dialog id="educationalUseNotice" aria-labelledby="educationalUseTitle" aria-describedby="educationalUseCopy" style="max-width:560px;width:calc(100% - 32px);max-height:85vh;overflow:auto;padding:28px;border:2px solid var(--border-strong);border-radius:16px;background:var(--panel);color:var(--text);box-shadow:6px 6px 0 var(--ink-shadow)">
 <h2 id="educationalUseTitle">Welcome to Study Desk</h2>
 <div id="educationalUseCopy">
@@ -1579,13 +1592,6 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </div>
 <button class="btn primary" id="educationalUseContinue" type="button">I understand — continue</button>
 </dialog>
-<div aria-live="polite">
-<button id="compatibilityToast" class="compatibility-toast" type="button" aria-haspopup="dialog" aria-controls="compatibilityNotice" hidden>
-<strong>Made for ChromeOS</strong>
-<span>ChromeOS + Chrome is our main target. Click for compatibility details.</span>
-</button>
-</div>
-
 <dialog id="compatibilityNotice" aria-labelledby="compatibilityTitle" style="max-width:540px;width:calc(100% - 32px);max-height:85vh;overflow:auto;padding:28px;border:2px solid var(--border-strong);border-radius:16px;background:var(--panel);color:var(--text);box-shadow:6px 6px 0 var(--ink-shadow)">
 <h2 id="compatibilityTitle">Made for ChromeOS</h2>
 <p id="compatibilityDetected" style="font-weight:700"></p>
@@ -1788,14 +1794,15 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       document.getElementById('confirmBody').textContent = body;
       ok.textContent = okLabel || 'Confirm';
       ok.className = 'btn ' + (danger ? 'danger' : 'primary');
-      m.classList.remove('hidden');
+      closeControlHelp();
       NT.confirmOpen = true;
+      m.showModal();
       cancel.focus();
       function done(v) {
-        m.classList.add('hidden');
+        if (m.open) m.close();
         NT.confirmOpen = false;
         ok.removeEventListener('click', yes); cancel.removeEventListener('click', no);
-        m.removeEventListener('mousedown', bg); document.removeEventListener('keydown', key, true);
+        m.removeEventListener('click', bg); document.removeEventListener('keydown', key, true);
         resolve(v);
       }
       function yes() { done(true); }
@@ -1803,7 +1810,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       function bg(e) { if (e.target === m) done(false); }
       function key(e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); done(false); } }
       ok.addEventListener('click', yes); cancel.addEventListener('click', no);
-      m.addEventListener('mousedown', bg); document.addEventListener('keydown', key, true);
+      m.addEventListener('click', bg); document.addEventListener('keydown', key, true);
     });
   };
 
@@ -1874,6 +1881,20 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }, true);
   document.addEventListener('toggle', closeControlHelp, true);
   window.addEventListener('resize', closeControlHelp);
+  var layerStackObserver = new MutationObserver(function () {
+    if (!helpAnchor) return;
+    var openLayers = document.querySelectorAll('.overlay:not(.hidden), dialog[open]');
+    for (var i = 0; i < openLayers.length; i++) {
+      if (!openLayers[i].contains(helpAnchor)) { closeControlHelp(); return; }
+    }
+    var storeView = document.getElementById('extensionStoreView');
+    if (storeView && !storeView.hidden) closeControlHelp();
+  });
+  document.querySelectorAll('.overlay, dialog').forEach(function (layer) {
+    layerStackObserver.observe(layer, { attributes: true, attributeFilter: ['class', 'open'] });
+  });
+  var storeViewForHelp = document.getElementById('extensionStoreView');
+  if (storeViewForHelp) layerStackObserver.observe(storeViewForHelp, { attributes: true, attributeFilter: ['hidden'] });
 })();
 
 </script>
