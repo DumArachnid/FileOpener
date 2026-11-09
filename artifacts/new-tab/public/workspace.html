@@ -338,12 +338,6 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .screen-sleep-recovery-trigger:hover { color: var(--text); }
 .screen-sleep-recovery-details { margin-top: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); text-align: left; }
 .screen-sleep-recovery-details p { font-size: 12px; }
-.screen-sleep-recovery-form { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-.screen-sleep-recovery-form label { color: var(--text); font-size: 12px; font-weight: 600; }
-.screen-sleep-recovery-form input { width: 100%; min-height: 40px; padding: 0 11px; border: 1px solid var(--border-strong); border-radius: 7px; outline: none; background: var(--panel); color: var(--text); font: 14px var(--main-font); }
-.screen-sleep-recovery-form input:focus-visible { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
-.screen-sleep-recovery-status { min-height: 1.4em; margin: 0 !important; color: var(--muted); font-size: 11px; }
-.screen-sleep-recovery-status.is-error { color: var(--danger); }
 .screen-sleep-recovery-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin-top: 11px; }
 .screen-sleep-recovery-actions button { min-height: 36px; }
 .screen-sleep-overlay :focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 65%, #bbb); outline-offset: 3px; }
@@ -557,7 +551,8 @@ input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 5px; }
 .account-recovery-link { justify-self: center; margin-top: -7px; font-size: 12px; font-weight: 600; }
 .account-optional-note { display: flex; align-items: flex-start; gap: 9px; margin: 5px 0 0 !important; padding: 12px 13px; border: 1px solid var(--border); border-radius: 11px; background: color-mix(in srgb, var(--input-bg) 78%, transparent); color: var(--muted); font-size: 11px; line-height: 1.45; }
 .account-optional-note span { flex: none; color: var(--accent-ink); font-weight: 700; }
-.offline-account-actions { margin-top: 12px; }
+.offline-account-actions { display: flex; gap: 8px; margin-top: 12px; }
+.offline-account-actions .btn { flex: 1; }
 .offline-handoff-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .account-error { min-height: 0; color: var(--danger); font-size: 12px; line-height: 1.45; }
 .account-error:not(:empty) { padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border)); border-radius: 10px; background: color-mix(in srgb, var(--danger) 7%, var(--panel)); }
@@ -1131,7 +1126,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <button class="btn sm danger-ghost hidden" id="clearScreenSleepPasswordBtn" type="button" style="margin-top:8px">Remove password</button>
 <p class="small muted tight" id="screenSleepPasswordStatus" role="status" aria-live="polite">No password set. Click or press a key to wake the screen.</p>
 <p class="tiny muted tight" style="margin-top:6px">This password stays in this browser and is not your account password. It is a local privacy lock, not account security.</p>
-<p class="tiny muted tight" style="margin-top:6px">Forgot it? Recovery checks the username of the account signed in on this browser. Without a signed-in account, clearing Study Desk site data removes the lock and other local settings.</p>
+<p class="tiny muted tight" style="margin-top:6px">Forgot it? Choose “Forgot password?” on the sleep screen to remove the lock without clearing your other saved settings.</p>
 </div>
 </section>
 <button class="btn" id="helpOpenBtn"><i data-ic="keyboard"></i>Keyboard shortcuts</button>
@@ -1399,8 +1394,12 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </div>
 <div class="recovery-code-box hidden" id="offlineAccountPanel">
 <strong>Using a downloaded copy?</strong>
-<p>Verify your existing account in a Study Desk sign-in window. You’ll need internet access to reach the account server. Workspace sync is not available from a downloaded copy.</p>
-<div class="account-actions offline-account-actions"><button class="btn primary" id="offlineAccountVerifyBtn" type="button">Verify account online</button></div>
+<p>Sign in in a separate Study Desk window. After you approve, only your username and rank return to this copy; your password and sign-in session stay in the other window. Internet access is required, and workspace sync is unavailable in a downloaded copy.</p>
+<p class="small muted" id="offlineAccountStatus" role="status" aria-live="polite"></p>
+<div class="account-actions offline-account-actions">
+<button class="btn primary" id="offlineAccountVerifyBtn" type="button">Verify account online</button>
+<button class="btn hidden" id="offlineAccountCancelBtn" type="button">Cancel verification</button>
+</div>
 </div>
 <div class="recovery-code-box hidden" id="offlineHandoffConfirmPanel">
 <strong>Send account verification?</strong>
@@ -1597,17 +1596,11 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div class="screen-sleep-recovery">
 <button class="screen-sleep-recovery-trigger" id="screenSleepRecoveryToggle" type="button" aria-controls="screenSleepRecoveryDetails" aria-expanded="false">Forgot password?</button>
 <div class="screen-sleep-recovery-details" id="screenSleepRecoveryDetails" hidden>
-<p>Enter the username for the Study Desk account signed in on this browser. If it matches, the sleep password is removed and the workspace unlocks; your other saved data stays.</p>
-<form class="screen-sleep-recovery-form" id="screenSleepRecoveryForm">
-<label for="screenSleepRecoveryUsername">Study Desk username</label>
-<input id="screenSleepRecoveryUsername" type="text" autocomplete="username" maxlength="24" placeholder="Account username" aria-describedby="screenSleepRecoveryHelp screenSleepRecoveryStatus" required>
-<p class="screen-sleep-recovery-status" id="screenSleepRecoveryStatus" role="status" aria-live="polite"></p>
-<p class="tiny muted tight" id="screenSleepRecoveryHelp">This checks the signed-in account for this browser. A username alone is not account security.</p>
+<p>Resetting removes this browser’s sleep password and unlocks the workspace. Your notes, tabs, bookmarks, and other saved settings will stay. Anyone using this browser can reset the local privacy lock.</p>
 <div class="screen-sleep-recovery-actions">
 <button class="btn sm" id="screenSleepRecoveryCancel" type="button">Keep password</button>
-<button class="btn sm danger" type="submit">Verify and unlock</button>
+<button class="btn sm danger" id="screenSleepRecoveryConfirm" type="button">Reset password and unlock</button>
 </div>
-</form>
 </div>
 </div>
 </section>
@@ -5294,27 +5287,6 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       return data;
     });
   }
-  NT.verifySleepRecoveryUsername = async function (username) {
-    var submitted = String(username || '').trim().toLowerCase();
-    if (!submitted) return 'mismatch';
-    if (isOfflineCopy) {
-      if (!accountUser) return 'no-account';
-      return accountUser.username.toLowerCase() === submitted ? 'matched' : 'mismatch';
-    }
-    if (NT.isServerQuietHours()) {
-      if (!accountUser) return 'unavailable';
-      return accountUser.username.toLowerCase() === submitted ? 'matched' : 'mismatch';
-    }
-    try {
-      var result = await api('/auth/me');
-      var signedInUser = result && result.user;
-      if (!signedInUser || typeof signedInUser.username !== 'string') return 'no-account';
-      return signedInUser.username.toLowerCase() === submitted ? 'matched' : 'mismatch';
-    } catch (error) {
-      return error && error.status === 401 ? 'no-account' : 'unavailable';
-    }
-  };
-
   var VISITOR_ID_KEY = 'study_desk_visitor_id_v1';
   var VISITOR_STATE_KEY = 'study_desk_visitor_state_v1';
   function visitorIdForAccountRequest() {
@@ -5499,10 +5471,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     var unlockError = document.getElementById('screenSleepError');
     var recoveryToggle = document.getElementById('screenSleepRecoveryToggle');
     var recoveryDetails = document.getElementById('screenSleepRecoveryDetails');
-    var recoveryForm = document.getElementById('screenSleepRecoveryForm');
-    var recoveryUsername = document.getElementById('screenSleepRecoveryUsername');
-    var recoveryStatus = document.getElementById('screenSleepRecoveryStatus');
     var recoveryCancel = document.getElementById('screenSleepRecoveryCancel');
+    var recoveryConfirm = document.getElementById('screenSleepRecoveryConfirm');
     var accessibleStatus = document.getElementById('screenSleepAccessibleStatus');
     var autoEnabled = localStorage.getItem('disguise_screen_sleep_enabled') !== 'false';
     var minutes = Number(localStorage.getItem('disguise_screen_sleep_minutes')) || 5;
@@ -5564,8 +5534,6 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       recoveryDetails.hidden = !open;
       recoveryToggle.setAttribute('aria-expanded', String(open));
       recoveryToggle.textContent = open ? 'Hide recovery options' : 'Forgot password?';
-      recoveryStatus.textContent = '';
-      recoveryStatus.classList.remove('is-error');
       if (focusTarget) setTimeout(function () { focusTarget.focus(); }, 0);
     }
     function clearIdleTimer() {
@@ -5698,39 +5666,15 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       passwordConfirm.value = '';
       updatePasswordSettings();
     }
-    async function recoverForgottenPassword(event) {
-      event.preventDefault();
-      recoveryStatus.classList.remove('is-error');
-      recoveryStatus.textContent = 'Checking the signed-in account…';
-      var submitButton = recoveryForm.querySelector('button[type="submit"]');
-      submitButton.disabled = true;
-      var verification;
-      try {
-        verification = await NT.verifySleepRecoveryUsername(recoveryUsername.value);
-      } catch (error) {
-        verification = 'unavailable';
-      }
-      if (verification !== 'matched') {
-        recoveryStatus.classList.add('is-error');
-        recoveryStatus.textContent = verification === 'mismatch'
-          ? 'That username does not match the account signed in on this browser.'
-          : verification === 'no-account'
-            ? 'No signed-in account could be verified here. Sign in first, or clear this browser’s Study Desk site data to remove the lock and local data.'
-            : 'Account verification is unavailable right now. Try again when the server can be reached.';
-        submitButton.disabled = false;
-        recoveryUsername.select();
-        return;
-      }
+    function recoverForgottenPassword() {
+      unlockError.textContent = '';
       try { localStorage.removeItem(PASSWORD_KEY); }
       catch (error) {
-        recoveryStatus.classList.add('is-error');
-        recoveryStatus.textContent = 'Could not remove the sleep password from this browser.';
-        submitButton.disabled = false;
+        unlockError.textContent = 'Could not reset the password in this browser.';
         return;
       }
       passwordInput.value = '';
       passwordConfirm.value = '';
-      recoveryUsername.value = '';
       updatePasswordSettings();
       leaveScreenSleep();
     }
@@ -5763,10 +5707,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     clearPasswordButton.addEventListener('click', removePassword);
     recoveryToggle.addEventListener('click', function () {
       var open = recoveryToggle.getAttribute('aria-expanded') !== 'true';
-      setRecoveryOpen(open, open ? recoveryUsername : recoveryToggle);
+      setRecoveryOpen(open, open ? recoveryCancel : recoveryToggle);
     });
     recoveryCancel.addEventListener('click', function () { setRecoveryOpen(false, recoveryToggle); });
-    recoveryForm.addEventListener('submit', recoverForgottenPassword);
+    recoveryConfirm.addEventListener('click', recoverForgottenPassword);
     overlay.addEventListener('pointerdown', function (event) {
       if (!locked || passwordEnabled()) return;
       event.preventDefault();
@@ -5808,9 +5752,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         return;
       }
       var focusable = [unlockInput, unlockForm.querySelector('button[type="submit"]'), recoveryToggle];
-      if (!recoveryDetails.hidden) {
-        focusable.push(recoveryUsername, recoveryCancel, recoveryForm.querySelector('button[type="submit"]'));
-      }
+      if (!recoveryDetails.hidden) focusable.push(recoveryCancel, recoveryConfirm);
       var activeIndex = focusable.indexOf(document.activeElement);
       var nextIndex = event.shiftKey
         ? (activeIndex <= 0 ? focusable.length - 1 : activeIndex - 1)
@@ -6292,6 +6234,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   }
   function accountMode(mode) {
     $('accountError').textContent = '';
+    $('offlineAccountStatus').textContent = '';
     $('accountSuspensionPanel').hidden = true;
     $('suspensionAppealStatus').textContent = '';
     $('accountDialogEyebrow').textContent = mode === 'recovery' ? 'RECOVERY' : 'ACCOUNT';
@@ -6411,12 +6354,40 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     return true;
   }
 
-  function clearOfflineAuthWatcher() {
+  function clearOfflineAuthWatcher(expectedWatcher) {
+    if (expectedWatcher) {
+      clearInterval(expectedWatcher);
+      if (offlineAuthWatcher === expectedWatcher) offlineAuthWatcher = null;
+      return;
+    }
     if (offlineAuthWatcher) clearInterval(offlineAuthWatcher);
     offlineAuthWatcher = null;
   }
+  function updateOfflineAuthControls(pending, status) {
+    var verifyButton = $('offlineAccountVerifyBtn');
+    var cancelButton = $('offlineAccountCancelBtn');
+    var statusText = $('offlineAccountStatus');
+    verifyButton.disabled = pending;
+    verifyButton.textContent = pending ? 'Waiting for approval…' : 'Verify account online';
+    cancelButton.classList.toggle('hidden', !pending);
+    statusText.textContent = status || '';
+  }
+  function cancelOfflineAccountVerification(message) {
+    clearOfflineAuthWatcher();
+    var popup = offlineAuthPopup;
+    offlineAuthPopup = null;
+    offlineAuthState = null;
+    if (popup && !popup.closed) {
+      try { popup.close(); } catch (error) {}
+    }
+    updateOfflineAuthControls(false, message || '');
+  }
   function startOfflineAccountVerification() {
     accountError.textContent = '';
+    if (offlineAuthState) {
+      $('offlineAccountStatus').textContent = 'A verification window is already open. Finish or cancel that request first.';
+      return;
+    }
     if (NT.isServerQuietHours()) {
       accountError.textContent = NT.serverQuietHoursMessage();
       return;
@@ -6437,26 +6408,30 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
     offlineAuthPopup = popup;
     offlineAuthState = state;
-    accountError.textContent = 'Sign in and approve the verification in the Study Desk window. This copy never receives your password.';
+    accountError.textContent = '';
+    updateOfflineAuthControls(true, 'Sign in and approve the request in the other window. This copy never receives your password.');
     var startedAt = Date.now();
-    offlineAuthWatcher = setInterval(function () {
+    var watcher = setInterval(function () {
       if (offlineAuthPopup !== popup || offlineAuthState !== state) {
-        clearOfflineAuthWatcher();
+        clearOfflineAuthWatcher(watcher);
         return;
       }
       if (popup.closed) {
-        clearOfflineAuthWatcher();
+        clearOfflineAuthWatcher(watcher);
         offlineAuthPopup = null;
         offlineAuthState = null;
+        updateOfflineAuthControls(false, '');
         accountError.textContent = 'The sign-in window closed before verification was approved.';
       } else if (Date.now() - startedAt > 120000) {
-        clearOfflineAuthWatcher();
+        clearOfflineAuthWatcher(watcher);
         offlineAuthPopup = null;
         offlineAuthState = null;
         try { popup.close(); } catch (error) {}
+        updateOfflineAuthControls(false, '');
         accountError.textContent = 'Study Desk did not respond in time. Check your internet connection and whether the account server is reachable, then try again.';
       }
     }, 500);
+    offlineAuthWatcher = watcher;
   }
   function showHostedHandoffConfirmation(user) {
     pendingHandoffUser = user;
@@ -6495,6 +6470,10 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     window.setTimeout(function () { window.close(); }, 700);
   }
   $('offlineAccountVerifyBtn').addEventListener('click', startOfflineAccountVerification);
+  $('offlineAccountCancelBtn').addEventListener('click', function () {
+    cancelOfflineAccountVerification('Verification cancelled. You can start a new request whenever you are ready.');
+    accountError.textContent = '';
+  });
   $('offlineHandoffConfirmBtn').addEventListener('click', finishHostedHandoff);
   $('offlineHandoffCancelBtn').addEventListener('click', function () {
     pendingHandoffUser = null;
@@ -6511,14 +6490,16 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       !/^[a-z0-9_]{3,24}$/i.test(user.username) ||
       !['user', 'moderator', 'dev'].includes(user.role)
     ) {
+      cancelOfflineAccountVerification();
       accountError.textContent = 'The server response could not be verified. Please try again.';
       return;
     }
     clearOfflineAuthWatcher();
     offlineAuthPopup = null;
     offlineAuthState = null;
+    updateOfflineAuthControls(false, '');
     setAccountUser({ username: user.username, role: user.role });
-    accountError.textContent = 'Account verified online for this session. Your password was not shared with this copy.';
+    accountError.textContent = '';
     NT.toast('Account verified for this session.');
   });
 
@@ -7131,6 +7112,11 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
   });
   accountDialog.addEventListener('click', function (event) { if (event.target === accountDialog) accountDialog.close(); });
+  accountDialog.addEventListener('close', function () {
+    if (!isOfflineCopy || !offlineAuthState) return;
+    cancelOfflineAccountVerification('Verification cancelled because the account window was closed.');
+    accountError.textContent = '';
+  });
   $('accountSignoutBtn').addEventListener('click', async function () {
     if (!isOfflineCopy) {
       try { await api('/auth/logout', { method: 'POST' }); } catch (error) {}
