@@ -8,6 +8,6 @@ The Base64 GitHub release allows you to run the file opener in almost any locati
 Mimo.org is known for its inability to update if the code is considered too complex. However, the Base64 code bypasses this limitation.
 
 # Did you use AI for the README.md?
-Yes, I did. I utilized the built-in “Apple Intelligence” feature that modern iPhones have, rather than relying on a cloud-based LLM. This approach ensures that the AI processing is done locally, conserving water resources.
+Yes, I did. I utilized the built-in “Apple Intelligence” feature that modern iPhones have, rather than relying on a cloud-based LLM. This approach ensures that the AI processing is done locally, saving water resources.
 
 ![DumArachnidCatPFP](assets/DumArachnidCat.png)
