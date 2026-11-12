@@ -2690,7 +2690,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     V.blobURL = url; V.isText = false; V.isHTML = false; V.saved = null; V.file = null;
     iframeWarning.classList.add('show');
     setTimeout(() => iframeWarning.classList.remove('show'), 6000);
-    makeFrame(url, sandboxFor(url), 'Web page');
+    makeFrame(url, sandboxFor(url), 'Web page', { pointerLock: true });
     setStatus('Web: ' + url, 'External URL');
     updateActions(true);
     NT.trackEvent('workspace_page_opened');
@@ -2984,6 +2984,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     d.head.appendChild(st);
     const f = d.createElement('iframe');
     f.setAttribute('sandbox', 'allow-scripts allow-forms allow-popups allow-pointer-lock' + (/^https?:/i.test(targetUrl) ? ' allow-same-origin' : ''));
+    if (/^https?:/i.test(targetUrl)) f.setAttribute('allow', 'pointer-lock');
     f.src = targetUrl;
     d.body.appendChild(f);
     points += 10;
@@ -3010,7 +3011,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         iframeWarning.classList.remove('show');
       } else renderTextView(text);
     } else if (V.blobURL) {
-      if (/^https?:/i.test(V.blobURL)) makeFrame(V.blobURL, sandboxFor(V.blobURL), 'Web page');
+      if (/^https?:/i.test(V.blobURL)) makeFrame(V.blobURL, sandboxFor(V.blobURL), 'Web page', { pointerLock: true });
       else makeFrame(V.blobURL, 'allow-scripts allow-pointer-lock', 'File');
     }
     updateActions(true);
@@ -3721,7 +3722,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       V.file = s.file; V.blobURL = s.blobURL; V.saved = s.saved; V.isText = s.isText; V.isHTML = s.isHTML;
       if (!live) {
         if (s.view === 'web' && safeUrl(s.url)) {
-          NT.makeFrame(s.url, NT.sandboxFor(s.url), 'Web page');
+          NT.makeFrame(s.url, NT.sandboxFor(s.url), 'Web page', { pointerLock: true });
           var warning = el('iframeWarning');
           warning.classList.add('show');
           setTimeout(function () { warning.classList.remove('show'); }, 6000);
