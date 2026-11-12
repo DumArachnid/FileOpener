@@ -85,6 +85,7 @@
       backdrop-filter: blur(16px);
     }
     .brand { display: flex; align-items: center; gap: 11px; margin-right: auto; font-weight: 800; letter-spacing: -.035em; }
+    .release-stage { display: inline-flex; align-items: center; padding: 3px 6px; border: 1px solid var(--border-strong); border-radius: 999px; background: var(--panel); color: var(--muted); font-size: 9px; font-weight: 700; letter-spacing: .06em; line-height: 1; text-transform: uppercase; }
     .brand-mark {
       width: 36px;
       height: 36px;
@@ -306,7 +307,7 @@
 <body>
   <main class="shell">
     <header class="topbar">
-      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span>Study Desk · Extension Store</span></div>
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span>Study Desk · Extension Store</span><span class="release-stage" data-release-stage>Beta</span></div>
       <div class="account-state" id="accountState" aria-live="polite">Checking account…</div>
       <button class="btn" id="accountActionBtn" type="button">Account</button>
       <button class="btn" id="backToDeskBtn" type="button">← Back to Study Desk</button>
@@ -1133,6 +1134,17 @@
       });
     }
   })();
+  </script>
+  <script>
+    (function setStudyDeskReleaseStage() {
+      var host = window.location.hostname.toLowerCase();
+      var isPreview = host === 'localhost' || host === '127.0.0.1' || host.endsWith('.replit.dev');
+      var stage = isPreview ? 'Alpha' : 'Beta';
+      document.querySelectorAll('[data-release-stage]').forEach(function (badge) {
+        badge.textContent = stage;
+        badge.setAttribute('aria-label', 'Study Desk ' + stage);
+      });
+    })();
   </script>
 </body>
 </html>
