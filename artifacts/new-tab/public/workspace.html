@@ -597,7 +597,11 @@ mark.hit.cur { background: var(--accent); color: var(--on-accent); }
 textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size, 14px); resize: none; padding: 14px; border-radius: 8px; line-height: 1.6; }
 
 .file-actions-container { display: flex; flex-direction: column; gap: 8px; width: 100%; flex: none; }
-.toggle-toolbar { align-self: flex-end; opacity: .8; }
+.file-actions-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 30px; }
+.memory-meter { display: inline-flex; align-items: center; gap: 7px; min-width: 0; color: var(--muted); font-size: 11px; line-height: 1; white-space: nowrap; }
+.memory-meter::before { content: ""; width: 6px; height: 6px; flex: none; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.memory-meter-value { color: var(--accent-ink); font-family: var(--mono); font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.toggle-toolbar { align-self: auto; flex: none; opacity: .8; }
 .file-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 8px; width: 100%; }
 .statusbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 7px 12px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--input-bg); flex: none; }
 .server-quiet-hours-status { flex: 1 1 auto; min-width: 0; color: var(--accent-ink); font-weight: 700; text-align: center; }
@@ -1493,7 +1497,12 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 </div>
 
 <div class="file-actions-container">
+<div class="file-actions-head">
+<div class="memory-meter" id="memoryMeter" role="status" aria-live="polite" title="Approximate JavaScript memory for this Study Desk tab. Browser APIs cannot report total device RAM and may exclude embedded sites, GPU, media, or browser overhead.">
+<span>RAM estimate</span><span class="memory-meter-value" id="memoryUsageValue">Checking…</span>
+</div>
 <button class="btn sm toggle-toolbar" id="toggleButtonsBtn">Hide toolbar</button>
+</div>
 <div id="fileActions" class="file-actions hidden" role="group" aria-label="File actions">
 <button class="btn primary" id="saveFileBtn" title="Save text file to localStorage"><i data-ic="download"></i>Save text</button>
 <button class="btn" id="downloadBtn"><i data-ic="download"></i>Download</button>
@@ -8118,6 +8127,76 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       else badge.textContent = stage;
       badge.setAttribute('aria-label', 'Study Desk ' + stage);
     });
+  })();
+</script>
+<script>
+  (function startWorkspaceMemoryMeter() {
+    var value = document.getElementById('memoryUsageValue');
+    var meter = document.getElementById('memoryMeter');
+    var NT = window.NT;
+    if (!value || !meter) return;
+
+    var refreshTimer = null;
+    var isMeasuring = false;
+
+    function isPaused() {
+      return document.hidden || (NT && typeof NT.isBackgroundSleeping === 'function' && NT.isBackgroundSleeping());
+    }
+
+    function formatBytes(bytes) {
+      var megabytes = bytes / (1024 * 1024);
+      return '~' + (megabytes >= 100 ? Math.round(megabytes) : megabytes.toFixed(1)) + ' MB';
+    }
+
+    async function sampleMemory() {
+      if (isMeasuring || isPaused()) return;
+      isMeasuring = true;
+      var bytes = null;
+      try {
+        var perf = window.performance;
+        if (window.crossOriginIsolated && perf && typeof perf.measureUserAgentSpecificMemory === 'function') {
+          try {
+            var measurement = await perf.measureUserAgentSpecificMemory();
+            if (measurement && Number.isFinite(measurement.bytes) && measurement.bytes > 0) bytes = measurement.bytes;
+          } catch (error) {}
+        }
+        if (!Number.isFinite(bytes) && perf && perf.memory && Number.isFinite(perf.memory.usedJSHeapSize)) {
+          bytes = perf.memory.usedJSHeapSize;
+        }
+        if (Number.isFinite(bytes) && bytes > 0) {
+          value.textContent = formatBytes(bytes);
+          meter.setAttribute('aria-label', 'Approximate Study Desk tab JavaScript memory usage: ' + formatBytes(bytes));
+        } else {
+          value.textContent = 'Unavailable';
+          meter.setAttribute('aria-label', 'RAM estimate unavailable in this browser');
+        }
+      } finally {
+        isMeasuring = false;
+      }
+    }
+
+    function stopSampling() {
+      if (refreshTimer) window.clearInterval(refreshTimer);
+      refreshTimer = null;
+    }
+
+    function startSampling() {
+      if (isPaused() || refreshTimer) return;
+      sampleMemory();
+      refreshTimer = window.setInterval(sampleMemory, 15000);
+    }
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) stopSampling();
+      else startSampling();
+    });
+    if (NT && typeof NT.onBackgroundSleepChange === 'function') {
+      NT.onBackgroundSleepChange(function (sleeping) {
+        if (sleeping) stopSampling();
+        else startSampling();
+      });
+    }
+    startSampling();
   })();
 </script>
 </body>
