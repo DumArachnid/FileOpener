@@ -2065,10 +2065,11 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     return 'allow-scripts allow-forms allow-popups allow-pointer-lock' + (cross ? ' allow-same-origin' : '');
   }
   NT.sandboxFor = sandboxFor;
-  function makeFrame(src, sandbox, title) {
+  function makeFrame(src, sandbox, title, options) {
     previewArea.innerHTML = '';
     const f = document.createElement('iframe');
     if (sandbox != null) f.setAttribute('sandbox', sandbox);
+    if (options && options.pointerLock) f.setAttribute('allow', 'pointer-lock');
     f.setAttribute('title', title || 'Viewer');
     f.setAttribute('referrerpolicy', 'no-referrer');
     f.src = src;
@@ -2998,14 +2999,14 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
       renderWebmFile(V.file);
     } else if (isLargeHtmlFile(V.file)) {
       if (!V.blobURL) V.blobURL = URL.createObjectURL(V.file);
-      makeFrame(V.blobURL, 'allow-scripts allow-forms allow-popups allow-pointer-lock', V.file.name);
+      makeFrame(V.blobURL, 'allow-scripts allow-forms allow-popups allow-pointer-lock', V.file.name, { pointerLock: true });
       iframeWarning.classList.remove('show');
     } else if (V.saved || V.isText) {
       const text = savedText();
       if (V.isHTML || /<\s*html/i.test(text) || /<\s*(body|div|script|h1)/i.test(text)) {
         revokeCurrent();
         V.blobURL = URL.createObjectURL(new Blob([text], { type: 'text/html' }));
-        makeFrame(V.blobURL, 'allow-scripts allow-forms allow-popups allow-pointer-lock', 'Rendered HTML');
+        makeFrame(V.blobURL, 'allow-scripts allow-forms allow-popups allow-pointer-lock', 'Rendered HTML', { pointerLock: true });
         iframeWarning.classList.remove('show');
       } else renderTextView(text);
     } else if (V.blobURL) {
