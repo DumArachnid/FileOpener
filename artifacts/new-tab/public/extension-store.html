@@ -85,8 +85,8 @@
       backdrop-filter: blur(16px);
     }
     .brand { display: flex; align-items: center; gap: 11px; margin-right: auto; font-weight: 800; letter-spacing: -.035em; }
-    .release-stage { display: inline-flex; align-items: center; gap: 5px; padding: 3px 7px; border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--border)); border-radius: 999px; background: color-mix(in srgb, var(--accent) 9%, var(--panel)); color: var(--accent-ink); font-size: 9px; font-weight: 800; letter-spacing: .08em; line-height: 1; text-transform: uppercase; white-space: nowrap; }
-    .release-stage::before { content: ""; width: 5px; height: 5px; flex: none; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent); }
+    .release-stage { position: relative; display: inline-block; padding: 3px 14px; border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--border)); border-radius: 999px; background: color-mix(in srgb, var(--accent) 9%, var(--panel)); color: var(--accent-ink); font-size: 9px; font-weight: 800; letter-spacing: .08em; line-height: 1.1; text-align: center; text-transform: uppercase; vertical-align: middle; white-space: nowrap; }
+    .release-stage::before { content: ""; position: absolute; top: 50%; left: 7px; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent); transform: translateY(-50%); }
     .brand-mark {
       width: 36px;
       height: 36px;
