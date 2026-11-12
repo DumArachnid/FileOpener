@@ -162,8 +162,9 @@ select { appearance: none; background-image: linear-gradient(45deg, transparent 
 .icon-btn:active { transform: scale(.9); }
 .icon-btn:disabled { opacity: .4; cursor: not-allowed; }
 .file-btn { cursor: pointer; margin: 0; font-size: 13px; color: var(--text); letter-spacing: 0; }
-.release-stage { position: relative; display: inline-block; padding: 3px 14px; border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--border)); border-radius: 999px; background: color-mix(in srgb, var(--accent) 9%, var(--panel)); color: var(--accent-ink); font-size: 9px; font-weight: 800; letter-spacing: .08em; line-height: 1.1; text-align: center; text-transform: uppercase; vertical-align: middle; white-space: nowrap; }
+.release-stage { position: relative; display: inline-flex; align-items: center; justify-content: center; padding: 3px 14px; border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--border)); border-radius: 999px; background: color-mix(in srgb, var(--accent) 9%, var(--panel)); color: var(--accent-ink); font-size: 9px; font-weight: 800; letter-spacing: .08em; line-height: 1; text-align: center; text-transform: uppercase; vertical-align: middle; white-space: nowrap; }
 .release-stage::before { content: ""; position: absolute; top: 50%; left: 7px; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent); transform: translateY(-50%); }
+.release-stage-label { position: relative; top: 1px; display: block; line-height: 1; }
 
 .locked-box { padding: 12px; border: 1.5px dashed var(--border-strong); border-radius: 8px; text-align: center; background: var(--input-bg); display: flex; flex-direction: column; gap: 8px; align-items: center; }
 
@@ -1494,7 +1495,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <div class="small server-quiet-hours-status" id="serverQuietHoursStatus" role="status" aria-live="polite" hidden></div>
 <div class="small muted mono status-mid" id="statusCounts"></div>
 <div class="status-source-group">
-<span class="release-stage" data-release-stage>Beta</span>
+<span class="release-stage" data-release-stage><span class="release-stage-label">Beta</span></span>
 <div class="small muted status-right" id="statusRight">Not saved</div>
 </div>
 </div>
@@ -8097,7 +8098,9 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     var isPreview = host === 'localhost' || host === '127.0.0.1' || host.endsWith('.replit.dev');
     var stage = isPreview ? 'Alpha' : 'Beta';
     document.querySelectorAll('[data-release-stage]').forEach(function (badge) {
-      badge.textContent = stage;
+      var label = badge.querySelector('.release-stage-label');
+      if (label) label.textContent = stage;
+      else badge.textContent = stage;
       badge.setAttribute('aria-label', 'Study Desk ' + stage);
     });
   })();
