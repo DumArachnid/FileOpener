@@ -33,23 +33,23 @@ jobs:
             });
             const page = await browser.newPage();
             
-            // Set viewport size (tweak width/height if you want mobile view!)
-            await page.setViewport({ width: 1280, height: 720 });
+            // Set viewport size (tweak width/height for a better view!)
+            await page.setViewport({ width: 1920, height: 1080 });
 
-            // Open the local workspace.html file
+            // Opens the local workspace.html file
             const filePath = "file://" + path.resolve("artifacts/new-tab/public/workspace.html");
             await page.goto(filePath, { waitUntil: "networkidle0" });
 
-            // Wait for workspace.html to fully settle
+            // Waits for workspace.html to fully settle
             await new Promise(r => setTimeout(r, 1250));
 
-            // Ensure assets directory exists
+            // Ensures directory exists
             const fs = require("fs");
             if (!fs.existsSync("assets")) {
                 fs.mkdirSync("assets");
             }
 
-            // Save screenshot
+            // screenshot
             await page.screenshot({ path: "assets/workspace-preview.png", fullPage: true });
             await browser.close();
             console.log("Screenshot snapped successfully!");
