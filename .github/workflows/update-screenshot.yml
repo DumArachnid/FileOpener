@@ -18,6 +18,14 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Cache Puppeteer Browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/puppeteer
+          key: ${{ runner.os }}-puppeteer-${{ hashFiles('**/package-lock.json', 'package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-puppeteer-
+
       - name: Install Puppeteer System Dependencies
         run: |
           sudo apt-get update
@@ -31,9 +39,10 @@ jobs:
 
       - name: Take Screenshot
         run: |
-          node -e '
+          node << 'EOF'
           const puppeteer = require("puppeteer");
           const path = require("path");
+          const fs = require("fs");
 
           (async () => {
             const browser = await puppeteer.launch({
@@ -41,28 +50,23 @@ jobs:
             });
             const page = await browser.newPage();
             
-            // Set viewport size
             await page.setViewport({ width: 1920, height: 1080 });
 
-            // Opens the local workspace.html file
             const filePath = "file://" + path.resolve("artifacts/new-tab/public/workspace.html");
-            await page.goto(filePath, { waitUntil: "networkidle0" });
+            console.log("Loading page:", filePath);
 
-            // Waits for workspace.html to fully settle
-            await new Promise(r => setTimeout(r, 1250));
+            await page.goto(filePath, { waitUntil: "load", timeout: 30000 });
 
-            // makes sure the sidebar UI isnt too transparent.
+            await new Promise(r => setTimeout(r, 2000));
+
             await page.evaluate(() => {
               document.body.style.backgroundColor = "#ffffff";
             });
 
-            // Ensures directory exists
-            const fs = require("fs");
             if (!fs.existsSync("assets")) {
                 fs.mkdirSync("assets");
             }
 
-            // screenshot plz
             await page.screenshot({ 
               path: "assets/workspace-preview.png", 
               fullPage: true,
@@ -72,7 +76,7 @@ jobs:
             await browser.close();
             console.log("Screenshot snapped successfully!");
           })();
-          '
+          EOF
 
       - name: Commit and push screenshot
         run: |
