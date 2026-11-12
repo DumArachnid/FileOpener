@@ -1,4 +1,4 @@
-Name: Update Workspace Screenshot
+name: Update Workspace Screenshot
 
 on:
   workflow_dispatch:
@@ -17,6 +17,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - name: Install Puppeteer System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libnss3 libatk-bridge2.0-0 libdrm2 libxkbcommon0 \
+            libgbm1 libasound2 libxrandr2 libatk1.0-0 libcups2 \
+            libxdamage1 libxfixes3 libxcomposite1
 
       - name: Install Puppeteer
         run: npm install puppeteer
@@ -43,7 +51,7 @@ jobs:
             // Waits for workspace.html to fully settle
             await new Promise(r => setTimeout(r, 1250));
 
-            // makes sure the sidebar UI isn't too transparent.
+            // makes sure the sidebar UI isnt too transparent.
             await page.evaluate(() => {
               document.body.style.backgroundColor = "#ffffff";
             });
@@ -71,4 +79,4 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add assets/workspace-preview.png
-          git diff --staged --quiet || (git commit -m "Updated preview screenshot" && git push)
+          git diff --staged --quiet || (git commit -m "Updated preview screenshot" && git push origin HEAD:${{ github.ref_name }})
