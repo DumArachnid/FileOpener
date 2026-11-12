@@ -1,4 +1,4 @@
-name: Update Workspace Screenshot
+Name: Update Workspace Screenshot
 
 on:
   workflow_dispatch:
@@ -33,7 +33,7 @@ jobs:
             });
             const page = await browser.newPage();
             
-            // Set viewport size (tweak width/height for a better view!)
+            // Set viewport size
             await page.setViewport({ width: 1920, height: 1080 });
 
             // Opens the local workspace.html file
@@ -43,14 +43,24 @@ jobs:
             // Waits for workspace.html to fully settle
             await new Promise(r => setTimeout(r, 1250));
 
+            // makes sure the sidebar UI isn't too transparent.
+            await page.evaluate(() => {
+              document.body.style.backgroundColor = "#ffffff";
+            });
+
             // Ensures directory exists
             const fs = require("fs");
             if (!fs.existsSync("assets")) {
                 fs.mkdirSync("assets");
             }
 
-            // screenshot
-            await page.screenshot({ path: "assets/workspace-preview.png", fullPage: true });
+            // screenshot plz
+            await page.screenshot({ 
+              path: "assets/workspace-preview.png", 
+              fullPage: true,
+              omitBackground: false 
+            });
+            
             await browser.close();
             console.log("Screenshot snapped successfully!");
           })();
