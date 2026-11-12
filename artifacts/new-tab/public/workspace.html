@@ -599,6 +599,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 .file-actions-container { display: flex; flex-direction: column; gap: 8px; width: 100%; flex: none; }
 .file-actions-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 30px; }
 .memory-meter { display: inline-flex; align-items: center; gap: 7px; min-width: 0; color: var(--muted); font-size: 11px; line-height: 1; white-space: nowrap; }
+.memory-meter[hidden] { display: none !important; }
 .memory-meter::before { content: ""; width: 6px; height: 6px; flex: none; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .memory-meter-value { color: var(--accent-ink); font-family: var(--mono); font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .toggle-toolbar { align-self: auto; flex: none; opacity: .8; }
@@ -1155,6 +1156,11 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 <p class="tiny muted tight" style="margin-top:6px">Forgot it? Choose “Forgot password?” on the sleep screen to remove the lock without clearing your other saved settings.</p>
 </div>
 </section>
+<section class="session-restore-settings" aria-labelledby="developerToolsTitle">
+<strong class="small" id="developerToolsTitle">Developer tools</strong>
+<label class="session-restore-toggle" for="showMemoryEstimateEnabled"><input id="showMemoryEstimateEnabled" type="checkbox"><span>Show JavaScript heap estimate</span></label>
+<p class="small muted">Displays an approximate JavaScript-memory reading beside the toolbar toggle. It is not total device RAM and may exclude embedded pages, graphics, and media.</p>
+</section>
 <button class="btn" id="helpOpenBtn"><i data-ic="keyboard"></i>Keyboard shortcuts</button>
 <div>
 <label for="shortcutSettingsToggle">Customize keyboard shortcuts</label>
@@ -1498,8 +1504,8 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
 
 <div class="file-actions-container">
 <div class="file-actions-head">
-<div class="memory-meter" id="memoryMeter" role="status" aria-live="polite" title="Approximate JavaScript memory for this Study Desk tab. Browser APIs cannot report total device RAM and may exclude embedded sites, GPU, media, or browser overhead.">
-<span>RAM estimate</span><span class="memory-meter-value" id="memoryUsageValue">Checking…</span>
+<div class="memory-meter" id="memoryMeter" role="status" aria-live="polite" hidden title="Approximate JavaScript heap usage for the Study Desk tab—not total device RAM. Embedded sites, GPU, media, and browser overhead may not be included.">
+<span>JS heap estimate</span><span class="memory-meter-value" id="memoryUsageValue">Checking…</span>
 </div>
 <button class="btn sm toggle-toolbar" id="toggleButtonsBtn">Hide toolbar</button>
 </div>
@@ -8133,11 +8139,17 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
   (function startWorkspaceMemoryMeter() {
     var value = document.getElementById('memoryUsageValue');
     var meter = document.getElementById('memoryMeter');
+    var toggle = document.getElementById('showMemoryEstimateEnabled');
     var NT = window.NT;
-    if (!value || !meter) return;
+    var settingKey = 'disguise_dev_memory_estimate';
+    if (!value || !meter || !toggle) return;
 
     var refreshTimer = null;
     var isMeasuring = false;
+    var enabled = false;
+    try { enabled = localStorage.getItem(settingKey) === '1'; } catch (error) {}
+    toggle.checked = enabled;
+    meter.hidden = !enabled;
 
     function isPaused() {
       return document.hidden || (NT && typeof NT.isBackgroundSleeping === 'function' && NT.isBackgroundSleeping());
@@ -8149,7 +8161,7 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
 
     async function sampleMemory() {
-      if (isMeasuring || isPaused()) return;
+      if (!enabled || isMeasuring || isPaused()) return;
       isMeasuring = true;
       var bytes = null;
       try {
@@ -8165,11 +8177,14 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
         }
         if (Number.isFinite(bytes) && bytes > 0) {
           value.textContent = formatBytes(bytes);
-          meter.setAttribute('aria-label', 'Approximate Study Desk tab JavaScript memory usage: ' + formatBytes(bytes));
+          meter.setAttribute('aria-label', 'Approximate Study Desk JavaScript heap estimate: ' + formatBytes(bytes));
         } else {
           value.textContent = 'Unavailable';
-          meter.setAttribute('aria-label', 'RAM estimate unavailable in this browser');
+          meter.setAttribute('aria-label', 'JavaScript heap estimate unavailable in this browser');
         }
+      } catch (error) {
+        value.textContent = 'Unavailable';
+        meter.setAttribute('aria-label', 'JavaScript heap estimate unavailable in this browser');
       } finally {
         isMeasuring = false;
       }
@@ -8181,10 +8196,23 @@ textarea.editor { flex: 1; font-family: var(--mono); font-size: var(--font-size,
     }
 
     function startSampling() {
-      if (isPaused() || refreshTimer) return;
+      if (!enabled || isPaused() || refreshTimer) return;
       sampleMemory();
       refreshTimer = window.setInterval(sampleMemory, 15000);
     }
+
+    toggle.addEventListener('change', function () {
+      enabled = toggle.checked;
+      meter.hidden = !enabled;
+      try { localStorage.setItem(settingKey, enabled ? '1' : '0'); } catch (error) {}
+      if (enabled) {
+        value.textContent = 'Checking…';
+        startSampling();
+      } else {
+        stopSampling();
+        value.textContent = '—';
+      }
+    });
 
     document.addEventListener('visibilitychange', function () {
       if (document.hidden) stopSampling();
