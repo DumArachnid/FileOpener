@@ -1,9 +1,9 @@
 # File Opener | Workspace
 
 ![Workspace Preview](assets/workspace-preview.png)
-Study desk is aimed to provide a functional and workspace for ChromeOS users, especially for educational purposes.
+Study desk is designed to offer functionality with minimal aesthetics, making it suitable for ChromeOS users, especially for educational purposes.
 
-Even though this is aimed to educational students, it doesnt mean that it can also be used for other things.
+Although it’s intended for educational students, it’s not restricted to that use.
 
 # Why create HTML that executes a lengthy Base64 string?
 The Base64 GitHub release allows you to run the file opener in almost any location, such as mimo.org.
